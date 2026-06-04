@@ -1,0 +1,3925 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>⚒ КУБІЧНА ЕВОЛЮЦІЯ</title>
+<!-- Telegram Mini App SDK -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap');
+:root{
+  --bg:#0a0c10;--panel:#12151c;--panel2:#191d26;--border:#252a38;
+  --gold:#e8b84b;--gold2:#f5d07a;--green:#4ecb71;--red:#e05555;
+  --blue:#5b9bd5;--orange:#d4804a;--purple:#9b72cf;--teal:#4ab8a0;
+  --synth:#00e5ff;--synth2:#7b2fff;
+  --text:#c8d4e8;--dim:#5a6880;--shadow:#000000cc;
+  --font:'Share Tech Mono',monospace;
+  --font2:'Press Start 2P',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:15px;}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.05) 3px,rgba(0,0,0,.05) 4px);pointer-events:none;z-index:9999;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:#080a0e;}
+::-webkit-scrollbar-thumb{background:var(--border);}
+::-webkit-scrollbar-thumb:hover{background:var(--gold);}
+
+/* LAYOUT */
+.app{display:grid;grid-template-rows:52px 1fr;height:100vh;}
+.main{display:grid;grid-template-columns:270px 1fr 310px;overflow:hidden;}
+
+/* HEADER */
+header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 14px;flex-shrink:0;}
+.logo{font-family:var(--font2);font-size:10px;color:var(--gold);text-shadow:0 0 20px #e8b84b88;white-space:nowrap;}
+.epoch-info{display:flex;align-items:center;gap:10px;flex:1;}
+.epoch-label{font-size:11px;color:var(--dim);}
+.epoch-name{font-size:13px;color:var(--text);}
+.epoch-progress{flex:1;max-width:200px;}
+.prog-track{height:7px;background:#0e1218;border:1px solid var(--border);overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:width .4s;box-shadow:0 0 8px var(--gold);}
+.prog-label{font-size:11px;color:var(--dim);margin-top:2px;}
+.evo-btn{font-family:var(--font2);font-size:8px;background:transparent;border:1px solid var(--gold);color:var(--gold);padding:7px 12px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.evo-btn:hover:not(:disabled){background:var(--gold);color:#000;}
+.evo-btn:disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;}
+.hstats{display:flex;gap:10px;margin-left:auto;}
+.hstat{font-size:11px;color:var(--dim);}
+.hstat span{color:var(--gold);}
+
+/* LEFT PANEL */
+.left-panel{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.panel-tabs{display:flex;border-bottom:1px solid var(--border);}
+.ptab{flex:1;padding:8px 2px;text-align:center;font-size:11px;color:var(--dim);cursor:pointer;border:none;background:transparent;font-family:var(--font);transition:all .15s;border-bottom:2px solid transparent;}
+.ptab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.ptab:hover{color:var(--text);}
+.tab-content{display:none;flex:1;overflow-y:auto;padding:8px;}
+.tab-content.active{display:flex;flex-direction:column;gap:5px;}
+
+/* RESOURCES */
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.res-card{background:var(--panel2);border:1px solid var(--border);padding:6px 8px;transition:border-color .3s;cursor:default;position:relative;overflow:hidden;}
+.res-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.05),transparent);}
+.res-card.lit{border-color:var(--green);animation:reslit .4s ease-out;}
+.res-card.synth-res{border-color:var(--synth) !important;background:linear-gradient(135deg,#0a1a20,#0d1a2e);}
+@keyframes reslit{0%{background:#0d1a0d;}100%{background:var(--panel2);}}
+.res-emoji{font-size:18px;}
+.res-name{font-size:11px;color:var(--dim);margin:1px 0;}
+.res-val{font-size:17px;color:var(--text);}
+.res-ps{font-size:11px;}
+.res-ps.pos{color:var(--green);}
+.res-ps.neg{color:var(--red);}
+.res-ps.zero{color:var(--dim);}
+
+/* SECTION HEADER */
+.sh{font-size:11px;color:var(--gold);border-bottom:1px solid var(--border);padding-bottom:3px;margin-bottom:4px;letter-spacing:1px;display:flex;align-items:center;gap:5px;}
+.sh-badge{background:var(--panel2);border:1px solid var(--border);font-size:10px;padding:1px 5px;color:var(--dim);}
+
+/* TECH TREE — deep rework */
+.tech-epoch-group{margin-bottom:8px;}
+.tech-epoch-header{font-size:9px;color:var(--dim);border-left:2px solid var(--border);padding:2px 6px;margin-bottom:4px;letter-spacing:1px;text-transform:uppercase;}
+.tech-epoch-header.active-ep{border-left-color:var(--gold);color:var(--gold);}
+.tech-node{background:var(--panel2);border:1px solid var(--border);padding:7px;display:flex;gap:7px;align-items:flex-start;transition:all .2s;position:relative;}
+.tech-node.unlocked{border-color:var(--green);background:linear-gradient(135deg,#0d1a0d,var(--panel2));}
+.tech-node.locked{opacity:.45;filter:saturate(.3);}
+.tech-node.available{border-color:var(--blue);animation:techpulse 2s ease-in-out infinite;}
+@keyframes techpulse{0%,100%{box-shadow:0 0 0 0 rgba(91,155,213,.1);}50%{box-shadow:0 0 8px 2px rgba(91,155,213,.2);}}
+.tech-node.prereq-locked{opacity:.3;pointer-events:none;}
+.tech-icon{font-size:20px;flex-shrink:0;}
+.tech-info{flex:1;}
+.tech-name{font-size:12px;color:var(--text);}
+.tech-desc{font-size:11px;color:var(--dim);margin:2px 0;}
+.tech-effect{font-size:11px;color:var(--teal);margin-bottom:3px;}
+.tech-cost{font-size:11px;color:var(--orange);}
+.tech-prereq{font-size:10px;color:var(--red);margin-bottom:2px;}
+.tech-btn{font-family:var(--font);background:transparent;border:1px solid var(--blue);color:var(--blue);font-size:11px;padding:4px 10px;cursor:pointer;margin-top:4px;transition:all .15s;white-space:nowrap;}
+.tech-btn:hover:not(:disabled){background:var(--blue);color:#000;}
+.tech-btn:disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;}
+.tech-chain-line{border-left:1px dashed var(--border);margin-left:10px;padding-left:10px;}
+
+/* AC TREE — per resource */
+.ac-tier{background:linear-gradient(135deg,#0d180d,var(--panel2));border:1px solid #1a3520;padding:8px;display:flex;gap:7px;align-items:flex-start;margin-bottom:5px;transition:all .2s;}
+.ac-tier.unlocked{border-color:var(--green);}
+.ac-tier-icon{font-size:20px;flex-shrink:0;}
+.ac-tier-info{flex:1;}
+.ac-tier-name{font-size:11px;color:var(--text);}
+.ac-tier-desc{font-size:10px;color:var(--dim);}
+.ac-tier-detail{font-size:10px;color:var(--green);margin-top:2px;}
+.ac-tier-target{font-size:10px;color:var(--purple);margin-top:2px;}
+.ac-tier-btn{font-family:var(--font);font-size:10px;padding:3px 8px;border:1px solid var(--green);background:transparent;color:var(--green);cursor:pointer;transition:all .15s;white-space:nowrap;align-self:center;}
+.ac-tier-btn:hover:not(:disabled){background:var(--green);color:#000;}
+.ac-tier-btn:disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;}
+
+/* BINDS */
+.bind-card{background:var(--panel2);border:1px solid var(--border);padding:6px;display:flex;justify-content:space-between;align-items:center;gap:5px;}
+.bind-left{flex:1;}
+.bind-name{font-size:11px;}
+.bind-stat{font-size:10px;color:var(--teal);}
+.bind-lvl{font-size:10px;color:var(--gold);}
+.small-btn{font-family:var(--font);background:transparent;border:1px solid var(--border);color:var(--dim);font-size:10px;padding:3px 7px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.small-btn.can{border-color:var(--orange);color:var(--orange);}
+.small-btn.can:hover{background:var(--orange);color:#000;}
+.small-btn:disabled{cursor:not-allowed;opacity:.4;}
+
+/* EXCHANGE PANEL */
+.exchange-panel{background:linear-gradient(135deg,#08101a,#0a0c14);border:1px solid var(--synth);padding:8px;margin-bottom:5px;}
+.exchange-title{font-size:11px;color:var(--synth);margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+.exchange-synth-bal{font-size:14px;color:var(--synth);text-shadow:0 0 10px var(--synth);margin-bottom:6px;}
+.exchange-row{display:flex;gap:5px;margin-bottom:4px;align-items:center;}
+.exch-select{flex:1;background:#0a1020;border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:11px;padding:3px 5px;}
+.exch-input{width:70px;background:#0a1020;border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:11px;padding:3px 5px;}
+.exch-btn{font-family:var(--font);font-size:10px;padding:4px 10px;border:1px solid var(--synth);background:transparent;color:var(--synth);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.exch-btn:hover:not(:disabled){background:var(--synth);color:#000;}
+.exch-btn:disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;}
+.exch-rate{font-size:10px;color:var(--dim);margin:2px 0;}
+.exchange-locked{text-align:center;padding:12px;color:var(--dim);font-size:11px;}
+.exchange-upgrade{display:flex;justify-content:space-between;align-items:center;margin-top:5px;padding-top:5px;border-top:1px solid var(--border);}
+.exchange-lvl-info{font-size:10px;color:var(--teal);}
+
+/* CENTER */
+.center-area{display:flex;flex-direction:column;overflow:hidden;}
+.clicker-strip{flex-shrink:0;background:#070a0f;border-bottom:1px solid var(--border);padding:8px 12px;display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;}
+.clicker-strip-title{font-size:10px;color:var(--dim);margin-right:4px;}
+.click-btn{background:var(--panel2);border:2px solid var(--border);color:var(--text);font-family:var(--font);font-size:12px;padding:7px 12px;cursor:pointer;transition:all .1s;display:flex;align-items:center;gap:5px;position:relative;overflow:hidden;}
+.click-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.03),transparent);pointer-events:none;}
+.click-btn:hover{border-color:var(--gold);color:var(--gold);background:#1a1a10;}
+.click-btn:active{transform:scale(.96);}
+.click-btn.cur-epoch{border-color:var(--teal);background:linear-gradient(135deg,var(--panel2),#0a1a18);}
+.click-btn .cb-emoji{font-size:18px;}
+.click-btn .cb-amt{font-size:9px;color:var(--green);position:absolute;top:2px;right:3px;}
+.click-btn .cb-ac{font-size:9px;color:var(--purple);position:absolute;bottom:2px;right:3px;}
+
+/* MAP AREA */
+.map-area{flex:1;overflow:hidden;position:relative;background:radial-gradient(ellipse at 50% 40%,#131820 0%,#070a0f 80%);}
+#isoCanvas{display:block;}
+#map-tooltip{position:absolute;display:none;background:#070a0fee;border:1px solid var(--gold);padding:5px 10px;font-size:11px;pointer-events:none;max-width:200px;}
+
+/* BUILD SELECTOR */
+.build-selector{position:absolute;bottom:0;left:0;right:0;background:#070a0fee;border-top:1px solid var(--border);padding:6px 10px;display:flex;gap:6px;overflow-x:auto;align-items:center;}
+.build-selector-title{font-size:10px;color:var(--dim);white-space:nowrap;}
+.bs-filter{font-family:var(--font);background:transparent;border:1px solid var(--border);color:var(--dim);font-size:10px;padding:2px 8px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.bs-filter.active{border-color:var(--gold);color:var(--gold);}
+
+/* RIGHT PANEL */
+.right-panel{border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.buildings-list{flex:1;overflow-y:auto;padding:7px;}
+
+/* BUILDING CARD — redesigned */
+.b-card{background:var(--panel2);border:1px solid var(--border);padding:9px;margin-bottom:6px;transition:all .2s;position:relative;overflow:hidden;}
+.b-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--border);transition:background .2s;}
+.b-card:hover{border-color:#3e4a60;}
+.b-card:hover::before{background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.b-card.on-map::before{background:linear-gradient(90deg,transparent,var(--green),transparent);}
+.b-card.on-map{border-color:#253a25;}
+.b-card.maxed::before{background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.b-card.maxed{border-color:#3a3020;}
+.b-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
+.b-title{font-size:12px;line-height:1.4;}
+.b-epoch-tag{font-size:10px;color:var(--dim);background:#070a0f;padding:1px 5px;border:1px solid var(--border);}
+.b-slots{display:flex;gap:3px;align-items:center;}
+.b-slot{width:9px;height:9px;border:1px solid var(--border);background:#070a0f;}
+.b-slot.filled{background:var(--green);border-color:var(--green);box-shadow:0 0 4px var(--green);}
+
+/* IO display — much clearer */
+.b-io-block{margin:4px 0;padding:4px 6px;background:#070a0f;border:1px solid var(--border);}
+.b-io-row{display:flex;align-items:center;gap:4px;font-size:11px;margin:1px 0;}
+.b-io-label{color:var(--dim);width:30px;flex-shrink:0;}
+.b-io-items{display:flex;flex-wrap:wrap;gap:4px;}
+.b-io-item{display:flex;align-items:center;gap:2px;}
+.b-io-item.input-item{color:var(--red);}
+.b-io-item.output-item{color:var(--green);}
+.b-io-item .io-val{font-size:12px;}
+.b-io-item .io-name{color:var(--dim);font-size:10px;}
+
+.b-cost-block{font-size:11px;color:var(--orange);margin:3px 0;display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+.b-cost-item{display:flex;align-items:center;gap:2px;}
+.b-cost-item.cant-afford{color:var(--red);}
+.b-cost-item.can-afford{color:var(--green);}
+.b-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;}
+.b-build-btn{font-family:var(--font);font-size:11px;padding:5px 12px;cursor:pointer;border:1px solid var(--green);background:transparent;color:var(--green);transition:all .15s;flex:1;}
+.b-build-btn:hover:not(:disabled){background:var(--green);color:#000;}
+.b-build-btn:disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;}
+
+/* INSTANCE ROW */
+.inst-row{background:#070a0f;border:1px solid var(--border);padding:6px 8px;margin-top:3px;font-size:11px;}
+.inst-row-top{display:flex;align-items:center;gap:5px;margin-bottom:3px;}
+.inst-lvl{color:var(--gold);font-size:12px;}
+.inst-ps{color:var(--green);flex:1;font-size:11px;}
+.inst-row-btns{display:flex;gap:3px;flex-wrap:wrap;}
+.inst-btn{font-family:var(--font);font-size:10px;padding:3px 7px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.inst-btn.can{border-color:var(--gold);color:var(--gold);}
+.inst-btn.can:hover{background:var(--gold);color:#000;}
+.inst-btn:disabled{opacity:.3;cursor:not-allowed;}
+.inst-ac-btn{font-family:var(--font);font-size:10px;padding:3px 7px;border:1px solid var(--purple);background:transparent;color:var(--purple);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.inst-ac-btn.active{background:var(--purple);color:#fff;}
+.inst-ac-btn:disabled{opacity:.3;cursor:not-allowed;}
+.inst-boost-btn{font-family:var(--font);font-size:10px;padding:3px 7px;border:1px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;transition:all .15s;}
+.inst-boost-btn:hover{background:var(--blue);color:#000;}
+
+/* LOG */
+.log-panel{border-top:1px solid var(--border);max-height:130px;overflow-y:auto;padding:5px 8px;display:flex;flex-direction:column-reverse;gap:2px;flex-shrink:0;}
+.log-line{font-size:11px;color:var(--dim);border-left:2px solid var(--border);padding-left:5px;}
+.log-line.important{color:var(--gold);border-left-color:var(--gold);}
+.log-line.synth-log{color:var(--synth);border-left-color:var(--synth);}
+
+/* FLOAT TEXT */
+.float-text{position:fixed;pointer-events:none;font-family:var(--font);font-size:17px;color:var(--gold);text-shadow:0 0 10px var(--gold);animation:floatup .9s ease-out forwards;z-index:9998;}
+.float-text.synth{color:var(--synth);text-shadow:0 0 10px var(--synth);}
+@keyframes floatup{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(-55px);}}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gold);color:#000;font-family:var(--font2);font-size:8px;padding:10px 20px;z-index:9997;transition:transform .35s;box-shadow:0 0 20px var(--gold);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+/* ============================================================
+   QUESTS & ACHIEVEMENTS
+   ============================================================ */
+/* Quest cards */
+.quest-card{background:var(--panel2);border:1px solid var(--border);padding:9px;margin-bottom:6px;position:relative;overflow:hidden;transition:border-color .2s;}
+.quest-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--border);}
+.quest-card.active::before{background:linear-gradient(90deg,var(--blue),var(--teal));}
+.quest-card.completed::before{background:linear-gradient(90deg,var(--gold),var(--green));}
+.quest-card.completed{border-color:#2a3a20;background:linear-gradient(135deg,#0a1a08,var(--panel2));}
+.quest-card.claimable{border-color:var(--gold);animation:questpulse 1.5s ease-in-out infinite;}
+@keyframes questpulse{0%,100%{box-shadow:0 0 0 0 rgba(232,184,75,.1);}50%{box-shadow:0 0 10px 2px rgba(232,184,75,.25);}}
+.quest-head{display:flex;align-items:flex-start;gap:7px;margin-bottom:5px;}
+.quest-icon{font-size:22px;flex-shrink:0;}
+.quest-title{font-size:12px;color:var(--text);line-height:1.3;}
+.quest-desc{font-size:11px;color:var(--dim);margin-bottom:5px;}
+.quest-progress-wrap{height:6px;background:#0a0c10;border:1px solid var(--border);margin-bottom:4px;overflow:hidden;}
+.quest-progress-bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--teal));transition:width .4s;}
+.quest-progress-bar.gold{background:linear-gradient(90deg,var(--gold),var(--green));}
+.quest-prog-label{font-size:10px;color:var(--dim);margin-bottom:5px;}
+.quest-reward{font-size:11px;color:var(--gold);margin-bottom:5px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;}
+.quest-claim-btn{font-family:var(--font);font-size:11px;padding:5px 14px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;transition:all .15s;width:100%;}
+.quest-claim-btn:hover:not(:disabled){background:var(--gold);color:#000;}
+.quest-claim-btn:disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;}
+.quest-done-badge{font-size:11px;color:var(--green);text-align:center;padding:3px;}
+.quest-category-header{font-size:11px;color:var(--gold);border-bottom:1px solid var(--border);padding-bottom:3px;margin:8px 0 5px;letter-spacing:1px;}
+.quest-new-badge{position:absolute;top:6px;right:6px;background:var(--red);color:#fff;font-size:9px;padding:1px 5px;border-radius:2px;}
+
+/* Achievement cards */
+.ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px 0;}
+.ach-card{background:var(--panel2);border:1px solid var(--border);padding:7px;text-align:center;transition:all .2s;position:relative;}
+.ach-card.unlocked{border-color:var(--gold);background:linear-gradient(135deg,#1a1200,var(--panel2));}
+.ach-card.unlocked::after{content:'✅';position:absolute;top:3px;right:4px;font-size:10px;}
+.ach-card.locked{opacity:.5;filter:saturate(.2);}
+.ach-icon{font-size:24px;margin-bottom:3px;}
+.ach-name{font-size:10px;color:var(--text);margin-bottom:2px;line-height:1.2;}
+.ach-desc{font-size:9px;color:var(--dim);}
+.ach-bonus{font-size:10px;color:var(--teal);margin-top:3px;}
+.ach-filter-bar{display:flex;gap:4px;margin-bottom:7px;flex-wrap:wrap;}
+.ach-filter-btn{font-family:var(--font);font-size:10px;padding:2px 8px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;transition:all .15s;}
+.ach-filter-btn.active{border-color:var(--gold);color:var(--gold);}
+.ach-progress-bar{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11px;color:var(--dim);}
+.ach-prog-track{flex:1;height:5px;background:#0a0c10;border:1px solid var(--border);}
+.ach-prog-fill{height:100%;background:var(--gold);transition:width .4s;}
+
+/* AC section inside Tech tab */
+.ac-tech-section{background:linear-gradient(135deg,#080f08,#0a1208);border:1px solid #1a3020;padding:10px;margin-bottom:8px;}
+.ac-tech-title{font-size:12px;color:var(--green);margin-bottom:8px;display:flex;align-items:center;gap:6px;border-bottom:1px solid #1a3020;padding-bottom:5px;}
+.ac-tech-summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:5px 8px;background:#060d06;border:1px solid #1a3020;}
+.ac-tech-stat{font-size:11px;color:var(--dim);}
+.ac-tech-stat span{color:var(--green);}
+.ac-branch-block{margin-bottom:6px;}
+.ac-branch-label{font-size:11px;padding:3px 7px;margin-bottom:4px;display:flex;align-items:center;gap:5px;}
+.ac-compact-node{background:#060d06;border:1px solid #1a3020;padding:6px 8px;display:flex;gap:8px;align-items:center;margin-bottom:3px;transition:all .2s;}
+.ac-compact-node.unlocked{border-color:var(--green);}
+.ac-compact-node.available{border-color:var(--blue);}
+.ac-compact-icon{font-size:16px;flex-shrink:0;}
+.ac-compact-info{flex:1;}
+.ac-compact-name{font-size:11px;color:var(--text);}
+.ac-compact-stat{font-size:10px;color:var(--green);}
+.ac-compact-btns{display:flex;gap:3px;flex-direction:column;}
+
+/* Tab badge for new quests/achievements */
+.tab-badge{display:inline-block;background:var(--red);color:#fff;font-size:8px;padding:0 4px;border-radius:10px;margin-left:3px;vertical-align:middle;}
+.defense-tab{display:flex;flex-direction:column;gap:5px;}
+.goblin-wave-panel{background:linear-gradient(135deg,#1a0808,#120a0a);border:1px solid var(--red);padding:10px;margin-bottom:6px;}
+.goblin-wave-title{font-size:13px;color:var(--red);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.goblin-wave-info{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+.gwi{font-size:11px;color:var(--dim);}
+.gwi span{color:var(--text);}
+.goblin-wave-bar-wrap{height:8px;background:#1a0808;border:1px solid #3a1010;margin-bottom:6px;overflow:hidden;}
+.goblin-wave-bar{height:100%;background:linear-gradient(90deg,var(--red),#ff8800);transition:width .3s;}
+.goblin-hp-bars{display:flex;flex-direction:column;gap:3px;max-height:120px;overflow-y:auto;}
+.goblin-row{display:flex;align-items:center;gap:6px;padding:3px 5px;background:#100808;border:1px solid #2a1010;}
+.goblin-icon{font-size:16px;flex-shrink:0;}
+.goblin-info{flex:1;font-size:11px;}
+.goblin-name{color:var(--red);}
+.goblin-hp-bar-wrap{height:5px;background:#200808;margin-top:2px;}
+.goblin-hp-bar{height:100%;background:var(--red);transition:width .2s;}
+.goblin-lvl-badge{font-size:10px;color:var(--gold);background:#1a1000;border:1px solid var(--gold);padding:1px 5px;flex-shrink:0;}
+.no-attack{color:var(--green);font-size:12px;text-align:center;padding:12px;border:1px solid #1a3a1a;background:#080f08;}
+
+/* Defense structures panel */
+.defense-structures{margin-top:6px;}
+.def-struct-card{background:var(--panel2);border:1px solid var(--border);padding:8px;margin-bottom:5px;transition:border-color .2s;}
+.def-struct-card.built{border-color:#5b9bd5;}
+.def-struct-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
+.def-struct-name{font-size:12px;color:var(--text);}
+.def-struct-count{font-size:11px;color:var(--blue);background:#0a1020;padding:1px 7px;border:1px solid var(--blue);}
+.def-struct-desc{font-size:11px;color:var(--dim);margin-bottom:4px;}
+.def-struct-stats{font-size:11px;color:var(--teal);margin-bottom:4px;}
+.def-struct-cost{font-size:11px;color:var(--orange);margin-bottom:5px;}
+.def-struct-btn{font-family:var(--font);font-size:11px;padding:4px 12px;border:1px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;transition:all .15s;width:100%;}
+.def-struct-btn:hover:not(:disabled){background:var(--blue);color:#000;}
+.def-struct-btn:disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;}
+
+/* Wave incoming alert */
+.wave-alert{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#1a0808ee;border:2px solid var(--red);color:var(--red);font-family:var(--font2);font-size:9px;padding:10px 20px;z-index:9998;display:none;animation:wavealert 0.4s ease-in-out infinite alternate;text-align:center;}
+@keyframes wavealert{from{box-shadow:0 0 8px var(--red);}to{box-shadow:0 0 20px var(--red),0 0 40px #ff000066;}}
+.wave-next-timer{font-size:11px;color:var(--dim);text-align:center;padding:4px;}
+.wave-next-timer span{color:var(--orange);}
+
+/* Goblin death loot float */
+.float-text.goblin-loot{color:#ff6644;text-shadow:0 0 8px #ff4400;}
+
+/* SYNTH label */
+.synth-label{color:var(--synth);text-shadow:0 0 8px var(--synth);}
+
+/* SCORE */
+.score-bar{background:linear-gradient(90deg,#0a0c14,#0d0f18);border-bottom:1px solid var(--border);padding:5px 12px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.score-pts{font-size:14px;color:var(--gold);text-shadow:0 0 10px var(--gold);}
+.score-pts span{font-size:12px;color:var(--dim);}
+.score-breakdown{display:flex;gap:8px;flex:1;flex-wrap:wrap;}
+.score-item{font-size:10px;color:var(--dim);}
+.score-item b{color:var(--text);}
+.score-rank{font-size:11px;background:var(--panel2);border:1px solid var(--gold);padding:2px 8px;color:var(--gold);white-space:nowrap;}
+
+/* TECH TREE — full-page node graph */
+.tech-tree-wrap{padding:8px;display:flex;flex-direction:column;gap:0;}
+.tt-epoch-group{margin-bottom:12px;}
+.tt-epoch-banner{font-size:9px;letter-spacing:2px;color:var(--gold);background:#07090f;border:1px solid var(--border);border-left:3px solid var(--gold);padding:4px 8px;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.tt-epoch-banner.locked{border-left-color:var(--dim);color:var(--dim);}
+.tt-epoch-banner .ep-tag{font-size:8px;background:var(--panel2);padding:1px 6px;border:1px solid var(--border);}
+.tt-row{display:flex;gap:5px;flex-wrap:wrap;padding-left:8px;}
+.tt-node{background:var(--panel2);border:1px solid var(--border);padding:7px 8px;min-width:130px;flex:1;position:relative;transition:all .2s;cursor:default;}
+.tt-node::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--border);transition:background .2s;}
+.tt-node.unlocked{border-color:var(--green);}
+.tt-node.unlocked::before{background:linear-gradient(90deg,var(--green),var(--teal));}
+.tt-node.available{border-color:var(--blue);animation:techavail 2s ease-in-out infinite;}
+.tt-node.available::before{background:linear-gradient(90deg,var(--blue),var(--purple));}
+.tt-node.locked-ep{opacity:.3;filter:saturate(.1);}
+.tt-node.locked-pre{opacity:.5;filter:saturate(.3);}
+@keyframes techavail{0%,100%{box-shadow:0 0 0 0 rgba(91,155,213,.1);}50%{box-shadow:0 0 10px 2px rgba(91,155,213,.25);}}
+.tt-node-head{display:flex;align-items:flex-start;gap:5px;margin-bottom:3px;}
+.tt-icon{font-size:18px;flex-shrink:0;line-height:1;}
+.tt-name{font-size:10px;color:var(--text);line-height:1.3;}
+.tt-effect{font-size:9px;color:var(--teal);margin:2px 0;}
+.tt-prereq-tag{font-size:8px;color:var(--dim);margin:2px 0;border-left:2px solid var(--border);padding-left:4px;}
+.tt-cost{font-size:9px;margin:3px 0;display:flex;flex-wrap:wrap;gap:3px;}
+.tt-cost-item{display:inline-flex;align-items:center;gap:2px;}
+.tt-cost-item.ok{color:var(--green);}
+.tt-cost-item.no{color:var(--red);}
+.tt-buy-btn{font-family:var(--font);font-size:9px;padding:3px 8px;border:1px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;transition:all .15s;width:100%;margin-top:4px;}
+.tt-buy-btn:hover:not(:disabled){background:var(--blue);color:#000;}
+.tt-buy-btn:disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;}
+.tt-done-badge{font-size:9px;color:var(--green);margin-top:3px;}
+.tt-connector{padding-left:20px;margin:2px 0;}
+.tt-vline{width:2px;height:8px;background:var(--border);}
+.tt-vline.active{background:var(--green);}
+
+/* BASE RESOURCE BUILDINGS */
+.base-res-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;padding:5px 0;}
+.base-b-card{background:var(--panel2);border:1px solid var(--border);padding:5px 7px;transition:border-color .2s;}
+.base-b-card.active-bld{border-color:var(--green);}
+.base-b-card.active-bld::before{content:'';display:block;height:2px;background:linear-gradient(90deg,var(--green),var(--teal));margin:-5px -7px 4px;}
+.base-b-head{display:flex;justify-content:space-between;align-items:center;}
+.base-b-name{font-size:10px;color:var(--text);}
+.base-b-lvl{font-size:9px;color:var(--gold);}
+.base-b-out{font-size:10px;color:var(--green);margin:2px 0;}
+.base-b-cost{font-size:9px;color:var(--orange);margin:2px 0;}
+.base-b-btn{font-family:var(--font);font-size:9px;padding:2px 8px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;transition:all .15s;width:100%;margin-top:3px;}
+.base-b-btn.can{border-color:var(--green);color:var(--green);}
+.base-b-btn.can:hover{background:var(--green);color:#000;}
+.base-b-btn:disabled{opacity:.3;cursor:not-allowed;}
+
+/* EPOCH RESOURCE BAR — always visible above map */
+.epoch-res-bar{flex-shrink:0;background:#07090e;border-bottom:1px solid var(--border);padding:5px 10px;display:flex;gap:5px;align-items:center;overflow-x:auto;flex-wrap:nowrap;}
+.epoch-res-bar::-webkit-scrollbar{height:2px;}
+.ep-res-chip{display:flex;align-items:center;gap:3px;background:var(--panel2);border:1px solid var(--border);padding:3px 7px;white-space:nowrap;transition:border-color .2s;flex-shrink:0;}
+.ep-res-chip.lit{border-color:var(--green);}
+.ep-res-chip.synth-chip{border-color:var(--synth);background:linear-gradient(90deg,#071014,#080c18);}
+.ep-res-chip .er-emoji{font-size:14px;}
+.ep-res-chip .er-val{font-size:12px;color:var(--text);}
+.ep-res-chip .er-ps{font-size:9px;}
+.ep-res-chip .er-ps.pos{color:var(--green);}
+.ep-res-chip .er-ps.neg{color:var(--red);}
+.ep-res-chip .er-ps.zero{color:var(--dim);}
+.ep-res-label{font-size:9px;color:var(--dim);flex-shrink:0;white-space:nowrap;}
+
+/* AC MINIMAP — node graph */
+.ac-minimap{position:relative;width:100%;overflow:hidden;}
+.ac-map-svg{display:block;width:100%;}
+.ac-map-canvas{width:100%;background:transparent;}
+
+/* AC node cards — compact for minimap area */
+.ac-node-wrap{padding:0 6px 6px;}
+.ac-node{background:#0a1a0a;border:1px solid #1a3a1a;padding:7px 8px;display:flex;gap:7px;align-items:flex-start;position:relative;transition:all .2s;cursor:default;}
+.ac-node.unlocked{background:linear-gradient(135deg,#0d1f0d,#0f1c0f);border-color:var(--green);}
+.ac-node.available{border-color:var(--blue);animation:acpulse 1.5s ease-in-out infinite;}
+.ac-node.locked{opacity:.4;filter:saturate(.2);}
+.ac-node.branch-resource{border-left:3px solid var(--teal);}
+.ac-node.branch-building{border-left:3px solid var(--purple);}
+.ac-node.branch-speed{border-left:3px solid var(--orange);}
+.ac-node-connector{width:2px;background:var(--border);margin:0 auto;transition:background .2s;}
+.ac-node-connector.active{background:var(--green);}
+.ac-node-connector.branch-split{position:relative;}
+.ac-branches{display:flex;gap:4px;}
+.ac-branch{flex:1;}
+.ac-branch-connector{height:14px;position:relative;display:flex;justify-content:center;}
+.ac-branch-connector::before{content:'';position:absolute;top:0;left:50%;width:2px;height:100%;background:var(--border);}
+.ac-branch-connector.active::before{background:var(--green);}
+.ac-branch-header{height:2px;background:var(--border);margin:0 20%;}
+.ac-branch-header.active{background:var(--green);}
+@keyframes acpulse{0%,100%{box-shadow:0 0 0 0 rgba(91,155,213,.15);}50%{box-shadow:0 0 10px 3px rgba(91,155,213,.25);}}
+.ac-node-icon{font-size:18px;flex-shrink:0;}
+.ac-node-body{flex:1;}
+.ac-node-name{font-size:11px;color:var(--text);}
+.ac-node-rate{font-size:10px;color:var(--green);margin:1px 0;}
+.ac-node-branch-tag{font-size:9px;padding:1px 5px;border:1px solid var(--border);display:inline-block;margin:2px 0;}
+.ac-node-branch-tag.resource{color:var(--teal);border-color:var(--teal);}
+.ac-node-branch-tag.building{color:var(--purple);border-color:var(--purple);}
+.ac-node-branch-tag.speed{color:var(--orange);border-color:var(--orange);}
+.ac-node-cost{font-size:10px;color:var(--orange);margin-top:3px;}
+.ac-node-lvl{font-size:10px;color:var(--gold);margin-top:2px;}
+.ac-buy-btn{font-family:var(--font);font-size:9px;padding:3px 8px;border:1px solid var(--green);background:transparent;color:var(--green);cursor:pointer;transition:all .15s;white-space:nowrap;margin-top:4px;}
+.ac-buy-btn:hover:not(:disabled){background:var(--green);color:#000;}
+.ac-buy-btn:disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;}
+.ac-lvl-btn{font-family:var(--font);font-size:9px;padding:2px 6px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;transition:all .15s;white-space:nowrap;margin-top:4px;}
+.ac-lvl-btn:hover:not(:disabled){background:var(--gold);color:#000;}
+.ac-lvl-btn:disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;}
+
+/* AC tab top summary */
+.ac-summary{background:#0a1a0a;border:1px solid #1a3a1a;padding:7px 10px;margin-bottom:8px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.ac-sum-item{font-size:10px;}
+.ac-sum-item span{color:var(--green);}
+
+/* ============================================================
+   TELEGRAM MINI APP — MOBILE OVERRIDES
+   ============================================================ */
+:root {
+  --tg-safe-top: env(safe-area-inset-top, 0px);
+  --tg-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (max-width: 700px) {
+  html, body { overflow: auto !important; height: auto !important; }
+  .app { display: flex; flex-direction: column; height: auto; min-height: 100dvh;
+         padding-top: var(--tg-safe-top); padding-bottom: var(--tg-safe-bottom); }
+  header { flex-wrap: wrap; gap: 6px; padding: 6px 10px; height: auto !important; }
+  .logo { font-size: 8px !important; }
+  .epoch-name { font-size: 11px; }
+  .hstats { gap: 6px; margin-left: 0; flex-wrap: wrap; }
+  .hstat { font-size: 10px; }
+  .evo-btn { font-size: 7px; padding: 5px 8px; }
+  .score-bar { flex-wrap: wrap; gap: 4px; padding: 5px 8px; }
+  .score-breakdown { flex-wrap: wrap; gap: 4px; }
+  .score-item { font-size: 9px; }
+  .main { display: flex; flex-direction: column; overflow: visible; }
+  .left-panel { border-right: none; border-bottom: 1px solid var(--border); max-height: 420px; overflow: auto; }
+  .panel-tabs { overflow-x: auto; flex-shrink: 0; scrollbar-width: none; }
+  .panel-tabs::-webkit-scrollbar { display: none; }
+  .ptab { font-size: 8px !important; padding: 7px 8px !important; white-space: nowrap; }
+  .center-area { border-right: none; border-bottom: 1px solid var(--border); }
+  .map-area { height: 200px !important; min-height: 200px !important; }
+  .right-panel { max-height: 380px; overflow: auto; }
+  .clicker-btn { min-height: 52px !important; padding: 8px !important; }
+  .res-card { padding: 6px !important; }
+  .res-emoji { font-size: 18px !important; }
+  .res-val { font-size: 13px !important; }
+}
+/* Cloud save status */
+#cloud-status {
+  position: fixed; bottom: calc(12px + var(--tg-safe-bottom)); right: 12px;
+  background: #0d1219; border: 1px solid var(--border); border-radius: 4px;
+  padding: 5px 10px; font-size: 10px; color: var(--dim); z-index: 9998;
+  transition: all .3s; pointer-events: none; opacity: 0;
+}
+#cloud-status.visible { opacity: 1; }
+#cloud-status.saving { border-color: var(--gold); color: var(--gold); }
+#cloud-status.saved  { border-color: var(--green); color: var(--green); }
+#cloud-status.error  { border-color: var(--red); color: var(--red); }
+/* Leaderboard overlay */
+#lb-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85);
+  z-index: 10000; align-items: center; justify-content: center; }
+#lb-overlay.open { display: flex; }
+#lb-panel { background: var(--panel); border: 1px solid var(--gold); padding: 16px;
+  min-width: 280px; max-width: 92vw; max-height: 80vh; overflow: auto; }
+#lb-panel h2 { font-family: var(--font2); font-size: 10px; color: var(--gold); margin-bottom: 12px; }
+.lb-row { display: flex; gap: 8px; align-items: center; padding: 5px 0;
+  border-bottom: 1px solid var(--border); font-size: 11px; }
+.lb-row.mine { background: rgba(232,184,75,.08); }
+.lb-rank { color: var(--gold); width: 26px; flex-shrink: 0; }
+.lb-name { flex: 1; color: var(--text); }
+.lb-score { color: var(--green); font-size: 10px; }
+.lb-ep { color: var(--dim); font-size: 10px; width: 40px; text-align: right; flex-shrink: 0; }
+.lb-close { margin-top: 12px; width: 100%; font-family: var(--font); background: transparent;
+  border: 1px solid var(--border); color: var(--dim); padding: 7px; cursor: pointer; }
+.lb-close:hover { border-color: var(--gold); color: var(--gold); }
+/* Leaderboard button in header */
+#lb-btn { font-family: var(--font); font-size: 9px; background: transparent;
+  border: 1px solid var(--border); color: var(--dim); padding: 4px 8px; cursor: pointer;
+  transition: all .15s; white-space: nowrap; }
+#lb-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+</style>
+</head>
+<body>
+<div id="cloud-status">💾 Збереження...</div>
+<div id="lb-overlay">
+  <div id="lb-panel">
+    <h2>🏆 РЕЙТИНГ ГРАВЦІВ</h2>
+    <div id="lb-list"><div style="color:var(--dim);font-size:11px">Завантаження...</div></div>
+    <div id="lb-my-rank" style="margin-top:8px;font-size:10px;color:var(--dim);"></div>
+    <button class="lb-close" onclick="document.getElementById('lb-overlay').classList.remove('open')">✕ ЗАКРИТИ</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="wave-alert" id="wave-alert">⚔️ УВАГА! ХВИЛЯ ГОБЛІНІВ!</div>
+
+<div class="app">
+<header>
+  <div class="logo">⚒ КУБ.ЕВО</div>
+  <div class="epoch-info">
+    <div>
+      <div class="epoch-label">ЕПОХА <span id="ep-num" style="color:var(--gold)">1</span></div>
+      <div class="epoch-name" id="ep-name">ВИЖИВАННЯ</div>
+    </div>
+    <div class="epoch-progress">
+      <div class="prog-track"><div class="prog-fill" id="ep-bar" style="width:0%"></div></div>
+      <div class="prog-label" id="ep-label">0 / 50 Колод</div>
+    </div>
+    <button class="evo-btn" id="btn-evo" onclick="advanceEpoch()" title="Перейти до наступної епохи. Потрібний ресурс вказано в прогрес-барі.">🚀 ЕВОЛЮЦІЯ</button>
+  </div>
+  <button id="lb-btn" onclick="openLeaderboard()">🏆 ТОП</button>
+  <div class="hstats">
+    <div class="hstat">🔬 <span id="hs-tech">0</span></div>
+    <div class="hstat">🏗️ <span id="hs-bld">0</span></div>
+    <div class="hstat">🤖 <span id="hs-acs">0</span>/с</div>
+    <div class="hstat"><span class="synth-label">⚡ <span id="hs-synth">0</span></span></div>
+  </div>
+</header>
+
+<div class="score-bar">
+  <div class="score-pts">⭐ <span id="score-total">0</span> <span>очок</span></div>
+  <div class="score-breakdown">
+    <div class="score-item">👆 Кліки: <b id="sc-clicks">0</b></div>
+    <div class="score-item">🏗 Будівлі: <b id="sc-builds">0</b></div>
+    <div class="score-item">📦 Ресурси: <b id="sc-res">0</b></div>
+    <div class="score-item">🔬 Техно: <b id="sc-tech">0</b></div>
+    <div class="score-item">🚀 Епохи: <b id="sc-ep">0</b></div>
+  </div>
+  <div class="score-rank" id="score-rank">🥉 НОВАЧОК</div>
+</div>
+<div class="main">
+
+<!-- LEFT PANEL -->
+<div class="left-panel">
+  <div class="panel-tabs">
+    <button class="ptab active" onclick="switchTab('resources')">📦 РЕСУРСИ</button>
+    <button class="ptab" onclick="switchTab('tech')">🔬 ТЕХНО</button>
+    <button class="ptab" onclick="switchTab('exchange')">⚗️ БІРЖА</button>
+    <button class="ptab" onclick="switchTab('binds')">⚡ ІНСТР.</button>
+    <button class="ptab" onclick="switchTab('defense')" id="tab-btn-defense">⚔️ ОБОРОНА</button>
+    <button class="ptab" onclick="switchTab('quests')" id="tab-btn-quests">📜 КВЕСТИ</button>
+    <button class="ptab" onclick="switchTab('achievements')" id="tab-btn-ach">🏆 АЧІВКИ</button>
+  </div>
+  <div class="tab-content active" id="tab-resources">
+    <div class="sh">📦 РЕСУРСИ ЕПОХИ <span id="res-ep-label" class="sh-badge">1</span></div>
+    <div class="res-grid" id="ui-resources"></div>
+  </div>
+  <div class="tab-content" id="tab-tech">
+    <div id="ui-tech-tree"></div>
+  </div>
+  <div class="tab-content" id="tab-exchange">
+    <div id="ui-exchange"></div>
+  </div>
+  <div class="tab-content" id="tab-binds">
+    <div class="sh">⚡ ПРИСКОРЮВАЧІ КЛІКУ</div>
+    <div id="ui-binds"></div>
+  </div>
+  <div class="tab-content" id="tab-defense">
+    <div id="ui-defense"></div>
+  </div>
+  <div class="tab-content" id="tab-quests">
+    <div id="ui-quests"></div>
+  </div>
+  <div class="tab-content" id="tab-achievements">
+    <div id="ui-achievements"></div>
+  </div>
+</div>
+
+<!-- CENTER: MAP + CLICKER STRIP -->
+<div class="center-area">
+  <div class="clicker-strip">
+    <div class="clicker-strip-title">ВИДОБУТОК:</div>
+    <div id="ui-clickers" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;"></div>
+  </div>
+  <!-- EPOCH RESOURCES — always visible -->
+  <div class="epoch-res-bar" id="ui-epoch-res-bar">
+    <span class="ep-res-label">РЕСУРСИ:</span>
+  </div>
+  <div class="map-area">
+    <canvas id="isoCanvas"></canvas>
+    <div style="position:absolute;top:8px;left:10px;font-size:10px;color:var(--dim);">Карта · Еп.<span id="map-epoch" style="color:var(--gold)">1</span></div>
+    <div id="map-tooltip"></div>
+  </div>
+  <div class="build-selector">
+    <div class="build-selector-title">ФІЛЬТР:</div>
+    <div id="ui-filters" style="display:flex;gap:5px;overflow-x:auto;"></div>
+  </div>
+</div>
+
+<!-- RIGHT PANEL: BUILDINGS -->
+<div class="right-panel">
+  <div style="padding:7px 10px;border-bottom:1px solid var(--border);font-size:10px;color:var(--dim);display:flex;justify-content:space-between;align-items:center;">
+    <span style="color:var(--gold);font-size:11px;">СПОРУДИ</span>
+    <span id="bld-count-label">0 збудовано</span>
+  </div>
+  <div class="buildings-list" id="ui-buildings"></div>
+  <div class="log-panel" id="ui-log"></div>
+</div>
+
+</div>
+</div>
+
+<script>
+// ============================================================
+// CONSTANTS & DATA
+// ============================================================
+const EPOCH_DATA = {
+  1:{name:"ВИЖИВАННЯ",   req:"logs",        amt:50},
+  2:{name:"ОСІЛІСТЬ",    req:"wheat",       amt:100},
+  3:{name:"РЕМЕСЛА",     req:"boards",      amt:150},
+  4:{name:"БРОНЗОВИЙ",   req:"bronze",      amt:80},
+  5:{name:"ЗАЛІЗНИЙ",    req:"iron",        amt:120},
+  6:{name:"СЕРЕДНЬОВІЧ", req:"wine",        amt:80},
+  7:{name:"ПРОТОРИНДУСТ",req:"books",       amt:100},
+  8:{name:"ПРОМ.РЕВ.",   req:"steel",       amt:180},
+  9:{name:"ХІМІЧНА",     req:"plastic",     amt:120},
+  10:{name:"ЕЛЕКТРИФІК", req:"electricity", amt:250},
+  11:{name:"ЕЛЕКТРОНІКА",req:"chips",       amt:80},
+  12:{name:"АВТОМАТИЗАЦ",req:"auto_drone",  amt:40}
+};
+
+const RES = {
+  wood:       {n:"Деревина",   e:"🌲",ep:1},
+  stone:      {n:"Камінь",     e:"⛰️", ep:1},
+  water:      {n:"Вода",       e:"💧",ep:1},
+  clay:       {n:"Глина",      e:"🧱",ep:1},
+  vegetation: {n:"Рослинність",e:"🌿",ep:1},
+  raw_ore:    {n:"Руда-сирець",e:"🌋",ep:1},
+  logs:       {n:"Колоди",     e:"🪵",ep:1},
+  charcoal:   {n:"Деревне вугілля",e:"🕳️",ep:1},
+  wheat:      {n:"Пшениця",    e:"🌾",ep:2},
+  barley:     {n:"Ячмінь",     e:"🌿",ep:2},
+  flour:      {n:"Борошно",    e:"🌾",ep:2},
+  boards:     {n:"Дошки",      e:"🪵",ep:3},
+  bricks:     {n:"Цегла",      e:"🧱",ep:3},
+  fiber:      {n:"Волокно",    e:"🧵",ep:3},
+  fabric:     {n:"Тканина",    e:"👘",ep:3},
+  copper:     {n:"Мідь",       e:"🟤",ep:4},
+  bronze:     {n:"Бронза",     e:"🛡️",ep:4},
+  tools:      {n:"Інструменти",e:"⚒️",ep:4},
+  iron:       {n:"Залізо",     e:"🔩",ep:5},
+  wine:       {n:"Вино",       e:"🍷",ep:6},
+  beer:       {n:"Пиво",       e:"🍺",ep:6},
+  cheese:     {n:"Сир",        e:"🧀",ep:6},
+  paper:      {n:"Папір",      e:"📄",ep:7},
+  books:      {n:"Книги",      e:"📚",ep:7},
+  steel:      {n:"Сталь",      e:"⚙️",ep:8},
+  coke:       {n:"Кокс",       e:"🔥",ep:8},
+  oil:        {n:"Нафта",      e:"🛢️",ep:9},
+  plastic:    {n:"Пластик",    e:"🧪",ep:9},
+  rubber:     {n:"Гума",       e:"⚫",ep:9},
+  cable:      {n:"Кабель",     e:"🔌",ep:10},
+  electricity:{n:"Енергія",    e:"⚡",ep:10},
+  silicon:    {n:"Кремній",    e:"💎",ep:11},
+  chips:      {n:"Мікросхеми", e:"🎛️",ep:11},
+  robot:      {n:"Робот",      e:"🤖",ep:12},
+  auto_drone: {n:"Авто.Дрон",  e:"🛸",ep:12},
+  synth_energy:{n:"Енергія Синтезу",e:"🌀",ep:1,synth:true}
+};
+
+// Epoch primary resources — which resources AC targets by default in each epoch
+const EPOCH_MAIN_RES = {
+  1:['wood','stone','water','clay','vegetation','raw_ore'],
+  2:['wood','stone','water','clay','vegetation','raw_ore','wheat'],
+  3:['logs','boards','bricks'],
+  4:['raw_ore','charcoal','copper'],
+  5:['iron','charcoal','raw_ore'],
+  6:['wheat','water','iron'],
+  7:['logs','water','paper'],
+  8:['iron','charcoal','steel'],
+  9:['raw_ore','water','oil'],
+  10:['copper','oil','electricity'],
+  11:['electricity','plastic','silicon'],
+  12:['chips','steel','electricity']
+};
+
+// ============================================================
+// AUTOCLICKER — BRANCHING TREE with levels 1-999
+// ============================================================
+// Structure:
+//   ROOT node (unlock once, cheap) → branches into 3 paths:
+//   A) Resource branch: faster click on epoch resources
+//   B) Building branch: automates buildings
+//   C) Speed branch: raw tick rate boost
+//
+// Each branch has nodes you unlock (cheap) then level up (1-999)
+
+const AC_NODES = {
+  // ROOT — unlock for almost nothing
+  root: {
+    id:"root", name:"Молоток", icon:"🔨",
+    desc:"Базовий автоклікер. Запускає збір ресурсів епохи.",
+    branch:"root",
+    unlockCostRes:"wood", unlockCostAmt:15,
+    canLevel:true, lvl:0, maxLvl:999,
+    lvlCostBase:10, lvlCostRes:"logs", lvlCostMult:1.05,
+    ratePerLvl:1, // clicks/s per level
+    ep_req:1, prereq:null, unlocked:false,
+    canTargetBuildings:false
+  },
+  // === BRANCH A — Resource harvest ===
+  res_a1: {
+    id:"res_a1", name:"Серп та молот", icon:"⚒️",
+    desc:"Підвищує ефективність збору ресурсів автокліком.",
+    branch:"resource",
+    unlockCostRes:"logs", unlockCostAmt:30,
+    canLevel:true, lvl:0, maxLvl:999,
+    lvlCostBase:20, lvlCostRes:"logs", lvlCostMult:1.06,
+    ratePerLvl:2,
+    ep_req:1, prereq:"root", unlocked:false,
+    canTargetBuildings:false
+  },
+  res_a2: {
+    id:"res_a2", name:"Бригада збирачів", icon:"👷",
+    desc:"Команда збирачів. Більший обсяг за кліком.",
+    branch:"resource",
+    unlockCostRes:"boards", unlockCostAmt:50,
+    canLevel:true, lvl:0, maxLvl:999,
+    lvlCostBase:40, lvlCostRes:"boards", lvlCostMult:1.07,
+    ratePerLvl:5,
+    ep_req:3, prereq:"res_a1", unlocked:false,
+    canTargetBuildings:false
+  },
+  res_a3: {
+    id:"res_a3", name:"Мануфактура", icon:"🏭",
+    desc:"Промислові темпи видобутку. Масштабується з епохою.",
+    branch:"resource",
+    unlockCostRes:"iron", unlockCostAmt:60,
+    canLevel:true, lvl:0, maxLvl:999,
+    lvlCostBase:80, lvlCostRes:"iron", lvlCostMult:1.08,
+    ratePerLvl:15,
+    ep_req:5, prereq:"res_a2", unlocked:false,
+    canTargetBuildings:false
+  },
+  res_a4: {
+    id:"res_a4", name:"Кіберзбирач", icon:"🤖",
+    desc:"Кібернетичний видобуток. Максимальна ефективність ресурсів.",
+    branch:"resource",
+    unlockCostRes:"chips", unlockCostAmt:40,
+    canLevel:true, lvl:0, maxLvl:999,
+    lvlCostBase:200, lvlCostRes:"chips", lvlCostMult:1.1,
+    ratePerLvl:50,
+    ep_req:11, prereq:"res_a3", unlocked:false,
+    canTargetBuildings:false
+  },
+  // === BRANCH B — Buildings ===
+  bld_b1: {
+    id:"bld_b1", name:"Підмайстер", icon:"🦾",
+    desc:"Призначається на будівлю. Помірне прискорення виробництва.",
+    branch:"building",
+    unlockCostRes:"bronze", unlockCostAmt:40,
+    canLevel:true, lvl:0, maxLvl:999,
+    lvlCostBase:50, lvlCostRes:"bronze", lvlCostMult:1.07,
+    buildingMultPerLvl:0.1, // +10% per level to building production
+    ep_req:4, prereq:"root", unlocked:false,
+    canTargetBuildings:true
+  },
+  bld_b2: {
+    id:"bld_b2", name:"Механічна рука", icon:"⚙️",
+    desc:"Механічний помічник для будівель. Сильне прискорення.",
+    branch:"building",
+    unlockCostRes:"iron", unlockCostAmt:60,
+    canLevel:true, lvl:0, maxLvl:999,
+    lvlCostBase:100, lvlCostRes:"iron", lvlCostMult:1.08,
+    buildingMultPerLvl:0.3,
+    ep_req:5, prereq:"bld_b1", unlocked:false,
+    canTargetBuildings:true
+  },
+  bld_b3: {
+    id:"bld_b3", name:"Заводська лінія", icon:"🏗️",
+    desc:"Повна автоматизація лінії виробництва будівлі.",
+    branch:"building",
+    unlockCostRes:"steel", unlockCostAmt:80,
+    canLevel:true, lvl:0, maxLvl:999,
+    lvlCostBase:200, lvlCostRes:"steel", lvlCostMult:1.09,
+    buildingMultPerLvl:1.0,
+    ep_req:8, prereq:"bld_b2", unlocked:false,
+    canTargetBuildings:true
+  },
+  bld_b4: {
+    id:"bld_b4", name:"Нейромережа", icon:"🧠",
+    desc:"ШІ управляє будівлею. Безмежна продуктивність.",
+    branch:"building",
+    unlockCostRes:"chips", unlockCostAmt:50,
+    canLevel:true, lvl:0, maxLvl:999,
+    lvlCostBase:500, lvlCostRes:"chips", lvlCostMult:1.1,
+    buildingMultPerLvl:5.0,
+    ep_req:11, prereq:"bld_b3", unlocked:false,
+    canTargetBuildings:true
+  },
+  // === BRANCH C — Speed ===
+  spd_c1: {
+    id:"spd_c1", name:"Пружина", icon:"🌀",
+    desc:"Прискорює частоту кліків автокліком.",
+    branch:"speed",
+    unlockCostRes:"clay", unlockCostAmt:20,
+    canLevel:true, lvl:0, maxLvl:999,
+    lvlCostBase:15, lvlCostRes:"clay", lvlCostMult:1.05,
+    speedPerLvl:0.5,
+    ep_req:1, prereq:"root", unlocked:false,
+    canTargetBuildings:false
+  },
+  spd_c2: {
+    id:"spd_c2", name:"Шестерня", icon:"⚙️",
+    desc:"Механічне прискорення темпу кліків.",
+    branch:"speed",
+    unlockCostRes:"bronze", unlockCostAmt:35,
+    canLevel:true, lvl:0, maxLvl:999,
+    lvlCostBase:35, lvlCostRes:"copper", lvlCostMult:1.06,
+    speedPerLvl:2,
+    ep_req:4, prereq:"spd_c1", unlocked:false,
+    canTargetBuildings:false
+  },
+  spd_c3: {
+    id:"spd_c3", name:"Турбіна", icon:"💨",
+    desc:"Турбінна швидкість: масова автоматизація.",
+    branch:"speed",
+    unlockCostRes:"steel", unlockCostAmt:70,
+    canLevel:true, lvl:0, maxLvl:999,
+    lvlCostBase:120, lvlCostRes:"steel", lvlCostMult:1.08,
+    speedPerLvl:10,
+    ep_req:8, prereq:"spd_c2", unlocked:false,
+    canTargetBuildings:false
+  },
+  spd_c4: {
+    id:"spd_c4", name:"Квантовий такт", icon:"⚡",
+    desc:"Квантова тактова частота. Необмежена швидкість.",
+    branch:"speed",
+    unlockCostRes:"electricity", unlockCostAmt:80,
+    canLevel:true, lvl:0, maxLvl:999,
+    lvlCostBase:400, lvlCostRes:"electricity", lvlCostMult:1.1,
+    speedPerLvl:50,
+    ep_req:10, prereq:"spd_c3", unlocked:false,
+    canTargetBuildings:false
+  }
+};
+
+// AC tree order for minimap rendering
+const AC_TREE_ORDER = [
+  {type:"root", id:"root"},
+  {type:"split", branches:[
+    {label:"⚒ РЕСУРСИ", color:"teal",  nodes:["res_a1","res_a2","res_a3","res_a4"]},
+    {label:"🏗 БУДІВЛІ",  color:"purple",nodes:["bld_b1","bld_b2","bld_b3","bld_b4"]},
+    {label:"⚡ ШВИДКІСТЬ",color:"orange",nodes:["spd_c1","spd_c2","spd_c3","spd_c4"]}
+  ]}
+];
+
+let acTotalRate = 0;
+let acCounter = 0;
+let acBuildingAssignments = {};
+
+function recalcACRate(){
+  let base=0;
+  // Root levels
+  let root=AC_NODES.root;
+  if(root.unlocked) base+=root.lvl*(root.ratePerLvl||1);
+  // Resource branch
+  ['res_a1','res_a2','res_a3','res_a4'].forEach(id=>{
+    let n=AC_NODES[id];
+    if(n.unlocked) base+=n.lvl*(n.ratePerLvl||0);
+  });
+  // Speed branch adds multiplier
+  let speedBonus=0;
+  ['spd_c1','spd_c2','spd_c3','spd_c4'].forEach(id=>{
+    let n=AC_NODES[id];
+    if(n.unlocked) speedBonus+=n.lvl*(n.speedPerLvl||0);
+  });
+  acTotalRate=Math.max(0, base+speedBonus);
+}
+
+// Building AC multiplier from bld branch
+function getBuildingACMult(){
+  let mult=1;
+  ['bld_b1','bld_b2','bld_b3','bld_b4'].forEach(id=>{
+    let n=AC_NODES[id];
+    if(n.unlocked&&n.lvl>0) mult+=n.lvl*(n.buildingMultPerLvl||0);
+  });
+  return Math.max(1,mult);
+}
+
+function unlockACNode(id){
+  let node=AC_NODES[id];
+  if(!node||node.unlocked) return;
+  if(epoch<node.ep_req) return;
+  if(node.prereq&&!AC_NODES[node.prereq]?.unlocked) return;
+  if((storage[node.unlockCostRes]||0)<node.unlockCostAmt) return;
+  storage[node.unlockCostRes]-=node.unlockCostAmt;
+  node.unlocked=true;
+  node.lvl=1; // start at level 1 on unlock
+  recalcACRate();
+  addLog(`🤖 AC розблоковано: ${node.name}`,true);
+  markDirty("full");
+}
+
+function levelUpACNode(id){
+  let node=AC_NODES[id];
+  if(!node||!node.unlocked) return;
+  if(node.lvl>=node.maxLvl) return;
+  let cost=Math.floor(node.lvlCostBase*Math.pow(node.lvlCostMult,node.lvl-1));
+  if((storage[node.lvlCostRes]||0)<cost) return;
+  storage[node.lvlCostRes]-=cost;
+  node.lvl++;
+  recalcACRate();
+  addLog(`🤖 AC ${node.name} → рів.${node.lvl}`);
+  markDirty("full");
+}
+
+function maxLevelACNode(id){
+  let node=AC_NODES[id];
+  if(!node||!node.unlocked) return;
+  let leveled=0;
+  while(node.lvl<node.maxLvl){
+    let cost=Math.floor(node.lvlCostBase*Math.pow(node.lvlCostMult,node.lvl-1));
+    if((storage[node.lvlCostRes]||0)<cost) break;
+    storage[node.lvlCostRes]-=cost;
+    node.lvl++; leveled++;
+  }
+  if(leveled>0){ recalcACRate(); addLog(`🤖 МАХ AC ${node.name} → рів.${node.lvl} (+${leveled})`,true); markDirty("full"); }
+  else showToast("⚠️ Недостатньо ресурсів!");
+}
+
+// Keep old AC_TIERS name but empty — code below uses AC_NODES
+const AC_TIERS = [];
+
+
+// ============================================================
+// TECH NODES — Full tree, one page, expensive, epoch-gated
+// Each node has: multiple cost resources, high amounts, prereq chain
+// ============================================================
+// Cost helper
+function tc(res,amt){return {res,amt};}
+
+const TECH_NODES = [
+// ─────────── EPOCH 1 ──────────────────────────────────────────
+// Chain: Примітивні знаряддя → Камінь → Заготівля → Вогонь
+{id:"ep1_t1", name:"Примітивні знаряддя", icon:"🪨", ep_req:1, prereq:null,
+ costs:[tc("wood",500),tc("stone",300)], unlocked:false,
+ effect:"click_mult_1_5", effectDesc:"Кліки ×1.5", category:"click",
+ desc:"Обколоті каменю дають перевагу у видобутку"},
+{id:"ep1_t2", name:"Обробка каменю",     icon:"⛏️", ep_req:1, prereq:"ep1_t1",
+ costs:[tc("stone",800),tc("wood",400)], unlocked:false,
+ effect:"click_mult_2", effectDesc:"Кліки ×2", category:"click",
+ desc:"Заточені кам'яні леза — перший крок до майстерності"},
+{id:"ep1_t3", name:"Вогонь",             icon:"🔥", ep_req:1, prereq:"ep1_t1",
+ costs:[tc("wood",1200),tc("vegetation",600)], unlocked:false,
+ effect:"prod_unlock_charcoal", effectDesc:"+50% вугілля з будівель", category:"prod",
+ desc:"Контрольований вогонь — основа цивілізації"},
+{id:"ep1_t4", name:"Плетіння",           icon:"🧺", ep_req:1, prereq:"ep1_t2",
+ costs:[tc("vegetation",1500),tc("wood",700)], unlocked:false,
+ effect:"baseres_mult_2", effectDesc:"Базові споруди ×2", category:"prod",
+ desc:"Кошики та пастки збільшують збір ресурсів"},
+{id:"ep1_t5", name:"Загони тварин",      icon:"🐾", ep_req:1, prereq:"ep1_t3",
+ costs:[tc("wood",2000),tc("stone",1000),tc("vegetation",800)], unlocked:false,
+ effect:"ac_unlock_bonus", effectDesc:"AC +2/с базово", category:"ac",
+ desc:"Одомашнення перших тварин для допомоги"},
+
+// ─────────── EPOCH 2 ──────────────────────────────────────────
+{id:"ep2_t1", name:"Землеробство",       icon:"🌾", ep_req:2, prereq:"ep1_t4",
+ costs:[tc("logs",2500),tc("clay",1200),tc("water",1000)], unlocked:false,
+ effect:"baseres_mult_3", effectDesc:"Базові споруди ×3", category:"prod",
+ desc:"Вирощування зернових змінює все"},
+{id:"ep2_t2", name:"Іригація",           icon:"💧", ep_req:2, prereq:"ep2_t1",
+ costs:[tc("logs",3500),tc("clay",2000),tc("stone",1500)], unlocked:false,
+ effect:"water_bonus", effectDesc:"Вода +3/с від споруд", category:"prod",
+ desc:"Канали та дамби — перша гідроінженерія"},
+{id:"ep2_t3", name:"Кераміка",           icon:"🏺", ep_req:2, prereq:"ep1_t2",
+ costs:[tc("clay",3000),tc("charcoal",800)], unlocked:false,
+ effect:"click_mult_3", effectDesc:"Кліки ×3", category:"click",
+ desc:"Гончарне колесо та обпалена глина"},
+{id:"ep2_t4", name:"Ткацтво",            icon:"🧵", ep_req:2, prereq:"ep2_t1",
+ costs:[tc("vegetation",4000),tc("wheat",1500)], unlocked:false,
+ effect:"prod_mult_1_5", effectDesc:"Виробництво ×1.5", category:"prod",
+ desc:"Перший ткацький верстат"},
+{id:"ep2_t5", name:"Торгівля",           icon:"🏪", ep_req:2, prereq:"ep2_t3",
+ costs:[tc("logs",5000),tc("clay",2500),tc("wheat",2000)], unlocked:false,
+ effect:"unlock_exchange_1", effectDesc:"Відкриває Біржу", category:"exchange",
+ desc:"Бартерні відносини між поселеннями"},
+
+// ─────────── EPOCH 3 ──────────────────────────────────────────
+{id:"ep3_t1", name:"Деревообробка",      icon:"🪵", ep_req:3, prereq:"ep2_t4",
+ costs:[tc("logs",6000),tc("stone",3000)], unlocked:false,
+ effect:"boards_bonus", effectDesc:"+40% виробн. дощок", category:"prod",
+ desc:"Пиляння, стругання, з'єднання деревини"},
+{id:"ep3_t2", name:"Цегельне виробництво",icon:"🧱",ep_req:3, prereq:"ep2_t2",
+ costs:[tc("clay",7000),tc("charcoal",3500),tc("water",2000)], unlocked:false,
+ effect:"bricks_bonus", effectDesc:"+40% виробн. цегли", category:"prod",
+ desc:"Обпалена цегла — матеріал на тисячоліття"},
+{id:"ep3_t3", name:"Колесо та вісь",     icon:"⚙️", ep_req:3, prereq:"ep3_t1",
+ costs:[tc("boards",3000),tc("stone",4000)], unlocked:false,
+ effect:"ac_mult_2", effectDesc:"AC ×2", category:"ac",
+ desc:"Перший механічний принцип — ротація"},
+{id:"ep3_t4", name:"Писемність",         icon:"📜", ep_req:3, prereq:"ep2_t5",
+ costs:[tc("boards",8000),tc("vegetation",4000)], unlocked:false,
+ effect:"tech_cost_minus_10pct", effectDesc:"Технології -10% дорожче", category:"special",
+ desc:"Збереження знань прискорює розвиток"},
+{id:"ep3_t5", name:"Рудна шахта",        icon:"⛏️", ep_req:3, prereq:"ep3_t2",
+ costs:[tc("boards",10000),tc("stone",6000),tc("bricks",2000)], unlocked:false,
+ effect:"ore_bonus", effectDesc:"Руда +3/с від споруд", category:"prod",
+ desc:"Шахти для видобутку металевих руд"},
+
+// ─────────── EPOCH 4 ──────────────────────────────────────────
+{id:"ep4_t1", name:"Мідна металургія",   icon:"🟤", ep_req:4, prereq:"ep3_t5",
+ costs:[tc("raw_ore",8000),tc("charcoal",6000),tc("boards",5000)], unlocked:false,
+ effect:"copper_bonus", effectDesc:"Мідь +50% від споруд", category:"prod",
+ desc:"Виплавка міді — початок металевого віку"},
+{id:"ep4_t2", name:"Бронзове ливарство", icon:"🛡️", ep_req:4, prereq:"ep4_t1",
+ costs:[tc("copper",4000),tc("charcoal",8000),tc("stone",6000)], unlocked:false,
+ effect:"click_mult_5", effectDesc:"Кліки ×5", category:"click",
+ desc:"Сплав міді та олова — революція зброї"},
+{id:"ep4_t3", name:"Ваги та міри",       icon:"⚖️", ep_req:4, prereq:"ep3_t4",
+ costs:[tc("bronze",2000),tc("boards",12000)], unlocked:false,
+ effect:"exchange_lvl2", effectDesc:"Біржа рів.2 (курс ×0.7)", category:"exchange",
+ desc:"Стандартизація торгівлі"},
+{id:"ep4_t4", name:"Архітектура",        icon:"🏛️", ep_req:4, prereq:"ep3_t3",
+ costs:[tc("bricks",12000),tc("boards",8000),tc("stone",10000)], unlocked:false,
+ effect:"prod_mult_2", effectDesc:"Виробництво ×2", category:"prod",
+ desc:"Планування будівель та конструкцій"},
+{id:"ep4_t5", name:"Ковальська справа",  icon:"⚒️", ep_req:4, prereq:"ep4_t2",
+ costs:[tc("bronze",5000),tc("charcoal",10000),tc("clay",8000)], unlocked:false,
+ effect:"baseres_mult_5", effectDesc:"Базові споруди ×5", category:"prod",
+ desc:"Майстерність обробки металу"},
+
+// ─────────── EPOCH 5 ──────────────────────────────────────────
+{id:"ep5_t1", name:"Залізна металургія", icon:"🔩", ep_req:5, prereq:"ep4_t5",
+ costs:[tc("raw_ore",15000),tc("charcoal",12000),tc("bronze",4000)], unlocked:false,
+ effect:"iron_bonus", effectDesc:"Залізо +60% від споруд", category:"prod",
+ desc:"Домни та виплавка заліза"},
+{id:"ep5_t2", name:"Військові укріплення",icon:"🏯",ep_req:5, prereq:"ep4_t4",
+ costs:[tc("iron",8000),tc("bricks",20000),tc("boards",15000)], unlocked:false,
+ effect:"bac_mult_3", effectDesc:"Будівлі з AC ×3", category:"building",
+ desc:"Мури та башти захищають виробництво"},
+{id:"ep5_t3", name:"Водяний млин",       icon:"🌊", ep_req:5, prereq:"ep5_t1",
+ costs:[tc("iron",6000),tc("boards",18000),tc("stone",15000)], unlocked:false,
+ effect:"ac_mult_3", effectDesc:"AC ×3", category:"ac",
+ desc:"Використання сили потоку води"},
+{id:"ep5_t4", name:"Гірнича справа",     icon:"⛏️", ep_req:5, prereq:"ep5_t1",
+ costs:[tc("iron",10000),tc("boards",12000)], unlocked:false,
+ effect:"ore_bonus_2", effectDesc:"Видобуток руди ×2", category:"prod",
+ desc:"Шахти з кріпленням — глибший видобуток"},
+{id:"ep5_t5", name:"Хімічні знання",     icon:"🧪", ep_req:5, prereq:"ep5_t3",
+ costs:[tc("iron",15000),tc("charcoal",20000),tc("water",10000)], unlocked:false,
+ effect:"prod_mult_3", effectDesc:"Виробництво ×3", category:"prod",
+ desc:"Перші хімічні процеси — кислоти, луги"},
+
+// ─────────── EPOCH 6 ──────────────────────────────────────────
+{id:"ep6_t1", name:"Виноробство",        icon:"🍷", ep_req:6, prereq:"ep2_t4",
+ costs:[tc("wheat",25000),tc("water",15000),tc("boards",20000)], unlocked:false,
+ effect:"wine_bonus", effectDesc:"Вино +50% від споруд", category:"prod",
+ desc:"Бродіння та перегонка — ферментація"},
+{id:"ep6_t2", name:"Пивоваріння",        icon:"🍺", ep_req:6, prereq:"ep6_t1",
+ costs:[tc("barley",18000),tc("water",20000),tc("bricks",15000)], unlocked:false,
+ effect:"beer_bonus", effectDesc:"Пиво +50% від споруд", category:"prod",
+ desc:"Злакові культури та хмільна ферментація"},
+{id:"ep6_t3", name:"Торговельні шляхи",  icon:"🛤️", ep_req:6, prereq:"ep4_t3",
+ costs:[tc("wine",5000),tc("beer",4000),tc("iron",12000)], unlocked:false,
+ effect:"exchange_lvl3", effectDesc:"Біржа рів.3 (курс ×0.5)", category:"exchange",
+ desc:"Мережа торговців між містами"},
+{id:"ep6_t4", name:"Медицина",           icon:"⚕️", ep_req:6, prereq:"ep6_t2",
+ costs:[tc("beer",5000),tc("water",25000),tc("boards",18000)], unlocked:false,
+ effect:"click_mult_7", effectDesc:"Кліки ×7", category:"click",
+ desc:"Лікувальні зілля та хірургія"},
+{id:"ep6_t5", name:"Університет",        icon:"🎓", ep_req:6, prereq:"ep6_t4",
+ costs:[tc("books",5000),tc("boards",30000),tc("bricks",25000)], unlocked:false,
+ effect:"tech_cost_minus_20pct", effectDesc:"Технології -20% дорожче", category:"special",
+ desc:"Систематизація знань — науковий метод"},
+
+// ─────────── EPOCH 7 ──────────────────────────────────────────
+{id:"ep7_t1", name:"Папероробство",      icon:"📄", ep_req:7, prereq:"ep3_t4",
+ costs:[tc("logs",40000),tc("water",30000),tc("tools",10000)], unlocked:false,
+ effect:"paper_bonus", effectDesc:"Папір +60% від споруд", category:"prod",
+ desc:"Деревна маса для виробництва паперу"},
+{id:"ep7_t2", name:"Друкарський верстат",icon:"📰", ep_req:7, prereq:"ep7_t1",
+ costs:[tc("paper",15000),tc("iron",20000),tc("boards",35000)], unlocked:false,
+ effect:"books_bonus", effectDesc:"Книги +80% від споруд", category:"prod",
+ desc:"Масове тиражування знань"},
+{id:"ep7_t3", name:"Навігація",          icon:"🧭", ep_req:7, prereq:"ep6_t3",
+ costs:[tc("paper",20000),tc("iron",25000),tc("boards",40000)], unlocked:false,
+ effect:"ac_mult_4", effectDesc:"AC ×4", category:"ac",
+ desc:"Компас, карти, морські маршрути"},
+{id:"ep7_t4", name:"Астрономія",         icon:"🔭", ep_req:7, prereq:"ep7_t2",
+ costs:[tc("books",15000),tc("iron",30000),tc("copper",8000)], unlocked:false,
+ effect:"baseres_mult_8", effectDesc:"Базові споруди ×8", category:"prod",
+ desc:"Спостереження за небом — точний календар"},
+{id:"ep7_t5", name:"Механіка",           icon:"⚙️", ep_req:7, prereq:"ep7_t3",
+ costs:[tc("iron",50000),tc("boards",45000),tc("bronze",20000)], unlocked:false,
+ effect:"bac_mult_5", effectDesc:"Будівлі з AC ×5", category:"building",
+ desc:"Передача руху через шестерні та важелі"},
+
+// ─────────── EPOCH 8 ──────────────────────────────────────────
+{id:"ep8_t1", name:"Кокосування вугілля",icon:"🔥", ep_req:8, prereq:"ep5_t5",
+ costs:[tc("charcoal",60000),tc("iron",40000),tc("bricks",50000)], unlocked:false,
+ effect:"coke_bonus", effectDesc:"Кокс +80% від споруд", category:"prod",
+ desc:"Виробництво коксу для доменних печей"},
+{id:"ep8_t2", name:"Сталеливарство",     icon:"⚙️", ep_req:8, prereq:"ep8_t1",
+ costs:[tc("iron",80000),tc("coke",30000),tc("bricks",60000)], unlocked:false,
+ effect:"steel_bonus", effectDesc:"Сталь +70% від споруд", category:"prod",
+ desc:"Конвертерний та мартенівський процес"},
+{id:"ep8_t3", name:"Парова машина",      icon:"🚂", ep_req:8, prereq:"ep7_t5",
+ costs:[tc("steel",15000),tc("iron",70000),tc("bricks",80000)], unlocked:false,
+ effect:"ac_mult_5", effectDesc:"AC ×5", category:"ac",
+ desc:"Перетворення пари на механічну роботу"},
+{id:"ep8_t4", name:"Залізниця",          icon:"🛤️", ep_req:8, prereq:"ep8_t3",
+ costs:[tc("steel",25000),tc("iron",90000),tc("boards",80000)], unlocked:false,
+ effect:"prod_mult_4", effectDesc:"Виробництво ×4", category:"prod",
+ desc:"Масовий транспорт та індустріалізація"},
+{id:"ep8_t5", name:"Текстильна революція",icon:"🏭",ep_req:8, prereq:"ep8_t2",
+ costs:[tc("steel",20000),tc("paper",25000),tc("iron",60000)], unlocked:false,
+ effect:"click_mult_10", effectDesc:"Кліки ×10", category:"click",
+ desc:"Механізовані ткацькі верстати"},
+
+// ─────────── EPOCH 9 ──────────────────────────────────────────
+{id:"ep9_t1", name:"Нафтова розвідка",   icon:"🛢️", ep_req:9, prereq:"ep8_t4",
+ costs:[tc("steel",50000),tc("iron",100000),tc("bricks",80000)], unlocked:false,
+ effect:"oil_bonus", effectDesc:"Нафта +80% від споруд", category:"prod",
+ desc:"Бурові установки та пошук родовищ"},
+{id:"ep9_t2", name:"Хімічна промисловість",icon:"🧪",ep_req:9, prereq:"ep9_t1",
+ costs:[tc("oil",20000),tc("steel",60000),tc("rubber",15000)], unlocked:false,
+ effect:"plastic_bonus", effectDesc:"Пластик +70% від споруд", category:"prod",
+ desc:"Синтетичні матеріали з нафтопродуктів"},
+{id:"ep9_t3", name:"Двигун внутрішнього згоряння",icon:"🔧",ep_req:9,prereq:"ep8_t3",
+ costs:[tc("steel",80000),tc("oil",30000),tc("rubber",20000)], unlocked:false,
+ effect:"ac_mult_6", effectDesc:"AC ×6", category:"ac",
+ desc:"Бензинові та дизельні двигуни"},
+{id:"ep9_t4", name:"Масове виробництво", icon:"🏭", ep_req:9, prereq:"ep8_t5",
+ costs:[tc("steel",100000),tc("plastic",20000),tc("rubber",25000)], unlocked:false,
+ effect:"bac_mult_8", effectDesc:"Будівлі з AC ×8", category:"building",
+ desc:"Конвеєрна лінія та стандартизація"},
+{id:"ep9_t5", name:"Нафтохімія",         icon:"⚗️", ep_req:9, prereq:"ep9_t2",
+ costs:[tc("oil",50000),tc("plastic",30000),tc("steel",80000)], unlocked:false,
+ effect:"exchange_lvl4", effectDesc:"Біржа рів.4 (курс ×0.3)", category:"exchange",
+ desc:"Полімери, добрива, синтетика"},
+
+// ─────────── EPOCH 10 ──────────────────────────────────────────
+{id:"ep10_t1", name:"Електрогенерація",  icon:"⚡", ep_req:10, prereq:"ep9_t3",
+ costs:[tc("copper",80000),tc("steel",120000),tc("oil",60000)], unlocked:false,
+ effect:"electricity_bonus", effectDesc:"Енергія +90% від споруд", category:"prod",
+ desc:"Генератори та трансформатори"},
+{id:"ep10_t2", name:"Радіозв'язок",      icon:"📻", ep_req:10, prereq:"ep10_t1",
+ costs:[tc("copper",100000),tc("electricity",30000),tc("steel",100000)], unlocked:false,
+ effect:"ac_mult_8", effectDesc:"AC ×8", category:"ac",
+ desc:"Електромагнітні хвилі — нова комунікація"},
+{id:"ep10_t3", name:"Електродвигун",     icon:"🔌", ep_req:10, prereq:"ep10_t1",
+ costs:[tc("copper",120000),tc("electricity",50000),tc("steel",80000)], unlocked:false,
+ effect:"prod_mult_5", effectDesc:"Виробництво ×5", category:"prod",
+ desc:"Перетворення електрики на рух"},
+{id:"ep10_t4", name:"Хімічна зброя захисту",icon:"🛡️",ep_req:10,prereq:"ep9_t5",
+ costs:[tc("electricity",80000),tc("plastic",60000),tc("steel",150000)], unlocked:false,
+ effect:"bac_mult_10", effectDesc:"Будівлі з AC ×10", category:"building",
+ desc:"Хімічні засоби захисту виробництва"},
+{id:"ep10_t5", name:"Ядерна фізика",     icon:"☢️", ep_req:10, prereq:"ep10_t3",
+ costs:[tc("electricity",120000),tc("steel",200000),tc("copper",150000)], unlocked:false,
+ effect:"click_mult_15", effectDesc:"Кліки ×15", category:"click",
+ desc:"Розщеплення ядра — атомна енергія"},
+
+// ─────────── EPOCH 11 ──────────────────────────────────────────
+{id:"ep11_t1", name:"Напівпровідники",   icon:"💎", ep_req:11, prereq:"ep10_t2",
+ costs:[tc("silicon",40000),tc("electricity",200000),tc("copper",180000)], unlocked:false,
+ effect:"silicon_bonus", effectDesc:"Кремній +80% від споруд", category:"prod",
+ desc:"Транзистори та інтегральні схеми"},
+{id:"ep11_t2", name:"Комп'ютерна техніка",icon:"💻",ep_req:11, prereq:"ep11_t1",
+ costs:[tc("chips",20000),tc("silicon",60000),tc("electricity",300000)], unlocked:false,
+ effect:"chips_bonus", effectDesc:"Мікросхеми +80% від споруд", category:"prod",
+ desc:"Процесори та оперативна пам'ять"},
+{id:"ep11_t3", name:"Інтернет",          icon:"🌐", ep_req:11, prereq:"ep11_t2",
+ costs:[tc("chips",40000),tc("electricity",400000),tc("steel",200000)], unlocked:false,
+ effect:"ac_mult_12", effectDesc:"AC ×12", category:"ac",
+ desc:"Глобальна мережа передачі даних"},
+{id:"ep11_t4", name:"Штучний інтелект",  icon:"🤖", ep_req:11, prereq:"ep11_t3",
+ costs:[tc("chips",80000),tc("electricity",600000),tc("silicon",100000)], unlocked:false,
+ effect:"prod_mult_8", effectDesc:"Виробництво ×8", category:"prod",
+ desc:"Машинне навчання та нейромережі"},
+{id:"ep11_t5", name:"Квантові обчислення",icon:"🌀",ep_req:11, prereq:"ep11_t4",
+ costs:[tc("chips",120000),tc("electricity",800000),tc("silicon",150000)], unlocked:false,
+ effect:"click_mult_25", effectDesc:"Кліки ×25", category:"click",
+ desc:"Квантова суперпозиція — нова обчислювальна парадигма"},
+
+// ─────────── EPOCH 12 ──────────────────────────────────────────
+{id:"ep12_t1", name:"Роботизація",       icon:"🦾", ep_req:12, prereq:"ep11_t4",
+ costs:[tc("chips",200000),tc("steel",500000),tc("electricity",1000000)], unlocked:false,
+ effect:"bac_mult_20", effectDesc:"Будівлі з AC ×20", category:"building",
+ desc:"Повністю автоматизовані робочі лінії"},
+{id:"ep12_t2", name:"Нанотехнології",    icon:"🔬", ep_req:12, prereq:"ep12_t1",
+ costs:[tc("chips",300000),tc("silicon",200000),tc("electricity",1500000)], unlocked:false,
+ effect:"prod_mult_15", effectDesc:"Виробництво ×15", category:"prod",
+ desc:"Маніпуляція матерією на атомному рівні"},
+{id:"ep12_t3", name:"Космічне виробництво",icon:"🚀",ep_req:12, prereq:"ep12_t2",
+ costs:[tc("auto_drone",5000),tc("chips",500000),tc("steel",1000000)], unlocked:false,
+ effect:"ac_mult_20", effectDesc:"AC ×20", category:"ac",
+ desc:"Фабрики на орбіті — необмежені ресурси"},
+{id:"ep12_t4", name:"Сингулярність",     icon:"✨", ep_req:12, prereq:"ep12_t3",
+ costs:[tc("chips",800000),tc("electricity",3000000),tc("auto_drone",10000)], unlocked:false,
+ effect:"click_mult_50", effectDesc:"Кліки ×50", category:"click",
+ desc:"Технологічна сингулярність — кінцева точка еволюції"},
+];
+
+// tech discount tracking
+let techCostDiscount = 1.0; // multiplier on tech costs
+
+let clickMult = 1;
+let acMult = 1;
+let bacMult = 1; // building AC multiplier
+let prodMult = 1;
+
+// ============================================================
+// BINDS
+// ============================================================
+const BINDS = [
+  {id:"b_wood",  name:"🪓 Сокира",         res:"wood",      costRes:"wood",      costBase:60,  costMult:1.08, lvl:0, maxLvl:999, addPerLvl:1},
+  {id:"b_stone", name:"⛏️ Кирка",          res:"stone",     costRes:"stone",     costBase:50,  costMult:1.08, lvl:0, maxLvl:999, addPerLvl:1},
+  {id:"b_water", name:"🪣 Відро",           res:"water",     costRes:"water",     costBase:40,  costMult:1.08, lvl:0, maxLvl:999, addPerLvl:1},
+  {id:"b_clay",  name:"🏺 Лопата",          res:"clay",      costRes:"clay",      costBase:40,  costMult:1.08, lvl:0, maxLvl:999, addPerLvl:1},
+  {id:"b_veg",   name:"🌿 Серп",            res:"vegetation",costRes:"vegetation",costBase:40,  costMult:1.08, lvl:0, maxLvl:999, addPerLvl:1},
+  {id:"b_ore",   name:"🏔️ Кайло",           res:"raw_ore",   costRes:"raw_ore",   costBase:50,  costMult:1.08, lvl:0, maxLvl:999, addPerLvl:1},
+  {id:"b_all",   name:"🎒 Рюкзак",          res:"all",       costRes:"logs",      costBase:200, costMult:1.12, lvl:0, maxLvl:999, addPerLvl:2},
+];
+
+// ============================================================
+// EXCHANGE SYSTEM
+// ============================================================
+let exchangeLevel = 0; // 0 = locked
+const EXCHANGE_RATES = {0:0,1:0.9,2:0.7,3:0.5,4:0.3}; // loss factor when selling
+// synthAutoRate: per-second passive synth gain from assigned buildings
+let synthAutoRate = 0;
+
+// ============================================================
+// BUILDINGS
+// ============================================================
+const BRANCHES = [
+  "Лісова","Гірнича","Аграрна","Ковальська",
+  "Металургійна","Харчова","Текстильна","Хімічна",
+  "Енергетична","Електронна","Робототехнічна","Наукова"
+];
+const BR_EMOJI = ["🌲","⛏️","🌾","⚒️","⚙️","🍷","🧵","🧪","⚡","💾","🤖","🔭"];
+
+// Building templates per epoch — logically named
+const EP_TEMPLATES = {
+  1:{name:"Збирацька стоянка",   inp:{wood:2},           out:{logs:2,charcoal:0.5},    cost:{wood:30,stone:15}},
+  2:{name:"Сільськогосподарська ферма",inp:{water:1,vegetation:1},out:{wheat:1.5,barley:0.5},cost:{logs:40,clay:20}},
+  3:{name:"Ремісничий цех",      inp:{logs:2,charcoal:1},out:{boards:2,bricks:1},       cost:{logs:60,stone:40}},
+  4:{name:"Бронзова ковальня",   inp:{raw_ore:3,charcoal:2},out:{copper:1.5,bronze:0.8},cost:{boards:50,bricks:30}},
+  5:{name:"Залізоплавильний цех",inp:{raw_ore:4,charcoal:3},out:{iron:1.5,tools:0.5},   cost:{boards:60,bronze:20,bricks:40}},
+  6:{name:"Середньовічна майстерня",inp:{wheat:2,water:1},out:{wine:1,beer:0.8,flour:0.5},cost:{boards:70,iron:15,bricks:50}},
+  7:{name:"Друкарсько-паперова фабрика",inp:{logs:3,water:2},out:{paper:2,books:0.3},   cost:{boards:80,iron:25,bricks:60}},
+  8:{name:"Промислова доменна піч",inp:{iron:2,charcoal:3},out:{steel:1,coke:0.8},      cost:{bricks:100,iron:40,boards:80}},
+  9:{name:"Нафтопереробний завод",inp:{raw_ore:5,water:3},out:{oil:2,rubber:0.5,plastic:0.8},cost:{steel:40,iron:60,bricks:80}},
+  10:{name:"Електростанція",      inp:{copper:2,oil:1},   out:{cable:1,electricity:3},  cost:{steel:60,iron:50,plastic:30}},
+  11:{name:"Мікроелектронний завод",inp:{electricity:3,plastic:2},out:{silicon:1,chips:0.5},cost:{steel:80,electricity:40,plastic:50}},
+  12:{name:"Автоматизований комплекс",inp:{chips:2,steel:1,electricity:3},out:{robot:0.3,auto_drone:0.2},cost:{steel:100,chips:50,electricity:60}}
+};
+
+// Building name prefixes per epoch to avoid duplicate names
+const EP_NAME_PREFIX = {
+  1:"Примітивна", 2:"Стародавня", 3:"Ремісна", 4:"Бронзова",
+  5:"Залізна", 6:"Середньовічна", 7:"Мануфактурна", 8:"Промислова",
+  9:"Хімічна", 10:"Електрична", 11:"Електронна", 12:"Автоматизована"
+};
+
+let buildings = {};
+BRANCHES.forEach((branch,bIdx)=>{
+  for(let ep=1;ep<=12;ep++){
+    let tmpl = EP_TEMPLATES[ep];
+    let id = `b${bIdx}_${ep}`;
+    let costScale = 1 + bIdx * 0.15;
+    let cost = {};
+    Object.keys(tmpl.cost).forEach(k=>{ cost[k] = Math.round(tmpl.cost[k] * costScale); });
+    // Unique name: "EpochPrefix BranchEmoji BuildingType [Branch]"
+    let uniqueName = `${BR_EMOJI[bIdx]} ${EP_NAME_PREFIX[ep]} ${tmpl.name.replace(/^[🌲⛏️🌾⚒️⚙️🍷🧵🧪⚡💾🤖🔭]\s*/,'')} [${branch}]`;
+    buildings[id] = {
+      name: uniqueName,
+      shortName: `${EP_NAME_PREFIX[ep]} ${tmpl.name.replace(/^[🌲⛏️🌾⚒️⚙️🍷🧵🧪⚡💾🤖🔭]\s*/,'')}`,
+      epoch: ep, branch, brIdx: bIdx,
+      cost, inputs:{...tmpl.inp}, outputs:{...tmpl.out},
+      instances: [], mapTile: null
+    };
+  }
+});
+
+// ============================================================
+// BASE RESOURCE BUILDINGS — auto-produce primary resources
+// ============================================================
+const BASE_RES_BUILDINGS = {
+  bw:  {name:"🌲 Лісозаготівля", res:"wood",       costBase:{wood:50,stone:20},    prodBase:0.5, ep_req:1, lvl:0, maxLvl:999, costMult:1.12},
+  bs:  {name:"⛰ Каменоломня",    res:"stone",      costBase:{wood:60,stone:10},    prodBase:0.4, ep_req:1, lvl:0, maxLvl:999, costMult:1.12},
+  bwa: {name:"💧 Колодязь",       res:"water",      costBase:{wood:40,stone:30},    prodBase:0.5, ep_req:1, lvl:0, maxLvl:999, costMult:1.12},
+  bc:  {name:"🧱 Глинище",        res:"clay",       costBase:{wood:50,stone:25},    prodBase:0.4, ep_req:1, lvl:0, maxLvl:999, costMult:1.12},
+  bv:  {name:"🌿 Розплідник",     res:"vegetation", costBase:{water:30,wood:40},    prodBase:0.4, ep_req:1, lvl:0, maxLvl:999, costMult:1.12},
+  bo:  {name:"🌋 Рудна яма",      res:"raw_ore",    costBase:{wood:80,stone:60},    prodBase:0.3, ep_req:1, lvl:0, maxLvl:999, costMult:1.13},
+  bl:  {name:"🪵 Лісопилка",      res:"logs",       costBase:{wood:100,stone:50},   prodBase:0.5, ep_req:1, lvl:0, maxLvl:999, costMult:1.13},
+  bch: {name:"🕳 Вугільник",       res:"charcoal",   costBase:{logs:80,stone:40},    prodBase:0.3, ep_req:1, lvl:0, maxLvl:999, costMult:1.14},
+  bwh: {name:"🌾 Поле пшениці",   res:"wheat",      costBase:{water:60,clay:50},    prodBase:0.5, ep_req:2, lvl:0, maxLvl:999, costMult:1.13},
+  bba: {name:"🌿 Ячмінне поле",   res:"barley",     costBase:{water:60,clay:50},    prodBase:0.4, ep_req:2, lvl:0, maxLvl:999, costMult:1.13},
+  bcu: {name:"🟤 Мідний кар'єр",  res:"copper",     costBase:{boards:80,bricks:50}, prodBase:0.3, ep_req:4, lvl:0, maxLvl:999, costMult:1.15},
+  bir: {name:"🔩 Залізна шахта",  res:"iron",       costBase:{boards:100,bricks:80},prodBase:0.2, ep_req:5, lvl:0, maxLvl:999, costMult:1.15},
+  boi: {name:"🛢 Нафтова вежа",   res:"oil",        costBase:{steel:80,iron:60},    prodBase:0.2, ep_req:9, lvl:0, maxLvl:999, costMult:1.16},
+  bel: {name:"⚡ Генератор",       res:"electricity",costBase:{steel:120,copper:80}, prodBase:0.3, ep_req:10,lvl:0, maxLvl:999, costMult:1.16},
+  bsi: {name:"💎 Кремнієва ферма", res:"silicon",   costBase:{electricity:100,steel:150},prodBase:0.15,ep_req:11,lvl:0,maxLvl:999,costMult:1.17},
+};
+
+let baseResMultiplier = 1; // from tech upgrades
+
+function buyBaseResBuilding(id){
+  let b=BASE_RES_BUILDINGS[id];
+  if(!b||epoch<b.ep_req) return;
+  let scale=Math.pow(b.costMult,b.lvl);
+  let cost={};
+  Object.keys(b.costBase).forEach(k=>cost[k]=Math.floor(b.costBase[k]*scale));
+  let canAfford=Object.keys(cost).every(k=>(storage[k]||0)>=cost[k]);
+  if(!canAfford) return;
+  Object.keys(cost).forEach(k=>storage[k]-=cost[k]);
+  b.lvl++;
+  addPoints(50*b.ep_req, 'builds');
+  addLog(`⚒ ${b.name} → рів.${b.lvl}`);
+  markDirty("full");
+}
+
+// ============================================================
+// SCORE SYSTEM
+// ============================================================
+const SCORES = {total:0, clicks:0, builds:0, resources:0, tech:0, epochs:0};
+const SCORE_FLOAT_INTERVAL = 50; // ms batching
+
+const RANKS = [
+  {pts:0,       label:"🥉 НОВАЧОК"},
+  {pts:1000,    label:"🥈 ЗБИРАЧ"},
+  {pts:5000,    label:"🥇 РЕМІСНИК"},
+  {pts:20000,   label:"🏅 МАЙСТЕР"},
+  {pts:100000,  label:"🎖 АРХІТЕКТОР"},
+  {pts:500000,  label:"🏆 ЦИВІЛІЗАТОР"},
+  {pts:2000000, label:"💎 ПРОМИСЛОВЕЦЬ"},
+  {pts:10000000,label:"⭐ ЛЕГЕНДА"},
+  {pts:Infinity, label:"🌀 ТВОРЕЦЬ"}
+];
+
+function addPoints(amt, category){
+  if(!amt||amt<=0) return;
+  SCORES.total+=amt;
+  SCORES[category]=(SCORES[category]||0)+amt;
+}
+
+function getScoreRank(){
+  let r=RANKS[0];
+  for(let i=RANKS.length-1;i>=0;i--){
+    if(SCORES.total>=RANKS[i].pts){r=RANKS[i];break;}
+  }
+  return r.label;
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let epoch = 1;
+let tech = 0;
+let buildCount = 0;
+let totalClicks = 0;
+let activeFilter = "all";
+let storage = {};
+let psCounters = {};
+Object.keys(RES).forEach(k=>{storage[k]=0;psCounters[k]=0;});
+storage.wood=30; storage.stone=10; storage.water=10;
+let logLines = [];
+let toastTimer = null;
+
+// ============================================================
+// 2D TOP-DOWN MAP
+// ============================================================
+const CELL = 36; // px per tile
+const MAP_COLS = 28, MAP_ROWS = 20;
+let canvas, ctx;
+let mapTiles = [];
+let mapHover = {col:-1, row:-1};
+let mapOffset = {x:0, y:0};
+let mapDrag = {active:false, sx:0, sy:0, ox:0, oy:0};
+
+// Terrain types with colors
+const TERRAIN = {
+  grass:  {base:'#2d5a1b', dark:'#1e3f10', accent:'#3a7023'},
+  forest: {base:'#1a4a10', dark:'#0f2e08', accent:'#245c14'},
+  dirt:   {base:'#7a5a30', dark:'#5a3f1a', accent:'#8a6a3a'},
+  stone:  {base:'#505560', dark:'#353840', accent:'#606870'},
+  water:  {base:'#1a4870', dark:'#0e2e50', accent:'#2060a0'},
+  sand:   {base:'#a08840', dark:'#705e25', accent:'#b09850'},
+  snow:   {base:'#ccd8e8', dark:'#8898b0', accent:'#e0eaf8'},
+  swamp:  {base:'#2a4530', dark:'#182a1c', accent:'#3a5a38'},
+};
+
+// Building visual colors per epoch
+const BLDCOL = {
+  1:{wall:'#8a6640',roof:'#6a4825',win:'#f0c060',smoke:false},
+  2:{wall:'#6a8040',roof:'#485a20',win:'#d8e880',smoke:false},
+  3:{wall:'#7a6035',roof:'#c87828',win:'#ffd060',smoke:true},
+  4:{wall:'#8a4040',roof:'#7a2020',win:'#ff8040',smoke:true},
+  5:{wall:'#505060',roof:'#383848',win:'#a0b0ff',smoke:true},
+  6:{wall:'#704060',roof:'#502040',win:'#ffa0c0',smoke:false},
+  7:{wall:'#604830',roof:'#956030',win:'#ffe0a0',smoke:false},
+  8:{wall:'#303030',roof:'#202020',win:'#ff6000',smoke:true},
+  9:{wall:'#2a4030',roof:'#182820',win:'#40ff80',smoke:true},
+  10:{wall:'#202840',roof:'#101828',win:'#40c0ff',smoke:true},
+  11:{wall:'#181828',roof:'#101018',win:'#00e5ff',smoke:true},
+  12:{wall:'#100c18',roof:'#080810',win:'#a040ff',smoke:true},
+};
+
+// Noise-like terrain generation using simple hash
+function terrainHash(x,y,seed){
+  let n=(x*374761393+y*668265263+seed)^0x9e3779b9;
+  n=(n^(n>>>16))*0x85ebca6b;
+  n=(n^(n>>>13))*0xc2b2ae35;
+  return (n^(n>>>16))&0x7fffffff;
+}
+
+function generateMap(){
+  const seed = Math.floor(Math.random()*99999);
+  // First pass: base terrain
+  for(let r=0;r<MAP_ROWS;r++){
+    mapTiles[r]=[];
+    for(let c=0;c<MAP_COLS;c++){
+      let h1 = terrainHash(c,r,seed)/0x7fffffff;
+      let h2 = terrainHash(c*2,r*2,seed+1)/0x7fffffff;
+      let h3 = terrainHash(c+MAP_COLS,r+MAP_ROWS,seed+2)/0x7fffffff;
+      let v = h1*0.5 + h2*0.3 + h3*0.2; // 0..1
+      let type;
+      if(v<0.12)      type='water';
+      else if(v<0.18) type='sand';
+      else if(v<0.55) type='grass';
+      else if(v<0.70) type='forest';
+      else if(v<0.82) type='dirt';
+      else if(v<0.92) type='stone';
+      else            type='snow';
+      mapTiles[r][c]={type, building:null, res:null, variation: Math.floor(h3*4)};
+    }
+  }
+  // Add a river — snake from top to bottom
+  let rc = Math.floor(MAP_COLS*0.4+terrainHash(seed,0,3)%Math.floor(MAP_COLS*0.2));
+  for(let r=0;r<MAP_ROWS;r++){
+    let drift = Math.round((terrainHash(r,seed,4)/0x7fffffff-0.5)*2);
+    rc = Math.max(2,Math.min(MAP_COLS-3,rc+drift));
+    for(let w=-1;w<=1;w++){
+      if(rc+w>=0&&rc+w<MAP_COLS){
+        mapTiles[r][rc+w].type='water';
+      }
+    }
+  }
+  // Sprinkle resource nodes (decorative)
+  const resNodes=[
+    {type:'grass',icon:'🌲',label:'Ліс'},
+    {type:'stone',icon:'⛏️',label:'Руда'},
+    {type:'sand', icon:'🌾',label:'Поле'},
+    {type:'dirt', icon:'🪨',label:'Камінь'},
+    {type:'swamp',icon:'🌿',label:'Болото'},
+  ];
+  // Starting camp
+  let startR=Math.floor(MAP_ROWS/2), startC=Math.floor(MAP_COLS*0.25);
+  mapTiles[startR][startC].type='grass';
+  mapTiles[startR][startC].building={epoch:1,name:"⛺ Табір",autoClicker:false,lvl:1};
+}
+
+function initMap(){
+  canvas = document.getElementById('isoCanvas');
+  generateMap();
+  // Small delay to ensure layout is computed
+  setTimeout(()=>{
+    resizeCanvas();
+    drawMap();
+  }, 50);
+  canvas.addEventListener('mousemove', onMapMouse);
+  canvas.addEventListener('click', onMapClick);
+  canvas.addEventListener('mousedown', onMapMouseDown);
+  canvas.addEventListener('mouseup', onMapMouseUp);
+  canvas.addEventListener('mouseleave', ()=>{mapDrag.active=false; mapHover={col:-1,row:-1};});
+  window.addEventListener('resize', ()=>{ resizeCanvas(); drawMap(); });
+}
+
+function resizeCanvas(){
+  let area = document.querySelector('.map-area');
+  if(!area||!canvas) return;
+  canvas.width  = area.clientWidth;
+  canvas.height = area.clientHeight;
+  ctx = canvas.getContext('2d');
+  // Center map properly
+  mapOffset.x = Math.max(0, Math.floor((canvas.width  - MAP_COLS*CELL)/2));
+  mapOffset.y = Math.max(0, Math.floor((canvas.height - MAP_ROWS*CELL)/2));
+  _mapDirty=true;
+}
+
+function screenToTile(sx,sy){
+  let col = Math.floor((sx - mapOffset.x) / CELL);
+  let row = Math.floor((sy - mapOffset.y) / CELL);
+  return {col, row};
+}
+
+function drawCell(c,r,tile){
+  let x = mapOffset.x + c*CELL;
+  let y = mapOffset.y + r*CELL;
+  let T = TERRAIN[tile.type] || TERRAIN.grass;
+  let isHov = (c===mapHover.col && r===mapHover.row);
+  let v = tile.variation||0;
+
+  // Base fill
+  ctx.fillStyle = isHov ? T.accent : T.base;
+  ctx.fillRect(x,y,CELL,CELL);
+
+  // Texture detail
+  if(tile.type==='grass'||tile.type==='forest'){
+    ctx.fillStyle = T.dark+'88';
+    // scattered dots
+    let dots=[[4,5],[12,9],[22,4],[8,20],[18,16],[28,8],[6,26],[24,22]];
+    dots.forEach(([dx,dy],i)=>{
+      if((v+i)%3===0) return;
+      ctx.fillRect(x+dx,y+dy,2,2);
+    });
+  } else if(tile.type==='water'){
+    // Wave lines
+    ctx.strokeStyle = T.accent+'66';
+    ctx.lineWidth=1;
+    for(let wi=0;wi<3;wi++){
+      ctx.beginPath();
+      ctx.moveTo(x+2, y+8+wi*10);
+      ctx.bezierCurveTo(x+10,y+4+wi*10, x+24,y+12+wi*10, x+CELL-2,y+8+wi*10);
+      ctx.stroke();
+    }
+  } else if(tile.type==='stone'||tile.type==='snow'){
+    ctx.fillStyle = T.accent+'55';
+    ctx.fillRect(x+4,y+4,6,6);
+    ctx.fillRect(x+18,y+20,8,5);
+    ctx.fillRect(x+10,y+14,5,8);
+  } else if(tile.type==='sand'){
+    ctx.fillStyle = T.dark+'44';
+    ctx.fillRect(x+8,y+8,3,3);
+    ctx.fillRect(x+20,y+15,3,3);
+    ctx.fillRect(x+14,y+25,3,3);
+  }
+
+  // Grid border
+  ctx.strokeStyle = isHov ? 'rgba(232,184,75,0.7)' : 'rgba(0,0,0,0.2)';
+  ctx.lineWidth = isHov ? 1.5 : 0.5;
+  ctx.strokeRect(x+.5, y+.5, CELL-1, CELL-1);
+
+  // Forest trees (small icons)
+  if(tile.type==='forest' && !tile.building){
+    ctx.fillStyle='#1a5c0a';
+    // simple triangle tree
+    ctx.beginPath();
+    ctx.moveTo(x+CELL/2, y+5);
+    ctx.lineTo(x+CELL/2+9, y+22);
+    ctx.lineTo(x+CELL/2-9, y+22);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#0e3806';
+    ctx.fillRect(x+CELL/2-2, y+22, 4, 6);
+  }
+}
+
+function drawBuilding2D(c,r,bdata){
+  let x = mapOffset.x + c*CELL;
+  let y = mapOffset.y + r*CELL;
+  let ep = bdata.epoch||1;
+  let bc = BLDCOL[ep]||BLDCOL[1];
+  let lvl = bdata.lvl||1;
+  let isAC = bdata.autoClicker;
+  let sz = Math.min(CELL-6, 20 + Math.min(lvl-1,5)*2); // grows with level
+  let bx = x + (CELL-sz)/2;
+  let by = y + (CELL-sz)/2;
+
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.25)';
+  ctx.fillRect(bx+3, by+3, sz, sz);
+
+  // Roof (top triangle area)
+  ctx.fillStyle = bc.roof;
+  ctx.beginPath();
+  ctx.moveTo(bx, by+sz*0.45);
+  ctx.lineTo(bx+sz/2, by);
+  ctx.lineTo(bx+sz, by+sz*0.45);
+  ctx.closePath(); ctx.fill();
+
+  // Wall
+  ctx.fillStyle = bc.wall;
+  ctx.fillRect(bx, by+sz*0.4, sz, sz*0.6);
+
+  // Door
+  ctx.fillStyle='rgba(0,0,0,0.5)';
+  ctx.fillRect(bx+sz*0.4, by+sz*0.75, sz*0.2, sz*0.25);
+
+  // Windows
+  ctx.fillStyle = isAC ? '#00e5ff' : bc.win;
+  if(ep>=3){
+    ctx.fillRect(bx+sz*0.1, by+sz*0.5, sz*0.2, sz*0.15);
+    ctx.fillRect(bx+sz*0.7, by+sz*0.5, sz*0.2, sz*0.15);
+  }
+
+  // AC glow
+  if(isAC){
+    ctx.shadowColor='rgba(0,229,255,0.8)';
+    ctx.shadowBlur=10;
+    ctx.strokeStyle='rgba(0,229,255,0.7)';
+    ctx.lineWidth=1.5;
+    ctx.strokeRect(bx,by,sz,sz);
+    ctx.shadowBlur=0;
+  }
+
+  // Level badge
+  if(lvl>1){
+    ctx.fillStyle=isAC?'#00e5ff':'#e8b84b';
+    ctx.font='bold 9px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('L'+lvl, x+CELL-8, y+CELL-3);
+  }
+
+  // Smoke (for industrial buildings)
+  if(bc.smoke && lvl>0){
+    let t=Date.now()/1200;
+    for(let s=0;s<2;s++){
+      let alpha=0.3+0.2*Math.sin(t+s*2);
+      ctx.fillStyle=`rgba(150,150,150,${alpha})`;
+      ctx.beginPath();
+      let sx2=bx+sz*0.3+s*sz*0.25;
+      let sy2=by-3-Math.abs(Math.sin(t+s))*4;
+      ctx.arc(sx2, sy2, 3+s, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+}
+
+function drawMap(){
+  if(!ctx||!canvas||!canvas.width) return;
+  // Background
+  ctx.fillStyle='#080c10';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // Tiles
+  for(let r=0;r<MAP_ROWS;r++){
+    for(let c=0;c<MAP_COLS;c++){
+      drawCell(c,r,mapTiles[r][c]);
+    }
+  }
+  // Buildings on top
+  for(let r=0;r<MAP_ROWS;r++){
+    for(let c=0;c<MAP_COLS;c++){
+      if(mapTiles[r][c].building){
+        drawBuilding2D(c,r,mapTiles[r][c].building);
+      }
+    }
+  }
+
+  // Map legend overlay
+  ctx.fillStyle='rgba(7,10,15,0.75)';
+  ctx.fillRect(mapOffset.x, mapOffset.y+MAP_ROWS*CELL+2, MAP_COLS*CELL, 18);
+
+  // Draw goblin wave indicators on map edge
+  if(goblinWave.active && goblinWave.goblins.length > 0){
+    let t = Date.now()/400;
+    let maxShow = Math.min(goblinWave.goblins.length, 8);
+    for(let gi=0;gi<maxShow;gi++){
+      let g = goblinWave.goblins[gi];
+      let gx = mapOffset.x + MAP_COLS*CELL - 20 + Math.sin(t+gi)*5;
+      let gy = mapOffset.y + 30 + gi * 28 + Math.cos(t*1.2+gi)*4;
+      // Goblin body
+      ctx.fillStyle = g.color || '#c0392b';
+      ctx.beginPath();
+      ctx.arc(gx, gy, 10, 0, Math.PI*2);
+      ctx.fill();
+      // Eyes
+      ctx.fillStyle='#ffff00';
+      ctx.beginPath(); ctx.arc(gx-4, gy-3, 2.5, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(gx+4, gy-3, 2.5, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle='#000';
+      ctx.beginPath(); ctx.arc(gx-4, gy-3, 1, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(gx+4, gy-3, 1, 0, Math.PI*2); ctx.fill();
+      // HP bar
+      let hpPct = g.hp/g.maxHp;
+      ctx.fillStyle='#300';
+      ctx.fillRect(gx-12, gy+13, 24, 3);
+      ctx.fillStyle=hpPct>0.5?'#0f0':hpPct>0.25?'#f80':'#f00';
+      ctx.fillRect(gx-12, gy+13, Math.floor(24*hpPct), 3);
+    }
+    // Attack arrow
+    ctx.fillStyle='rgba(200,50,50,0.6)';
+    ctx.beginPath();
+    ctx.moveTo(mapOffset.x+MAP_COLS*CELL-35, mapOffset.y+MAP_ROWS*CELL/2);
+    ctx.lineTo(mapOffset.x+MAP_COLS*CELL-10, mapOffset.y+MAP_ROWS*CELL/2-15);
+    ctx.lineTo(mapOffset.x+MAP_COLS*CELL-10, mapOffset.y+MAP_ROWS*CELL/2+15);
+    ctx.closePath(); ctx.fill();
+  } else if(!goblinWave.active && goblinWave.nextWaveIn > 0){
+    // Show countdown on map
+    let alpha = goblinWave.nextWaveIn <= 15 ? 0.7 + Math.sin(Date.now()/300)*0.3 : 0.4;
+    ctx.fillStyle=`rgba(180,60,60,${alpha})`;
+    ctx.font='bold 11px Share Tech Mono,monospace';
+    ctx.textAlign='right';
+    ctx.fillText(`⚔ хвиля через ${goblinWave.nextWaveIn}с`, mapOffset.x+MAP_COLS*CELL-5, mapOffset.y+15);
+    ctx.textAlign='left';
+  }
+
+  ctx.fillStyle='#5a6880';
+  ctx.font='9px Share Tech Mono,monospace';
+  ctx.textAlign='left';
+  const legend=[
+    {c:'#2d5a1b',l:'Луки'},
+    {c:'#1a4a10',l:'Ліс'},
+    {c:'#1a4870',l:'Вода'},
+    {c:'#505560',l:'Скеля'},
+    {c:'#a08840',l:'Пісок'},
+  ];
+  legend.forEach((item,i)=>{
+    ctx.fillStyle=item.c;
+    ctx.fillRect(mapOffset.x+5+i*70, mapOffset.y+MAP_ROWS*CELL+6, 8, 8);
+    ctx.fillStyle='#5a6880';
+    ctx.fillText(item.l, mapOffset.x+16+i*70, mapOffset.y+MAP_ROWS*CELL+14);
+  });
+}
+
+function onMapMouseDown(e){
+  if(e.button===1||(e.button===0&&e.altKey)){
+    mapDrag={active:true,sx:e.clientX,sy:e.clientY,ox:mapOffset.x,oy:mapOffset.y};
+  }
+}
+function onMapMouseUp(e){ mapDrag.active=false; }
+
+function onMapMouse(e){
+  let rect=canvas.getBoundingClientRect();
+  let mx=e.clientX-rect.left, my=e.clientY-rect.top;
+
+  if(mapDrag.active){
+    mapOffset.x=mapDrag.ox+(mx+rect.left-mapDrag.sx)|0;
+    mapOffset.y=mapDrag.oy+(my+rect.top-mapDrag.sy)|0;
+    _mapDirty=true; return;
+  }
+
+  let {col,row}=screenToTile(mx,my);
+  mapHover={col,row};
+  let tip=document.getElementById('map-tooltip');
+  if(col>=0&&col<MAP_COLS&&row>=0&&row<MAP_ROWS){
+    let tile=mapTiles[row][col];
+    let tname=(TERRAIN[tile.type]||{}).label||tile.type;
+    tip.style.display='block';
+    tip.style.left=(mx+12)+'px';
+    tip.style.top=(my+12)+'px';
+    if(tile.building){
+      let b=tile.building;
+      tip.innerHTML=`<b style="color:var(--gold)">${b.name}</b><br>🏗 Рів.${b.lvl||1} · Еп.${b.epoch}${b.autoClicker?'<br><span style="color:var(--synth)">🤖 Автоклікер</span>':''}`;
+    } else {
+      let tLabel={grass:'🌿 Луки',forest:'🌲 Ліс',water:'💧 Вода',stone:'⛰ Скеля',sand:'🌾 Пісок',dirt:'🪨 Каміння',snow:'❄ Сніг',swamp:'🌿 Болото'}[tile.type]||tile.type;
+      tip.innerHTML=`<span style="color:var(--dim)">${tLabel} [${col},${row}]</span>`;
+    }
+  } else {
+    tip.style.display='none';
+  }
+  _mapDirty=true;
+}
+
+function onMapClick(e){}
+
+function placeOnMap(building){
+  for(let r=1;r<MAP_ROWS-1;r++){
+    for(let c=1;c<MAP_COLS-1;c++){
+      let t=mapTiles[r][c];
+      if(!t.building&&t.type!=='water'){
+        t.building={epoch:building.epoch,name:building.name,autoClicker:false,lvl:1};
+        return {r,c};
+      }
+    }
+  }
+  return null;
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+function getClickAmt(res){
+  let base=1+(BINDS.find(b=>b.res===res)?.lvl||0)+(BINDS.find(b=>b.res==="all")?.lvl||0)*2;
+  return Math.floor(base*clickMult);
+}
+
+function clickGather(res,e){
+  let amt=getClickAmt(res);
+  storage[res]=(storage[res]||0)+amt;
+  resLifetimeTotal[res]=(resLifetimeTotal[res]||0)+amt;
+  totalClicks++;
+  addPoints(amt, 'clicks');
+  addPoints(Math.ceil(amt*0.5), 'resources');
+  if(e){
+    let fl=document.createElement('div');
+    fl.className='float-text';
+    fl.textContent=`+${amt} ${RES[res]?.e||''}`;
+    fl.style.left=(e.clientX-20)+'px';
+    fl.style.top=(e.clientY-20)+'px';
+    document.body.appendChild(fl);
+    setTimeout(()=>fl.remove(),900);
+  }
+  markDirty("full");
+}
+
+function unlockACTier(idx){ /* legacy stub — unused */ }
+
+function unlockTech(idx){
+  let node=TECH_NODES[idx];
+  if(!node||node.unlocked) return;
+  if(epoch<node.ep_req) return;
+  if(node.prereq){
+    let preNode=TECH_NODES.find(n=>n.id===node.prereq);
+    if(preNode&&!preNode.unlocked) return;
+  }
+  // Multi-cost system with discount
+  let disc=techCostDiscount;
+  let costs=node.costs||[{res:node.costRes||'logs',amt:node.costAmt||100}];
+  let canAfford=costs.every(c=>(storage[c.res]||0)>=Math.floor(c.amt*disc));
+  if(!canAfford) return;
+  costs.forEach(c=>storage[c.res]-=Math.floor(c.amt*disc));
+  node.unlocked=true;
+  applyTechEffect(node.effect);
+  tech+=5;
+  let techPts=costs.reduce((s,c)=>s+c.amt,0)*2;
+  addPoints(techPts,'tech');
+  addLog(`🔬 ${node.name} — ${node.effectDesc}`,true);
+  markDirty("full");
+}
+
+function applyTechEffect(effect){
+  // Click multipliers
+  const cmatch=effect.match(/^click_mult_(\d+(?:_\d+)?)$/);
+  if(cmatch){let v=parseFloat(cmatch[1].replace('_','.'));clickMult=Math.max(clickMult,v);}
+  // AC multipliers
+  const amatch=effect.match(/^ac_mult_(\d+)$/);
+  if(amatch){acMult=Math.max(acMult,parseInt(amatch[1]));recalcACRate();}
+  // Building AC multipliers (old bacMult kept for compat, real is getBuildingACMult)
+  const bmatch=effect.match(/^bac_mult_(\d+)$/);
+  if(bmatch){bacMult=Math.max(bacMult,parseInt(bmatch[1]));}
+  // Production multipliers
+  const pmatch=effect.match(/^prod_mult_(\d+(?:_\d+)?)$/);
+  if(pmatch){let v=parseFloat(pmatch[1].replace('_','.'));prodMult=Math.max(prodMult,v);}
+  // Exchange
+  if(effect==="unlock_exchange_1") exchangeLevel=Math.max(exchangeLevel,1);
+  if(effect==="exchange_lvl2") exchangeLevel=Math.max(exchangeLevel,2);
+  if(effect==="exchange_lvl3") exchangeLevel=Math.max(exchangeLevel,3);
+  if(effect==="exchange_lvl4") exchangeLevel=Math.max(exchangeLevel,4);
+  // Base resource multipliers
+  if(effect==="baseres_mult_2") baseResMultiplier=Math.max(baseResMultiplier,2);
+  if(effect==="baseres_mult_3") baseResMultiplier=Math.max(baseResMultiplier,3);
+  if(effect==="baseres_mult_5") baseResMultiplier=Math.max(baseResMultiplier,5);
+  if(effect==="baseres_mult_8") baseResMultiplier=Math.max(baseResMultiplier,8);
+  // Tech cost discount
+  if(effect==="tech_cost_minus_10pct") techCostDiscount=Math.min(techCostDiscount,0.9);
+  if(effect==="tech_cost_minus_20pct") techCostDiscount=Math.min(techCostDiscount,0.8);
+  // AC bonus
+  if(effect==="ac_unlock_bonus"){let n=AC_NODES.root;if(n.unlocked)n.lvl+=2;recalcACRate();}
+  // Resource bonuses handled passively via baseResMultiplier / prod upgrades
+}
+
+function recalcAC(){ recalcACRate(); }
+
+function buyBind(idx){
+  let b=BINDS[idx];
+  if(b.lvl>=b.maxLvl) return;
+  let cost=Math.floor(b.costBase*Math.pow(b.costMult,b.lvl));
+  if((storage[b.costRes]||0)<cost) return;
+  storage[b.costRes]-=cost;
+  b.lvl++;
+  addLog(`${b.name} → рів.${b.lvl}`);
+  markDirty("full");
+}
+
+function buildBuilding(id){
+  let b=buildings[id];
+  if(b.instances.length>=999) return;
+  let canAfford=Object.keys(b.cost).every(r=>(storage[r]||0)>=b.cost[r]);
+  if(!canAfford) return;
+  Object.keys(b.cost).forEach(r=>storage[r]-=b.cost[r]);
+  let tile=placeOnMap(b);
+  b.instances.push({lvl:1,tileR:tile?.r,tileC:tile?.c,autoClicker:false});
+  buildCount++; tech++;
+  addPoints(500 * b.epoch, 'builds');
+  addLog(`🏗️ Збудовано: ${b.shortName} [${b.branch}]`,true);
+  showToast(`✅ ${b.shortName}`);
+  _mapDirty=true;
+  markDirty("full");
+}
+
+function upgradeInstance(e,id,idx){
+  e.stopPropagation();
+  let b=buildings[id];
+  let inst=b.instances[idx];
+  if(inst.lvl>=999) return;
+  let scale=inst.lvl*2;
+  let canAfford=Object.keys(b.cost).every(r=>(storage[r]||0)>=b.cost[r]*scale);
+  if(!canAfford) return;
+  Object.keys(b.cost).forEach(r=>storage[r]-=b.cost[r]*scale);
+  inst.lvl++;
+  if(inst.tileR!==undefined&&mapTiles[inst.tileR]?.[inst.tileC]?.building){
+    mapTiles[inst.tileR][inst.tileC].building.lvl=inst.lvl;
+  }
+  tech+=2;
+  addPoints(200*b.epoch*inst.lvl, 'builds');
+  addLog(`⬆ Апгрейд: ${b.shortName} → рів.${inst.lvl}`);
+  markDirty("full");
+}
+
+// MAX upgrade — spend all available resources to level up as high as possible
+function maxUpgradeInstance(e,id,idx){
+  e.stopPropagation();
+  let b=buildings[id];
+  let inst=b.instances[idx];
+  let leveled=0;
+  while(inst.lvl<999){
+    let scale=inst.lvl*2;
+    let canAfford=Object.keys(b.cost).every(r=>(storage[r]||0)>=b.cost[r]*scale);
+    if(!canAfford) break;
+    Object.keys(b.cost).forEach(r=>storage[r]-=b.cost[r]*scale);
+    inst.lvl++;
+    if(inst.tileR!==undefined&&mapTiles[inst.tileR]?.[inst.tileC]?.building){
+      mapTiles[inst.tileR][inst.tileC].building.lvl=inst.lvl;
+    }
+    tech+=2; leveled++;
+    addPoints(200*b.epoch*inst.lvl, 'builds');
+  }
+  if(leveled>0){ addLog(`⬆⬆ МАХ: ${b.shortName} → рів.${inst.lvl} (+${leveled})`,true); markDirty("full"); }
+  else showToast("⚠️ Недостатньо ресурсів для апгрейду!");
+}
+
+function boostInstance(e,id,idx){
+  e.stopPropagation();
+  let b=buildings[id];
+  let inst=b.instances[idx];
+  let mult=inst.lvl*5;
+  let ok=Object.keys(b.inputs).every(k=>(storage[k]||0)>=b.inputs[k]*mult);
+  if(!ok){showToast("⚠️ Недостатньо ресурсів для бусту!");return;}
+  Object.keys(b.inputs).forEach(k=>storage[k]-=b.inputs[k]*mult);
+  Object.keys(b.outputs).forEach(k=>{
+    let gained=b.outputs[k]*mult*inst.lvl*prodMult;
+    storage[k]=(storage[k]||0)+gained;
+  });
+  tech++;
+  addLog(`⚡ Буст: ${b.shortName} × ${mult}`);
+  markDirty("full");
+}
+
+// AC on building — requires bld branch unlocked
+function toggleACOnBuilding(e,id,idx){
+  e.stopPropagation();
+  let b=buildings[id];
+  let inst=b.instances[idx];
+  let key=`${id}_${idx}`;
+
+  // Find highest unlocked bld node
+  let bldNodes=['bld_b4','bld_b3','bld_b2','bld_b1'];
+  let topBld=bldNodes.find(nid=>AC_NODES[nid]?.unlocked);
+
+  if(inst.autoClicker){
+    inst.autoClicker=false;
+    delete acBuildingAssignments[key];
+    if(inst.tileR!==undefined&&mapTiles[inst.tileR]?.[inst.tileC]?.building){
+      mapTiles[inst.tileR][inst.tileC].building.autoClicker=false;
+    }
+    addLog(`⛔ AC знято з ${b.shortName}`);
+  } else {
+    if(!topBld){
+      showToast("⚠️ Потрібна гілка AC 'БУДІВЛІ' — розблокуй Підмайстра!");return;
+    }
+    let costRes='bronze'; let costAmt=20;
+    if(AC_NODES['bld_b4'].unlocked){costRes='chips';costAmt=30;}
+    else if(AC_NODES['bld_b3'].unlocked){costRes='steel';costAmt=40;}
+    else if(AC_NODES['bld_b2'].unlocked){costRes='iron';costAmt=30;}
+    if((storage[costRes]||0)<costAmt){
+      showToast(`⚠️ Потрібно ${costAmt} ${RES[costRes].n}!`);return;
+    }
+    storage[costRes]-=costAmt;
+    inst.autoClicker=true;
+    acBuildingAssignments[key]=true;
+    if(inst.tileR!==undefined&&mapTiles[inst.tileR]?.[inst.tileC]?.building){
+      mapTiles[inst.tileR][inst.tileC].building.autoClicker=true;
+    }
+    addLog(`🤖 AC → ${b.shortName} (×${getBuildingACMult().toFixed(1)})`,true);
+  }
+  markDirty("full");
+}
+
+function advanceEpoch(){
+  let d=EPOCH_DATA[epoch];
+  if(!d||!EPOCH_DATA[epoch+1]) return;
+  if((storage[d.req]||0)<d.amt) return;
+  storage[d.req]-=d.amt;
+  epoch++;
+  tech+=10;
+  addPoints(10000 * epoch, 'epochs');
+  document.getElementById('map-epoch').textContent=epoch;
+  addLog(`🚀 НОВА ЕПОХА: ${EPOCH_DATA[epoch].name}`,true);
+  showToast(`🎉 ЕПОХА ${epoch}: ${EPOCH_DATA[epoch].name}`);
+  markDirty("full");
+}
+
+function setFilter(f){ activeFilter=f; markDirty("full"); }
+
+function switchTab(t){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.ptab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  let tabs=['resources','tech','exchange','binds','defense','quests','achievements'];
+  let idx=tabs.indexOf(t);
+  document.querySelectorAll('.ptab')[idx]?.classList.add('active');
+  if(t==='defense') renderDefenseTab();
+  if(t==='quests') renderQuestsTab();
+  if(t==='achievements') renderAchievementsTab();
+}
+
+// ============================================================
+// EXCHANGE ACTIONS
+// ============================================================
+function sellToSynth(){
+  if(exchangeLevel<1){showToast("⚠️ Біржа не відкрита!");return;}
+  let selEl=document.getElementById('exch-sell-res');
+  let amtEl=document.getElementById('exch-sell-amt');
+  if(!selEl||!amtEl) return;
+  let res=selEl.value;
+  let amt=parseInt(amtEl.value)||0;
+  if(amt<=0){showToast("⚠️ Вкажіть кількість!");return;}
+  if((storage[res]||0)<amt){showToast("⚠️ Недостатньо ресурсів!");return;}
+  let rate=EXCHANGE_RATES[exchangeLevel];
+  let gained=Math.floor(amt*rate);
+  if(gained<=0){showToast("⚠️ Занадто мало!");return;}
+  storage[res]-=amt;
+  storage.synth_energy=(storage.synth_energy||0)+gained;
+  addLog(`⚗️ Обміняно ${amt} ${RES[res]?.n} → ${gained} 🌀 Синтез`,false);
+  let fl=document.createElement('div');
+  fl.className='float-text synth';
+  fl.textContent=`+${gained} 🌀`;
+  fl.style.left='50%';fl.style.top='50%';
+  document.body.appendChild(fl);
+  setTimeout(()=>fl.remove(),900);
+  markDirty("full");
+}
+
+function buyFromSynth(){
+  if(exchangeLevel<1){showToast("⚠️ Біржа не відкрита!");return;}
+  let selEl=document.getElementById('exch-buy-res');
+  let amtEl=document.getElementById('exch-buy-amt');
+  if(!selEl||!amtEl) return;
+  let res=selEl.value;
+  let amt=parseInt(amtEl.value)||0;
+  if(amt<=0){showToast("⚠️ Вкажіть кількість!");return;}
+  let rate=EXCHANGE_RATES[exchangeLevel];
+  let cost=Math.ceil(amt/rate);
+  if((storage.synth_energy||0)<cost){
+    showToast(`⚠️ Потрібно ${cost} 🌀 Синтезу!`);return;
+  }
+  storage.synth_energy-=cost;
+  storage[res]=(storage[res]||0)+amt;
+  addLog(`⚗️ Куплено ${amt} ${RES[res]?.n} за ${cost} 🌀`,false);
+  markDirty("full");
+}
+
+// ============================================================
+// LOOPS
+// ============================================================
+// AC loop — 100ms
+let acAccumulator=0;
+setInterval(()=>{
+  if(acTotalRate<=0) return;
+  let ticksPer100ms=acTotalRate/10;
+  acAccumulator+=ticksPer100ms;
+  let clicks=Math.floor(acAccumulator);
+  acAccumulator-=clicks;
+  // Distribute to epoch main resources
+  let targets=EPOCH_MAIN_RES[epoch]||EPOCH_MAIN_RES[1];
+  for(let i=0;i<clicks;i++){
+    let res=targets[acCounter%targets.length];
+    storage[res]=(storage[res]||0)+getClickAmt(res);
+    acCounter++;
+  }
+},100);
+
+// Production loop — 1s
+setInterval(()=>{
+  Object.keys(psCounters).forEach(k=>psCounters[k]=0);
+
+  // AC ps display
+  if(acTotalRate>0){
+    let targets=EPOCH_MAIN_RES[epoch]||EPOCH_MAIN_RES[1];
+    let cpsPerRes=acTotalRate/targets.length;
+    targets.forEach(r=>{
+      psCounters[r]=(psCounters[r]||0)+cpsPerRes*getClickAmt(r);
+    });
+  }
+
+  // Buildings production
+  Object.keys(buildings).forEach(id=>{
+    let b=buildings[id];
+    if(b.epoch>epoch) return; // skip future epoch buildings
+    b.instances.forEach((inst,iIdx)=>{
+      let m=inst.lvl*prodMult;
+      if(inst.autoClicker) m*=getBuildingACMult();
+      let ok=Object.keys(b.inputs).every(k=>(storage[k]||0)>=b.inputs[k]*m*0.1);
+      if(ok){
+        Object.keys(b.inputs).forEach(k=>{
+          let use=b.inputs[k]*m*0.5;
+          storage[k]-=use;
+          psCounters[k]=(psCounters[k]||0)-use;
+        });
+        Object.keys(b.outputs).forEach(k=>{
+          let gain=b.outputs[k]*m*0.5;
+          storage[k]=(storage[k]||0)+gain;
+          psCounters[k]=(psCounters[k]||0)+gain;
+          resLifetimeTotal[k]=(resLifetimeTotal[k]||0)+gain;
+          addPoints(Math.ceil(gain*0.1), 'resources');
+        });
+      }
+    });
+  });
+
+  // Base resource buildings production
+  Object.keys(BASE_RES_BUILDINGS).forEach(id=>{
+    let b=BASE_RES_BUILDINGS[id];
+    if(!b.lvl||epoch<b.ep_req) return;
+    let gain=b.prodBase*b.lvl*baseResMultiplier;
+    storage[b.res]=(storage[b.res]||0)+gain;
+    psCounters[b.res]=(psCounters[b.res]||0)+gain;
+    addPoints(Math.ceil(gain*0.05), 'resources');
+  });
+
+  // Passive synth auto-gain from exchange upgrades
+  if(exchangeLevel>=3){
+    let autoGain=(exchangeLevel>=4?2:1)*0.5;
+    storage.synth_energy=(storage.synth_energy||0)+autoGain;
+    psCounters.synth_energy=(psCounters.synth_energy||0)+autoGain;
+  }
+
+  // Check quests and achievements every second
+  checkQuests();
+  checkAchievements();
+
+  markDirty('res');
+},1000);
+
+let _mapDirty=true;
+let _lastHover={col:-1,row:-1};
+setInterval(()=>{
+  if(_mapDirty||mapHover.col!==_lastHover.col||mapHover.row!==_lastHover.row){
+    drawMap();
+    _mapDirty=false;
+    _lastHover={col:mapHover.col,row:mapHover.row};
+  }
+},100);
+
+// ============================================================
+// LOG & TOAST
+// ============================================================
+function addLog(msg,important=false,isSynth=false){
+  let ts=new Date().toLocaleTimeString('uk',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  logLines.unshift({msg:`${ts} ${msg}`,imp:important,synth:isSynth});
+  if(logLines.length>40) logLines.pop();
+}
+function showToast(msg){
+  let el=document.getElementById('toast');
+  el.textContent=msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2800);
+}
+
+// ============================================================
+// RENDER THROTTLING — dirty flags to avoid full DOM rebuild every tick
+// ============================================================
+let _dirtyFull=true, _dirtyRes=true, _dirtyBld=true, _dirtyLog=true;
+let _lastEpoch=0, _renderScheduled=false;
+
+function markDirty(what){
+  if(what==='full') _dirtyFull=true;
+  if(what==='res')  _dirtyRes=true;
+  if(what==='bld')  _dirtyBld=true;
+  if(what==='log')  _dirtyLog=true;
+  if(!_renderScheduled){
+    _renderScheduled=true;
+    requestAnimationFrame(()=>{_renderScheduled=false;renderUI();});
+  }
+}
+
+function fmt(n){
+  n=Math.floor(n);
+  if(n>=1e9) return (n/1e9).toFixed(1)+'B';
+  if(n>=1e6) return (n/1e6).toFixed(1)+'M';
+  if(n>=1e3) return (n/1e3).toFixed(1)+'K';
+  return n;
+}
+
+function renderUI(){
+  // Header
+  document.getElementById('ep-num').textContent=epoch;
+  document.getElementById('ep-name').textContent=EPOCH_DATA[epoch]?.name||"ФІНАЛ";
+  document.getElementById('hs-tech').textContent=tech;
+  document.getElementById('hs-bld').textContent=buildCount;
+  document.getElementById('hs-acs').textContent=fmt(acTotalRate);
+  document.getElementById('hs-synth').textContent=fmt(storage.synth_energy||0);
+  document.getElementById('bld-count-label').textContent=buildCount+' збудовано';
+  // Score bar
+  let sTotal=document.getElementById('score-total');
+  if(sTotal){
+    sTotal.textContent=fmt(SCORES.total);
+    document.getElementById('sc-clicks').textContent=fmt(SCORES.clicks||0);
+    document.getElementById('sc-builds').textContent=fmt(SCORES.builds||0);
+    document.getElementById('sc-res').textContent=fmt(SCORES.resources||0);
+    document.getElementById('sc-tech').textContent=fmt(SCORES.tech||0);
+    document.getElementById('sc-ep').textContent=fmt(SCORES.epochs||0);
+    document.getElementById('score-rank').textContent=getScoreRank();
+  }
+  let d=EPOCH_DATA[epoch],nx=EPOCH_DATA[epoch+1];
+  if(d&&nx){
+    let cur=storage[d.req]||0,pct=Math.min(100,(cur/d.amt)*100);
+    document.getElementById('ep-bar').style.width=pct+'%';
+    document.getElementById('ep-label').textContent=`${fmt(cur)} / ${d.amt} ${RES[d.req]?.n||d.req}`;
+    document.getElementById('btn-evo').disabled=cur<d.amt;
+  } else {
+    document.getElementById('ep-bar').style.width='100%';
+    let b=document.getElementById('btn-evo');
+    b.textContent='🏁 ФІНАЛ';b.disabled=true;
+  }
+  document.getElementById('res-ep-label').textContent=epoch;
+
+  // Resources
+  let resDiv=document.getElementById('ui-resources');
+  resDiv.innerHTML='';
+  Object.keys(RES).forEach(k=>{
+    if(k==='synth_energy') return; // shown separately
+    if(RES[k].ep>epoch&&storage[k]<=0) return;
+    let v=storage[k]||0,ps=psCounters[k]||0;
+    let lit=ps>0.5?'lit':'';
+    let tipText=`${RES[k].n} (${RES[k].e})\nЗапас: ${fmt(v)}\nВиробництво: ${ps>=0?'+':''}${ps.toFixed(1)}/с\nЕпоха: ${RES[k].ep}`;
+    resDiv.innerHTML+=`<div class="res-card ${lit}" title="${tipText}">
+      <div class="res-emoji">${RES[k].e}</div>
+      <div class="res-name">${RES[k].n}</div>
+      <div class="res-val">${fmt(v)}</div>
+      <div class="res-ps ${ps>0?'pos':ps<0?'neg':'zero'}">${ps>=0?'+':''}${ps.toFixed(1)}/с</div>
+    </div>`;
+  });
+  // Synth energy card
+  if(exchangeLevel>=1){
+    let sv=storage.synth_energy||0,sps=psCounters.synth_energy||0;
+    resDiv.innerHTML+=`<div class="res-card synth-res">
+      <div class="res-emoji">🌀</div>
+      <div class="res-name" style="color:var(--synth)">Синтез</div>
+      <div class="res-val" style="color:var(--synth)">${fmt(sv)}</div>
+      <div class="res-ps ${sps>0?'pos':sps<0?'neg':'zero'}">${sps>=0?'+':''}${sps.toFixed(1)}/с</div>
+    </div>`;
+  }
+
+  // Epoch resource bar (always visible above map)
+  renderEpochResBar();
+
+  // Clickers — show ALL resources available up to current epoch (all clickable)
+  let cDiv=document.getElementById('ui-clickers');
+  cDiv.innerHTML='';
+  // Collect all unlocked resources (ep <= epoch), excluding synth
+  let allClickable=Object.keys(RES).filter(k=>k!=='synth_energy'&&RES[k].ep<=epoch);
+  let acRes=acTotalRate>0;
+  // Current epoch targets get highlighted
+  let curTargets=new Set(EPOCH_MAIN_RES[epoch]||EPOCH_MAIN_RES[1]);
+  allClickable.forEach(res=>{
+    if(!RES[res]) return;
+    let amt=getClickAmt(res);
+    let isCur=curTargets.has(res);
+    let ttip=`${RES[res].n} (Еп.${RES[res].ep}) · +${amt} за клік${acRes?' · 🤖 AC активний':''}`;
+    cDiv.innerHTML+=`<button class="click-btn${isCur?' cur-epoch':''}" onclick="clickGather('${res}',event)" title="${ttip}">
+      <span class="cb-emoji">${RES[res].e}</span>
+      <span>${RES[res].n}</span>
+      <span class="cb-amt">+${amt}</span>
+      ${acRes&&isCur?`<span class="cb-ac">🤖</span>`:''}
+    </button>`;
+  });
+
+  // Tech Tree — grouped by category (AC is now embedded in tech tab)
+  renderTechTree();
+
+  // Exchange
+  renderExchange();
+
+  // Binds
+  let bDiv=document.getElementById('ui-binds');
+  bDiv.innerHTML='';
+  BINDS.forEach((b,idx)=>{
+    let cost=Math.floor(b.costBase*Math.pow(b.costMult,b.lvl));
+    let canBuy=b.lvl<b.maxLvl&&(storage[b.costRes]||0)>=cost;
+    let tipText=`${b.name}\nДодає +${b.addPerLvl} до ${b.res==='all'?'всіх ресурсів':RES[b.res]?.n||b.res} за кліком\nРівень: ${b.lvl}/${b.maxLvl}\nВартість: ${cost} ${RES[b.costRes]?.n}`;
+    bDiv.innerHTML+=`<div class="bind-card" title="${tipText}">
+      <div class="bind-left">
+        <div class="bind-name">${b.name}</div>
+        <div class="bind-stat">+${b.addPerLvl*b.lvl} до ${b.res==='all'?'ВСІХ':RES[b.res]?.n}</div>
+        <div class="bind-lvl">рів. ${b.lvl}/${b.maxLvl}</div>
+      </div>
+      <button class="small-btn ${canBuy?'can':''}" onclick="buyBind(${idx})" ${b.lvl>=b.maxLvl||!canBuy?'disabled':''} title="${canBuy?`Купити рівень за ${cost} ${RES[b.costRes]?.n}`:'Недостатньо ресурсів'}">
+        ${b.lvl>=b.maxLvl?'MAX':`${cost}${RES[b.costRes]?.e||''}`}
+      </button>
+    </div>`;
+  });
+
+  // Filters
+  let fDiv=document.getElementById('ui-filters');
+  fDiv.innerHTML=`<button class="bs-filter ${activeFilter==='all'?'active':''}" onclick="setFilter('all')" title="Показати всі галузі">🌍 УСІ</button>`;
+  BRANCHES.forEach((br,i)=>{
+    if(i>11) return;
+    fDiv.innerHTML+=`<button class="bs-filter ${activeFilter===br?'active':''}" onclick="setFilter('${br}')" title="Фільтр: ${br}">${BR_EMOJI[i]} ${br}</button>`;
+  });
+
+  // Buildings
+  renderBuildings();
+
+  // Log
+  let logDiv=document.getElementById('ui-log');
+  logDiv.innerHTML=logLines.slice(0,15).map(l=>`<div class="log-line ${l.imp?'important':''} ${l.synth?'synth-log':''}">${l.msg}</div>`).join('');
+
+  // Active tab renders
+  let activeTab = document.querySelector('.tab-content.active')?.id;
+  if(activeTab==='tab-defense') renderDefenseTab();
+  if(activeTab==='tab-quests') renderQuestsTab();
+  if(activeTab==='tab-achievements') renderAchievementsTab();
+}
+
+function renderEpochResBar(){
+  let bar=document.getElementById('ui-epoch-res-bar');
+  if(!bar) return;
+  let epRes=Object.keys(RES).filter(k=>{
+    if(k==='synth_energy') return false;
+    return RES[k].ep<=epoch;
+  });
+  let html='<span class="ep-res-label">ЕП.'+epoch+':</span>';
+  epRes.forEach(k=>{
+    let v=storage[k]||0;
+    let ps=psCounters[k]||0;
+    let lit2=ps>0.3?'lit':'';
+    let chipTip=`${RES[k].n}\n${fmt(v)} запас · ${ps>=0?'+':''}${ps.toFixed(1)}/с`;
+    html+=`<div class="ep-res-chip ${lit2}" title="${chipTip}">
+      <span class="er-emoji">${RES[k].e}</span>
+      <span class="er-val">${fmt(v)}</span>
+      <span class="er-ps ${ps>0?'pos':ps<0?'neg':'zero'}">${ps>=0?'+':''}${ps.toFixed(1)}</span>
+    </div>`;
+  });
+  if(exchangeLevel>=1){
+    let sv=storage.synth_energy||0, sps=psCounters.synth_energy||0;
+    html+=`<div class="ep-res-chip synth-chip">
+      <span class="er-emoji">🌀</span>
+      <span class="er-val" style="color:var(--synth)">${fmt(sv)}</span>
+      <span class="er-ps ${sps>0?'pos':sps<0?'neg':'zero'}">${sps>=0?'+':''}${sps.toFixed(1)}</span>
+    </div>`;
+  }
+  bar.innerHTML=html;
+}
+
+function renderACTree(){
+  // Summary bar
+  let sumDiv=document.getElementById('ui-ac-summary');
+  if(sumDiv){
+    let bldMult=getBuildingACMult();
+    sumDiv.innerHTML=`<div class="ac-summary">
+      <div class="ac-sum-item">⚡ Темп: <span>${fmt(acTotalRate)}/с</span></div>
+      <div class="ac-sum-item">🏗 Будівлі: <span>×${bldMult.toFixed(1)}</span></div>
+      <div class="ac-sum-item">🎯 Цілі: <span>${(EPOCH_MAIN_RES[epoch]||[]).map(r=>RES[r]?.e||'').join('')}</span></div>
+    </div>`;
+  }
+
+  let tDiv=document.getElementById('ui-ac-tree');
+  if(!tDiv) return;
+
+  // ROOT node
+  let root=AC_NODES.root;
+  let rootEpOk=epoch>=root.ep_req;
+  let rootCanUnlock=!root.unlocked&&rootEpOk&&(storage[root.unlockCostRes]||0)>=root.unlockCostAmt;
+  let rootNextCost=root.unlocked?Math.floor(root.lvlCostBase*Math.pow(root.lvlCostMult,root.lvl-1)):0;
+  let rootCanLvl=root.unlocked&&root.lvl<root.maxLvl&&(storage[root.lvlCostRes]||0)>=rootNextCost;
+
+  let rootCls=root.unlocked?'unlocked':rootCanUnlock?'available':'locked';
+
+  let html=`<div style="padding:0 6px 4px;">
+    <div class="ac-node ${rootCls}" style="border-color:var(--gold);">
+      <div class="ac-node-icon">${root.icon}</div>
+      <div class="ac-node-body">
+        <div class="ac-node-name" style="color:var(--gold)">${root.name}</div>
+        <div style="font-size:10px;color:var(--dim)">${root.desc}</div>
+        ${root.unlocked?`<div class="ac-node-lvl">РІВ. ${root.lvl} / ${root.maxLvl} · +${root.lvl*root.ratePerLvl}/с</div>`:''}
+        ${!root.unlocked?`<div class="ac-node-cost">💰 ${root.unlockCostAmt}${RES[root.unlockCostRes]?.e} ${RES[root.unlockCostRes]?.n}</div>
+          <button class="ac-buy-btn" onclick="unlockACNode('root')" ${!rootCanUnlock?'disabled':''}>🔓 КУПИТИ</button>`
+        :`<div style="display:flex;gap:3px;flex-wrap:wrap;">
+            <button class="ac-lvl-btn" onclick="levelUpACNode('root')" ${!rootCanLvl?'disabled':''}>
+              ${root.lvl>=root.maxLvl?'✅ МАКС':`⬆ ${fmt(rootNextCost)}${RES[root.lvlCostRes]?.e}`}
+            </button>
+            ${root.lvl<root.maxLvl?`<button class="ac-lvl-btn" style="border-color:var(--gold);color:var(--gold);" onclick="maxLevelACNode('root')" ${!rootCanLvl?'disabled':''} title="Вкласти максимум">МАХ⬆</button>`:''}
+          </div>`}
+      </div>
+    </div>
+  </div>`;
+
+  // Branch connector from root
+  let rootUnlocked=root.unlocked;
+  html+=`<div style="display:flex;justify-content:center;"><div style="width:2px;height:14px;background:${rootUnlocked?'var(--gold)':'var(--border)'}"></div></div>`;
+  html+=`<div style="height:2px;background:linear-gradient(90deg,transparent,${rootUnlocked?'var(--border)':'#111'} 15%,${rootUnlocked?'var(--border)':'#111'} 85%,transparent);margin:0 6px;"></div>`;
+
+  // 3 branches
+  html+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:0 4px;">`;
+
+  const BRANCH_DEFS=[
+    {key:"resource", label:"⚒ РЕСУРСИ", color:"teal",   nodes:["res_a1","res_a2","res_a3","res_a4"]},
+    {key:"building", label:"🏗 БУДІВЛІ",  color:"purple", nodes:["bld_b1","bld_b2","bld_b3","bld_b4"]},
+    {key:"speed",    label:"⚡ ШВИДКІСТЬ",color:"orange", nodes:["spd_c1","spd_c2","spd_c3","spd_c4"]}
+  ];
+
+  BRANCH_DEFS.forEach(br=>{
+    let cvar=`var(--${br.color})`;
+    html+=`<div style="display:flex;flex-direction:column;gap:0;">`;
+    // Branch header
+    html+=`<div style="text-align:center;font-size:9px;color:${cvar};border:1px solid ${cvar};padding:2px 4px;margin-bottom:3px;background:${rootUnlocked?'#0a0e14':'#070a0e'}">${br.label}</div>`;
+
+    br.nodes.forEach((nid,ni)=>{
+      let node=AC_NODES[nid];
+      if(!node) return;
+      let prereqOk=!node.prereq||AC_NODES[node.prereq]?.unlocked;
+      let epOk=epoch>=node.ep_req;
+      let canUnlock=!node.unlocked&&prereqOk&&epOk&&rootUnlocked&&(storage[node.unlockCostRes]||0)>=node.unlockCostAmt;
+      let nextCost=node.unlocked?Math.floor(node.lvlCostBase*Math.pow(node.lvlCostMult,Math.max(0,node.lvl-1))):0;
+      let canLvl=node.unlocked&&node.lvl<node.maxLvl&&(storage[node.lvlCostRes]||0)>=nextCost;
+      let nodeCls=node.unlocked?'unlocked':canUnlock?'available':'locked';
+
+      // Connector line
+      if(ni>0){
+        let prevUnlocked=AC_NODES[br.nodes[ni-1]]?.unlocked;
+        html+=`<div style="width:2px;height:8px;background:${prevUnlocked?cvar:'var(--border)'};margin:0 auto;"></div>`;
+      }
+
+      html+=`<div class="ac-node ${nodeCls} branch-${br.key}" style="${node.unlocked?`border-color:${cvar};`:canUnlock?`border-color:var(--blue);`:''}">
+        <div style="font-size:15px">${node.unlocked?'✅':epOk&&prereqOk&&rootUnlocked?node.icon:'🔒'}</div>
+        <div style="flex:1;">
+          <div style="font-size:10px;color:var(--text);font-family:var(--font)">${node.name}</div>
+          ${node.unlocked?`<div style="font-size:9px;color:${cvar}">РІВ.${node.lvl} · ${node.ratePerLvl?('+'+node.lvl*node.ratePerLvl+'/с'):node.speedPerLvl?('+'+node.lvl*node.speedPerLvl+'/с'):('×'+(1+node.lvl*(node.buildingMultPerLvl||0)).toFixed(1))}</div>`:''}
+          ${!node.unlocked&&epOk&&prereqOk&&rootUnlocked?`<div style="font-size:9px;color:var(--orange);">${node.unlockCostAmt}${RES[node.unlockCostRes]?.e}</div>
+            <button class="ac-buy-btn" style="font-size:8px;padding:2px 5px;" onclick="unlockACNode('${nid}')" ${!canUnlock?'disabled':''}>🔓</button>`
+          :node.unlocked?`<div style="display:flex;gap:3px;flex-wrap:wrap;">
+              <button class="ac-lvl-btn" style="font-size:8px;padding:2px 5px;" onclick="levelUpACNode('${nid}')" ${!canLvl?'disabled':''}>
+                ${node.lvl>=node.maxLvl?'MAX':`⬆${fmt(nextCost)}${RES[node.lvlCostRes]?.e}`}
+              </button>
+              ${node.lvl<node.maxLvl?`<button class="ac-lvl-btn" style="font-size:8px;padding:2px 5px;border-color:var(--gold);color:var(--gold);" onclick="maxLevelACNode('${nid}')" ${!canLvl?'disabled':''} title="Вкласти максимум ресурсів в рівні">МАХ⬆</button>`:''}
+            </div>`
+          :`<div style="font-size:9px;color:var(--dim)">Еп.${node.ep_req}</div>`}
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+
+  html+=`</div>`;
+  tDiv.innerHTML=html;
+}
+
+function renderTechTree(){
+  let tDiv=document.getElementById('ui-tech-tree');
+  if(!tDiv) return;
+
+  // ── AC SECTION (embedded in Tech tab) ────────────────────
+  let root=AC_NODES.root;
+  let rootEpOk=epoch>=root.ep_req;
+  let rootCanUnlock=!root.unlocked&&rootEpOk&&(storage[root.unlockCostRes]||0)>=root.unlockCostAmt;
+  let rootNextCost=root.unlocked?Math.floor(root.lvlCostBase*Math.pow(root.lvlCostMult,root.lvl-1)):0;
+  let rootCanLvl=root.unlocked&&root.lvl<root.maxLvl&&(storage[root.lvlCostRes]||0)>=rootNextCost;
+  let bldMult=getBuildingACMult();
+
+  let acHtml=`<div class="ac-tech-section">
+    <div class="ac-tech-title">🤖 АВТОКЛІКЕР — Вбудований у Технології
+      ${root.unlocked?`<span class="sh-badge" style="color:var(--green)">Активний ×${fmt(acTotalRate)}/с</span>`:'<span class="sh-badge">Заблокований</span>'}
+    </div>
+    <div class="ac-tech-summary">
+      <div class="ac-tech-stat">⚡ Темп: <span>${fmt(acTotalRate)}/с</span></div>
+      <div class="ac-tech-stat">🏗 Будівлі: <span>×${bldMult.toFixed(1)}</span></div>
+      <div class="ac-tech-stat">🎯 Ціль: <span>${(EPOCH_MAIN_RES[epoch]||[]).map(r=>RES[r]?.e||'').join('')}</span></div>
+    </div>`;
+
+  // Root node
+  acHtml+=`<div class="ac-compact-node ${root.unlocked?'unlocked':rootCanUnlock?'available':''}">
+    <div class="ac-compact-icon">${root.icon}</div>
+    <div class="ac-compact-info">
+      <div class="ac-compact-name" style="color:var(--gold)">${root.name}</div>
+      <div style="font-size:10px;color:var(--dim)">${root.desc}</div>
+      ${root.unlocked?`<div class="ac-compact-stat">РІВ.${root.lvl} · +${root.lvl*root.ratePerLvl}/с</div>`:''}
+    </div>
+    <div class="ac-compact-btns">
+      ${!root.unlocked?`<button class="ac-buy-btn" onclick="unlockACNode('root')" ${!rootCanUnlock?'disabled':''}>🔓 ${root.unlockCostAmt}${RES[root.unlockCostRes]?.e}</button>`
+      :`<button class="ac-lvl-btn" onclick="levelUpACNode('root')" ${!rootCanLvl?'disabled':''}>${root.lvl>=root.maxLvl?'MAX':`⬆${fmt(rootNextCost)}${RES[root.lvlCostRes]?.e}`}</button>
+        <button class="ac-lvl-btn" style="border-color:var(--gold);color:var(--gold);" onclick="maxLevelACNode('root')" ${!rootCanLvl?'disabled':''}>МАХ⬆</button>`}
+    </div>
+  </div>`;
+
+  // 3 branches side by side
+  const BRANCH_DEFS=[
+    {key:"resource", label:"⚒ РЕСУРСИ",  color:"--teal",   nodes:["res_a1","res_a2","res_a3","res_a4"]},
+    {key:"building", label:"🏗 БУДІВЛІ", color:"--purple",  nodes:["bld_b1","bld_b2","bld_b3","bld_b4"]},
+    {key:"speed",    label:"⚡ ШВИДКІСТЬ",color:"--orange",  nodes:["spd_c1","spd_c2","spd_c3","spd_c4"]}
+  ];
+
+  acHtml+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:6px;">`;
+  BRANCH_DEFS.forEach(br=>{
+    let cvar=`var(${br.color})`;
+    acHtml+=`<div class="ac-branch-block">
+      <div class="ac-branch-label" style="color:${cvar};border-left:3px solid ${cvar};font-size:10px;">${br.label}</div>`;
+    br.nodes.forEach(nid=>{
+      let node=AC_NODES[nid];
+      if(!node) return;
+      let prereqOk=!node.prereq||AC_NODES[node.prereq]?.unlocked;
+      let epOk=epoch>=node.ep_req;
+      let canUnlock=!node.unlocked&&prereqOk&&epOk&&root.unlocked&&(storage[node.unlockCostRes]||0)>=node.unlockCostAmt;
+      let nextCost=node.unlocked?Math.floor(node.lvlCostBase*Math.pow(node.lvlCostMult,Math.max(0,node.lvl-1))):0;
+      let canLvl=node.unlocked&&node.lvl<node.maxLvl&&(storage[node.lvlCostRes]||0)>=nextCost;
+      let nodeCls=node.unlocked?'unlocked':canUnlock?'available':'';
+      let statVal=node.ratePerLvl?('+'+node.lvl*node.ratePerLvl+'/с'):node.speedPerLvl?('+'+node.lvl*node.speedPerLvl+'/с'):('×'+(1+node.lvl*(node.buildingMultPerLvl||0)).toFixed(1));
+      acHtml+=`<div class="ac-compact-node ${nodeCls}" style="margin-bottom:2px;${node.unlocked?`border-left:2px solid ${cvar};`:''}">
+        <div style="font-size:13px">${node.unlocked?'✅':epOk&&prereqOk&&root.unlocked?node.icon:'🔒'}</div>
+        <div style="flex:1;">
+          <div style="font-size:10px;color:var(--text)">${node.name}</div>
+          ${node.unlocked?`<div style="font-size:9px;color:${cvar}">${statVal}</div>`:''}
+          ${!node.unlocked&&!epOk?`<div style="font-size:9px;color:var(--dim)">Еп.${node.ep_req}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          ${!node.unlocked&&epOk&&prereqOk&&root.unlocked?`<button class="ac-buy-btn" style="font-size:9px;padding:2px 5px" onclick="unlockACNode('${nid}')" ${!canUnlock?'disabled':''}>🔓 ${node.unlockCostAmt}${RES[node.unlockCostRes]?.e}</button>`:''}
+          ${node.unlocked?`<button class="ac-lvl-btn" style="font-size:9px;padding:2px 5px" onclick="levelUpACNode('${nid}')" ${!canLvl?'disabled':''}>${node.lvl>=node.maxLvl?'MAX':`⬆${fmt(nextCost)}${RES[node.lvlCostRes]?.e}`}</button>
+            <button class="ac-lvl-btn" style="font-size:9px;padding:2px 5px;border-color:var(--gold);color:var(--gold)" onclick="maxLevelACNode('${nid}')" ${!canLvl?'disabled':''}>МАХ⬆</button>`:''}
+        </div>
+      </div>`;
+    });
+    acHtml+=`</div>`;
+  });
+  acHtml+=`</div></div>`;
+  // ── END AC SECTION ────────────────────────────────────────
+
+  // Group tech by epoch
+  let byEpoch={};
+  TECH_NODES.forEach(n=>{
+    if(!byEpoch[n.ep_req]) byEpoch[n.ep_req]=[];
+    byEpoch[n.ep_req].push(n);
+  });
+  const CAT_COLOR={click:"--orange",ac:"--green",building:"--purple",prod:"--teal",exchange:"--synth",special:"--gold"};
+  let disc=techCostDiscount;
+
+  let techHtml='<div class="tech-tree-wrap">';
+  for(let ep=1;ep<=12;ep++){
+    let nodes=byEpoch[ep]||[];
+    if(!nodes.length) continue;
+    let epOkAll=epoch>=ep;
+    let epName=EPOCH_DATA[ep]?.name||'';
+    techHtml+=`<div class="tt-epoch-group">
+      <div class="tt-epoch-banner ${!epOkAll?'locked':''}">
+        <span>ЕПОХА ${ep}</span>
+        <span style="color:var(--text)">${epName}</span>
+        <span class="ep-tag">${nodes.filter(n=>n.unlocked).length}/${nodes.length} досліджено</span>
+        ${!epOkAll?`<span style="font-size:8px;color:var(--dim)">🔒 потрібна еп.${ep}</span>`:''}
+      </div>
+      <div class="tt-row">`;
+    nodes.forEach(node=>{
+      let nodeIdx=TECH_NODES.indexOf(node);
+      let epOk=epoch>=ep;
+      let prereqOk=!node.prereq||(TECH_NODES.find(n=>n.id===node.prereq)?.unlocked);
+      let costs=node.costs||[];
+      let canAfford=costs.every(c=>(storage[c.res]||0)>=Math.floor(c.amt*disc));
+      let canBuy=epOk&&prereqOk&&!node.unlocked&&canAfford;
+      let cls=node.unlocked?'unlocked':!epOk?'locked-ep':!prereqOk?'locked-pre':canBuy?'available':'';
+      let prereqNode=node.prereq?TECH_NODES.find(n=>n.id===node.prereq):null;
+      let catColor=`var(${CAT_COLOR[node.category]||'--dim'})`;
+      let costHtml=costs.map(c=>{
+        let have=storage[c.res]||0;
+        let need=Math.floor(c.amt*disc);
+        let ok=have>=need;
+        return `<span class="tt-cost-item ${ok?'ok':'no'}">${RES[c.res]?.e||'?'}${fmt(need)}</span>`;
+      }).join('');
+      techHtml+=`<div class="tt-node ${cls}" style="border-left:3px solid ${catColor};">
+        <div class="tt-node-head">
+          <div class="tt-icon">${node.unlocked?'✅':epOk&&prereqOk?node.icon:'🔒'}</div>
+          <div style="flex:1;">
+            <div class="tt-name">${node.name}</div>
+            <div class="tt-effect" style="color:${catColor}">${node.effectDesc}</div>
+          </div>
+        </div>
+        ${prereqNode&&!node.unlocked?`<div class="tt-prereq-tag">↳ ${prereqNode.name}</div>`:''}
+        <div style="font-size:9px;color:var(--dim);margin:2px 0;">${node.desc}</div>
+        ${!node.unlocked?`<div class="tt-cost">${costHtml}${disc<1?` <span style="font-size:8px;color:var(--teal)">-${Math.round((1-disc)*100)}%</span>`:''}</div>
+          <button class="tt-buy-btn" onclick="unlockTech(${nodeIdx})" ${!canBuy?'disabled':''}>${canBuy?'🔬 ДОСЛІДИТИ':!epOk?`🔒 Еп.${ep}`:!prereqOk?'⬆ Потрібна':`💰 Не вистачає`}</button>`
+        :`<div class="tt-done-badge">✅ Досліджено · ${node.effectDesc}</div>`}
+      </div>`;
+    });
+    techHtml+='</div></div>';
+  }
+  techHtml+='</div>';
+
+  tDiv.innerHTML = acHtml + techHtml;
+}
+
+function renderBaseBuildings(){
+  let bDiv=document.getElementById('ui-base-buildings');
+  if(!bDiv) return;
+  let html='';
+  Object.keys(BASE_RES_BUILDINGS).forEach(id=>{
+    let b=BASE_RES_BUILDINGS[id];
+    if(epoch<b.ep_req) return;
+    let scale=Math.pow(b.costMult,b.lvl);
+    let cost={};
+    Object.keys(b.costBase).forEach(k=>cost[k]=Math.floor(b.costBase[k]*scale));
+    let canAfford=Object.keys(cost).every(k=>(storage[k]||0)>=cost[k]);
+    let prod=(b.prodBase*Math.max(1,b.lvl)*baseResMultiplier).toFixed(2);
+    let costStr=Object.keys(cost).map(k=>`${RES[k]?.e||''}${fmt(cost[k])}`).join(' ');
+    html+=`<div class="base-b-card ${b.lvl>0?'active-bld':''}">
+      <div class="base-b-head">
+        <div class="base-b-name">${b.name}</div>
+        ${b.lvl>0?`<div class="base-b-lvl">рів.${b.lvl}</div>`:''}
+      </div>
+      ${b.lvl>0?`<div class="base-b-out">+${prod} ${RES[b.res]?.e} ${RES[b.res]?.n}/с</div>`
+               :`<div style="font-size:9px;color:var(--dim)">+${b.prodBase} ${RES[b.res]?.e}/с за рів.</div>`}
+      <div class="base-b-cost">${costStr}</div>
+      <button class="base-b-btn ${canAfford?'can':''}" onclick="buyBaseResBuilding('${id}')" ${!canAfford?'disabled':''}>
+        ${b.lvl===0?'🏗 ЗБУДУВАТИ':'⬆ РІВЕНЬ'}
+      </button>
+    </div>`;
+  });
+  bDiv.innerHTML=html||'<div style="color:var(--dim);font-size:10px;padding:8px;">Немає доступних споруд</div>';
+}
+
+
+function renderExchange(){
+  let eDiv=document.getElementById('ui-exchange');
+  if(exchangeLevel===0){
+    let techNode=TECH_NODES.find(n=>n.id==='ep2_t5');
+    let nodeIdx=techNode?TECH_NODES.indexOf(techNode):-1;
+    let prereqOk=!techNode?.prereq||(TECH_NODES.find(n=>n.id===techNode?.prereq)?.unlocked);
+    let epOk=techNode&&epoch>=techNode.ep_req;
+    let disc=techCostDiscount;
+    let canBuy=techNode&&!techNode.unlocked&&epOk&&prereqOk&&(techNode.costs||[]).every(c=>(storage[c.res]||0)>=Math.floor(c.amt*disc));
+    let costStr=techNode?(techNode.costs||[]).map(c=>`${RES[c.res]?.e}${fmt(Math.floor(c.amt*disc))}`).join(' '):'';
+    eDiv.innerHTML=`<div class="exchange-panel">
+      <div class="exchange-title">⚗️ БІРЖА СИНТЕЗУ</div>
+      <div class="exchange-locked">🔒 Потрібна технологія «Торгівля» (Еп.2)<br>
+        <div style="font-size:10px;color:var(--orange);margin:6px 0;">💰 ${costStr}</div>
+        <button class="exch-btn" onclick="unlockTech(${nodeIdx})" ${!canBuy?'disabled':''}>🔬 ДОСЛІДИТИ</button>
+      </div>
+    </div>`;
+    return;
+  }
+
+  let lvl=exchangeLevel;
+  let rate=EXCHANGE_RATES[lvl];
+  let sv=storage.synth_energy||0;
+  let sps=psCounters.synth_energy||0;
+
+  // Next upgrade tech
+  let nextTechIds={1:"t_exch2",2:"t_exch3",3:"t_exch4"};
+  let nextTechId=nextTechIds[lvl];
+  let nextTech=nextTechId?TECH_NODES.find(n=>n.id===nextTechId):null;
+  let canUpgrade=nextTech&&!nextTech.unlocked&&epoch>=nextTech.ep_req&&(storage[nextTech.costRes]||0)>=nextTech.costAmt;
+  let nextIdx=nextTech?TECH_NODES.indexOf(nextTech):-1;
+
+  // Tradeable resources
+  let tradeRes=Object.keys(RES).filter(k=>!RES[k].synth&&RES[k].ep<=epoch&&storage[k]>0);
+
+  eDiv.innerHTML=`<div class="exchange-panel">
+    <div class="exchange-title">⚗️ БІРЖА СИНТЕЗУ <span style="color:var(--dim);font-size:9px;">РІВ.${lvl}</span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:4px;">Курс обміну: ×${rate} (продаж) / ×${(1/rate).toFixed(2)} (купівля)</div>
+    <div class="exchange-synth-bal">🌀 ${fmt(sv)} Синтез${sps>0?` <span style="font-size:11px;color:var(--green)">+${sps.toFixed(1)}/с</span>`:''}</div>
+
+    <div class="sh" style="margin-bottom:6px;">📤 ПРОДАТИ → Синтез</div>
+    <div class="exchange-row">
+      <select class="exch-select" id="exch-sell-res">
+        ${Object.keys(RES).filter(k=>!RES[k].synth&&RES[k].ep<=epoch).map(k=>`<option value="${k}">${RES[k].e} ${RES[k].n} (${fmt(storage[k]||0)})</option>`).join('')}
+      </select>
+      <input class="exch-input" type="number" id="exch-sell-amt" placeholder="к-сть" min="1" value="10">
+      <button class="exch-btn" onclick="sellToSynth()">→ 🌀</button>
+    </div>
+    <div class="exch-rate">1 ресурс = ${rate} 🌀 (втрата ${Math.round((1-rate)*100)}%)</div>
+
+    <div class="sh" style="margin:8px 0 6px;">📥 КУПИТИ ← Синтез</div>
+    <div class="exchange-row">
+      <select class="exch-select" id="exch-buy-res">
+        ${Object.keys(RES).filter(k=>!RES[k].synth&&RES[k].ep<=epoch).map(k=>`<option value="${k}">${RES[k].e} ${RES[k].n}</option>`).join('')}
+      </select>
+      <input class="exch-input" type="number" id="exch-buy-amt" placeholder="к-сть" min="1" value="10">
+      <button class="exch-btn" onclick="buyFromSynth()">🌀 →</button>
+    </div>
+    <div class="exch-rate">1 🌀 = ${rate.toFixed(2)} ресурсу (ефективно)</div>
+
+    ${nextTech?`<div class="exchange-upgrade">
+      <div class="exchange-lvl-info">⬆ ${nextTech.name}<br><span style="color:var(--dim)">${nextTech.effectDesc}</span><br><span style="color:var(--orange)">💰 ${nextTech.costAmt} ${RES[nextTech.costRes]?.n} · Еп.${nextTech.ep_req}</span></div>
+      <button class="exch-btn" onclick="unlockTech(${nextIdx})" ${!canUpgrade?'disabled':''}>⬆ ОНОВИТИ</button>
+    </div>`:'<div style="font-size:10px;color:var(--synth);margin-top:6px;text-align:center;">✅ Максимальний рівень</div>'}
+  </div>`;
+}
+
+function renderBuildings(){
+  let blDiv=document.getElementById('ui-buildings');
+  let html='';
+
+  // ── SECTION 1: BASE RESOURCE BUILDINGS ────────────────────────
+  let hasBase=false;
+  let baseHtml='';
+  Object.keys(BASE_RES_BUILDINGS).forEach(id=>{
+    let b=BASE_RES_BUILDINGS[id];
+    if(epoch<b.ep_req) return;
+    hasBase=true;
+    let scale=Math.pow(b.costMult,b.lvl);
+    let cost={};
+    Object.keys(b.costBase).forEach(k=>cost[k]=Math.floor(b.costBase[k]*scale));
+    let canAfford=Object.keys(cost).every(k=>(storage[k]||0)>=cost[k]);
+    let prod=(b.prodBase*Math.max(1,b.lvl)*baseResMultiplier).toFixed(2);
+    let costStr=Object.keys(cost).map(k=>`${RES[k]?.e||''}${fmt(cost[k])} ${RES[k]?.n}`).join(' + ');
+    let res=RES[b.res];
+    let tipText=`${b.name}\nВидобуває: ${res?.n||b.res} (${res?.e||''})\nВиробництво: +${prod}/с (рів.×${b.prodBase})\nВартість: ${costStr}\nЕпоха: ${b.ep_req}`;
+    baseHtml+=`<div class="base-b-card ${b.lvl>0?'active-bld':''}" title="${tipText}">
+      <div class="base-b-head">
+        <div class="base-b-name">${b.name}</div>
+        ${b.lvl>0?`<div class="base-b-lvl">рів.${b.lvl}</div>`:''}
+      </div>
+      ${b.lvl>0?`<div class="base-b-out">+${prod} ${res?.e||''} ${res?.n||b.res}/с</div>`
+               :`<div style="font-size:9px;color:var(--dim)">+${b.prodBase} ${res?.e||''}/с за рів.</div>`}
+      <div class="base-b-cost">${costStr}</div>
+      <button class="base-b-btn ${canAfford?'can':''}" onclick="buyBaseResBuilding('${id}')" ${!canAfford?'disabled':''}>
+        ${b.lvl===0?'🏗 ЗБУДУВАТИ':'⬆ РІВЕНЬ'}
+      </button>
+    </div>`;
+  });
+  if(hasBase){
+    html+=`<div class="sh" style="margin-bottom:4px;">🪨 БАЗОВІ СПОРУДИ <span class="sh-badge">Автовидобуток</span></div>
+    <div class="base-res-grid">${baseHtml}</div>
+    <div class="sh" style="margin:8px 0 4px;">🏭 ВИРОБНИЧІ СПОРУДИ <span class="sh-badge">Еп.${epoch}</span></div>`;
+  }
+
+  // ── SECTION 2: PRODUCTION BUILDINGS ────────────────────────────
+  let bldCount=0;
+  Object.keys(buildings).forEach(id=>{
+    let b=buildings[id];
+    if(b.epoch>epoch) return;
+    if(activeFilter!=='all'&&b.branch!==activeFilter) return;
+    bldCount++;
+
+    let count=b.instances.length;
+
+    let costItems=Object.keys(b.cost).map(r=>{
+      let have=storage[r]||0;
+      let need=b.cost[r];
+      let cls=have>=need?'can-afford':'cant-afford';
+      return `<span class="b-cost-item ${cls}">${RES[r]?.e||''}${need}<span style="font-size:9px;color:var(--dim)"> ${RES[r]?.n}</span></span>`;
+    }).join('');
+
+    let inItems=Object.keys(b.inputs).map(r=>`<span class="b-io-item input-item"><span class="io-val">${b.inputs[r]}</span><span style="font-size:14px">${RES[r]?.e||''}</span><span class="io-name">${RES[r]?.n}</span></span>`).join('');
+    let outItems=Object.keys(b.outputs).map(r=>`<span class="b-io-item output-item"><span class="io-val">+${b.outputs[r]}</span><span style="font-size:14px">${RES[r]?.e||''}</span><span class="io-name">${RES[r]?.n}</span></span>`).join('');
+
+    let canBuild=count<999&&Object.keys(b.cost).every(r=>(storage[r]||0)>=b.cost[r]);
+
+    // AC node info
+    let bldNodes=['bld_b4','bld_b3','bld_b2','bld_b1'];
+    let topBld=bldNodes.find(nid=>AC_NODES[nid]?.unlocked);
+    let acCostRes='bronze',acCostAmt=20;
+    if(AC_NODES['bld_b4'].unlocked){acCostRes='chips';acCostAmt=30;}
+    else if(AC_NODES['bld_b3'].unlocked){acCostRes='steel';acCostAmt=40;}
+    else if(AC_NODES['bld_b2'].unlocked){acCostRes='iron';acCostAmt=30;}
+
+    let instHtml='';
+    let showInst=b.instances.slice(0,5);
+    showInst.forEach((inst,idx)=>{
+      let upScale=inst.lvl*2;
+      let upCost=Object.keys(b.cost).map(r=>`${fmt(b.cost[r]*upScale)}${RES[r]?.e||''}`).join('+');
+      let canUp=inst.lvl<999&&Object.keys(b.cost).every(r=>(storage[r]||0)>=b.cost[r]*upScale);
+      let canAC=!!topBld&&!inst.autoClicker&&(storage[acCostRes]||0)>=acCostAmt;
+      let bldMult=inst.autoClicker?getBuildingACMult():1;
+      let effProd=inst.lvl*prodMult*bldMult;
+      let psOut=Object.keys(b.outputs).map(r=>`+${(b.outputs[r]*effProd*0.5).toFixed(1)}${RES[r]?.e||''}/с`).join(' ');
+      let upTip=`Апгрейд рів.${inst.lvl}→${inst.lvl+1}\nВартість: ${Object.keys(b.cost).map(r=>`${b.cost[r]*upScale} ${RES[r]?.n}`).join(', ')}`;
+      let acTip=inst.autoClicker?'Зняти автоклікер (звільнити)':`Призначити автоклікер: ${acCostAmt} ${RES[acCostRes]?.n}`;
+
+      instHtml+=`<div class="inst-row">
+        <div class="inst-row-top">
+          <span class="inst-lvl">Рів.${inst.lvl}/999</span>
+          <span class="inst-ps">${psOut}${inst.autoClicker?` <span style="color:var(--synth)">🤖×${bldMult.toFixed(1)}</span>`:''}</span>
+        </div>
+        <div class="inst-row-btns">
+          <button class="inst-boost-btn" onclick="boostInstance(event,'${id}',${idx})" title="Разовий буст: витратити ресурси та отримати велику кількість продукції">⚡ БУСТ</button>
+          <button class="inst-btn ${canUp?'can':''}" onclick="upgradeInstance(event,'${id}',${idx})" ${!canUp?'disabled':''} title="${upTip}">⬆ ${upCost}</button>
+          <button class="inst-btn can" style="border-color:var(--gold);color:var(--gold);" onclick="maxUpgradeInstance(event,'${id}',${idx})" ${!canUp?'disabled':''} title="Максимально підвищити рівень на наявні ресурси">МАХ⬆</button>
+          <button class="inst-ac-btn ${inst.autoClicker?'active':''}" onclick="toggleACOnBuilding(event,'${id}',${idx})" ${!canAC&&!inst.autoClicker?'disabled':''} title="${acTip}">
+            ${inst.autoClicker?'🤖 ЗНЯТИ':`🤖 ${acCostAmt}${RES[acCostRes]?.e}`}
+          </button>
+        </div>
+      </div>`;
+    });
+    if(b.instances.length>5){
+      instHtml+=`<div style="font-size:10px;color:var(--dim);padding:3px 5px;border-left:2px solid var(--border);">...ще ${b.instances.length-5} споруд</div>`;
+    }
+
+    let slotDots='';
+    for(let i=0;i<Math.min(count,10);i++) slotDots+=`<div class="b-slot filled"></div>`;
+    if(count>10) slotDots+=`<span style="font-size:9px;color:var(--green)">+${count-10}</span>`;
+
+    // Build tooltip
+    let inDesc=Object.keys(b.inputs).map(r=>`${b.inputs[r]} ${RES[r]?.n}`).join(', ');
+    let outDesc=Object.keys(b.outputs).map(r=>`+${b.outputs[r]} ${RES[r]?.n}`).join(', ');
+    let costDesc=Object.keys(b.cost).map(r=>`${b.cost[r]} ${RES[r]?.n}`).join(', ');
+    let cardTip=`${b.name}\nЕпоха: ${b.epoch} | Збудовано: ${count}\nВхід: ${inDesc}\nВихід: ${outDesc}\nВартість: ${costDesc}`;
+
+    html+=`<div class="b-card ${count>0?'on-map':''}" title="${cardTip}">
+      <div class="b-header">
+        <div>
+          <div class="b-title">${b.name}</div>
+          <span class="b-epoch-tag">Еп.${b.epoch} · ${count} шт</span>
+        </div>
+        <div class="b-slots">${slotDots}</div>
+      </div>
+      <div class="b-io-block">
+        <div class="b-io-row"><span class="b-io-label" style="color:var(--red)">⬇ ВХ:</span><div class="b-io-items">${inItems}</div></div>
+        <div class="b-io-row"><span class="b-io-label" style="color:var(--green)">⬆ ВИХ:</span><div class="b-io-items">${outItems}</div></div>
+      </div>
+      <div class="b-cost-block">💰 Ціна: ${costItems}</div>
+      <div class="b-actions">
+        <button class="b-build-btn" onclick="buildBuilding('${id}')" ${!canBuild?'disabled':''} title="${canBuild?'Побудувати нову споруду':'Недостатньо ресурсів'}">➕ БУДУВАТИ${count>0?` (${count})`:''}</button>
+      </div>
+      ${instHtml}
+    </div>`;
+  });
+
+  if(!hasBase&&bldCount===0){
+    html=`<div style="padding:20px;color:var(--dim);font-size:12px;">Немає будівель. Обери фільтр або розвинь епоху.</div>`;
+  } else if(bldCount===0 && activeFilter!=='all'){
+    html+=`<div style="padding:10px;color:var(--dim);font-size:11px;">Немає споруд для фільтру «${activeFilter}»</div>`;
+  }
+  blDiv.innerHTML=html;
+}
+
+// ============================================================
+// QUESTS SYSTEM
+// ============================================================
+const QUESTS = [
+  // === EPOCH 1 ===
+  {id:'q_first_click', cat:'Початок', icon:'👆', title:'Перший удар',
+   desc:'Зроби перший клік по ресурсу', type:'clicks', target:1, claimed:false, done:false,
+   reward:{wood:20, stone:10}, rewardDesc:'20🌲 + 10⛰'},
+  {id:'q_gather_100', cat:'Початок', icon:'🌲', title:'Лісозаготівля',
+   desc:'Зібрати 100 деревини', type:'storage_once', res:'wood', target:100, claimed:false, done:false,
+   reward:{wood:50, stone:30}, rewardDesc:'50🌲 + 30⛰'},
+  {id:'q_first_build', cat:'Початок', icon:'🏗', title:'Перша будівля',
+   desc:'Збудуй 1 будь-яку споруду', type:'builds', target:1, claimed:false, done:false,
+   reward:{logs:30, clay:20}, rewardDesc:'30🪵 + 20🧱', bonus:{clickMult:0.1}},
+  {id:'q_50_clicks', cat:'Початок', icon:'✊', title:'Клікер',
+   desc:'Зроби 50 кліків', type:'clicks', target:50, claimed:false, done:false,
+   reward:{stone:100, water:50}, rewardDesc:'100⛰ + 50💧'},
+  {id:'q_logs_50', cat:'Початок', icon:'🪵', title:'Перша колода',
+   desc:'Накопичити 50 колод (для еволюції)', type:'storage_once', res:'logs', target:50, claimed:false, done:false,
+   reward:{wood:100, vegetation:50}, rewardDesc:'100🌲 + 50🌿'},
+
+  // === EPOCH 2 ===
+  {id:'q_epoch2', cat:'Розвиток', icon:'🌾', title:'Нова епоха',
+   desc:'Досягти Епохи 2 (Осілість)', type:'epoch', target:2, claimed:false, done:false,
+   reward:{wheat:50, barley:30, logs:100}, rewardDesc:'50🌾 + 30🌿 + 100🪵', bonus:{prodMult:0.2}},
+  {id:'q_5builds', cat:'Розвиток', icon:'🏘', title:'Поселення',
+   desc:'Збудуй 5 споруд', type:'builds', target:5, claimed:false, done:false,
+   reward:{boards:30, bricks:20}, rewardDesc:'30🪵 + 20🧱'},
+  {id:'q_tech1', cat:'Розвиток', icon:'🔬', title:'Перше дослідження',
+   desc:'Відкрий 1 технологію', type:'tech_count', target:1, claimed:false, done:false,
+   reward:{logs:200, clay:100}, rewardDesc:'200🪵 + 100🧱', bonus:{clickMult:0.15}},
+  {id:'q_ac_root', cat:'Розвиток', icon:'🤖', title:'Перший автоклікер',
+   desc:'Розблокуй кореневий вузол Автоклікера (вкладка Технологій)', type:'ac_unlocked', target:'root', claimed:false, done:false,
+   reward:{logs:100, charcoal:50}, rewardDesc:'100🪵 + 50🕳️'},
+  {id:'q_500clicks', cat:'Розвиток', icon:'👊', title:'Невтомний',
+   desc:'Зроби 500 кліків', type:'clicks', target:500, claimed:false, done:false,
+   reward:{stone:300, clay:200}, rewardDesc:'300⛰ + 200🧱'},
+
+  // === EPOCH 3-4 ===
+  {id:'q_epoch3', cat:'Ремесла', icon:'⚒️', title:'Ремісник',
+   desc:'Досягти Епохи 3 (Ремесла)', type:'epoch', target:3, claimed:false, done:false,
+   reward:{boards:100, bricks:80, fiber:50}, rewardDesc:'100🪵 + 80🧱 + 50🧵', bonus:{prodMult:0.3}},
+  {id:'q_10builds', cat:'Ремесла', icon:'🏗', title:'Майстер будівельник',
+   desc:'Збудуй 10 споруд', type:'builds', target:10, claimed:false, done:false,
+   reward:{copper:30, bronze:20}, rewardDesc:'30🟤 + 20🛡️', bonus:{buildBonus:true}},
+  {id:'q_5techs', cat:'Ремесла', icon:'📚', title:'Дослідник',
+   desc:'Відкрий 5 технологій', type:'tech_count', target:5, claimed:false, done:false,
+   reward:{iron:50, tools:30}, rewardDesc:'50🔩 + 30⚒️'},
+  {id:'q_first_defense', cat:'Оборона', icon:'🛡', title:'Перша стіна',
+   desc:'Збудуй 1 захисну споруду', type:'defense_built', target:1, claimed:false, done:false,
+   reward:{stone:200, logs:150}, rewardDesc:'200⛰ + 150🪵'},
+  {id:'q_first_wave', cat:'Оборона', icon:'⚔️', title:'Перша битва',
+   desc:'Відбий першу хвилю гоблінів', type:'waves_defeated', target:1, claimed:false, done:false,
+   reward:{bronze:50, iron:30}, rewardDesc:'50🛡️ + 30🔩', bonus:{prodMult:0.25}},
+
+  // === EPOCH 5-6 ===
+  {id:'q_epoch5', cat:'Залізо', icon:'🔩', title:'Залізний вік',
+   desc:'Досягти Епохи 5 (Залізний вік)', type:'epoch', target:5, claimed:false, done:false,
+   reward:{iron:200, tools:100, charcoal:150}, rewardDesc:'200🔩 + 100⚒️', bonus:{prodMult:0.5}},
+  {id:'q_25builds', cat:'Залізо', icon:'🏙', title:'Місто',
+   desc:'Збудуй 25 споруд', type:'builds', target:25, claimed:false, done:false,
+   reward:{iron:100, boards:200}, rewardDesc:'100🔩 + 200🪵'},
+  {id:'q_10techs', cat:'Залізо', icon:'🔭', title:'Вчений',
+   desc:'Відкрий 10 технологій', type:'tech_count', target:10, claimed:false, done:false,
+   reward:{wine:50, beer:40}, rewardDesc:'50🍷 + 40🍺'},
+  {id:'q_5waves', cat:'Оборона', icon:'⚔️', title:'Захисник',
+   desc:'Відбий 5 хвиль гоблінів', type:'waves_defeated', target:5, claimed:false, done:false,
+   reward:{iron:150, bricks:200}, rewardDesc:'150🔩 + 200🧱', bonus:{defenseBonus:true}},
+  {id:'q_5000clicks', cat:'Залізо', icon:'💪', title:'Легендарний клікер',
+   desc:'5000 кліків', type:'clicks', target:5000, claimed:false, done:false,
+   reward:{iron:300, stone:500}, rewardDesc:'300🔩 + 500⛰'},
+
+  // === EPOCH 7-8 ===
+  {id:'q_epoch8', cat:'Промисловість', icon:'🏭', title:'Промислова революція',
+   desc:'Досягти Епохи 8', type:'epoch', target:8, claimed:false, done:false,
+   reward:{steel:100, coke:80, paper:100}, rewardDesc:'100⚙️ + 80🔥 + 100📄', bonus:{prodMult:1.0}},
+  {id:'q_50builds', cat:'Промисловість', icon:'🏗', title:'Промисловець',
+   desc:'Збудуй 50 споруд', type:'builds', target:50, claimed:false, done:false,
+   reward:{steel:150, iron:300}, rewardDesc:'150⚙️ + 300🔩'},
+  {id:'q_20techs', cat:'Промисловість', icon:'⚙️', title:'Інженер',
+   desc:'Відкрий 20 технологій', type:'tech_count', target:20, claimed:false, done:false,
+   reward:{steel:200, plastic:100}, rewardDesc:'200⚙️ + 100🧪'},
+  {id:'q_fortress', cat:'Оборона', icon:'🏰', title:'Фортеця',
+   desc:'Збудуй Фортецю', type:'defense_struct', structId:'fortress', claimed:false, done:false,
+   reward:{steel:200, iron:300}, rewardDesc:'200⚙️ + 300🔩', bonus:{defenseBonus:true}},
+  {id:'q_20waves', cat:'Оборона', icon:'⚔️', title:'Непохитний захисник',
+   desc:'Відбий 20 хвиль гоблінів', type:'waves_defeated', target:20, claimed:false, done:false,
+   reward:{steel:300, chips:20}, rewardDesc:'300⚙️ + 20🎛️', bonus:{prodMult:0.5}},
+
+  // === EPOCH 10-12 ===
+  {id:'q_epoch10', cat:'Майбутнє', icon:'⚡', title:'Електрична доба',
+   desc:'Досягти Епохи 10', type:'epoch', target:10, claimed:false, done:false,
+   reward:{electricity:500, cable:200, copper:400}, rewardDesc:'500⚡ + 200🔌', bonus:{prodMult:2.0}},
+  {id:'q_100builds', cat:'Майбутнє', icon:'🌆', title:'Мегаполіс',
+   desc:'Збудуй 100 споруд', type:'builds', target:100, claimed:false, done:false,
+   reward:{chips:50, electricity:1000}, rewardDesc:'50🎛️ + 1000⚡'},
+  {id:'q_epoch12', cat:'Майбутнє', icon:'🤖', title:'Сингулярність',
+   desc:'Досягти Епохи 12 (Автоматизація)', type:'epoch', target:12, claimed:false, done:false,
+   reward:{auto_drone:20, robot:10, chips:500}, rewardDesc:'20🛸 + 10🤖 + 500🎛️', bonus:{prodMult:5.0}},
+  {id:'q_50waves', cat:'Оборона', icon:'🗡️', title:'Легенда оборони',
+   desc:'Відбий 50 хвиль гоблінів', type:'waves_defeated', target:50, claimed:false, done:false,
+   reward:{auto_drone:10, chips:200}, rewardDesc:'10🛸 + 200🎛️', bonus:{clickMult:1.0}},
+];
+
+// Quest progress tracking
+let questProgress = {};
+let newQuestCount = 0;
+
+function checkQuests(){
+  let anyNew = false;
+  QUESTS.forEach(q=>{
+    if(q.done||q.claimed) return;
+    let prog = 0, target = q.target||1;
+    switch(q.type){
+      case 'clicks':        prog = totalClicks; break;
+      case 'builds':        prog = buildCount; break;
+      case 'epoch':         prog = epoch >= target ? target : epoch; break;
+      case 'storage_once':
+        if(!q._maxSeen) q._maxSeen = 0;
+        q._maxSeen = Math.max(q._maxSeen, storage[q.res]||0);
+        prog = q._maxSeen; break;
+      case 'tech_count':    prog = TECH_NODES.filter(n=>n.unlocked).length; break;
+      case 'ac_unlocked':   prog = AC_NODES[q.target]?.unlocked ? 1 : 0; target = 1; break;
+      case 'waves_defeated':prog = goblinWave.totalWaves; break;
+      case 'defense_built': prog = Object.values(DEFENSE_STRUCTS).reduce((s,d)=>s+d.count,0); break;
+      case 'defense_struct': prog = (DEFENSE_STRUCTS[q.structId]?.count||0)>0 ? 1 : 0; target = 1; break;
+    }
+    questProgress[q.id] = {prog, target};
+    if(prog >= target && !q.done){
+      q.done = true;
+      anyNew = true;
+      addLog(`📜 Квест виконано: "${q.title}"! Можна отримати нагороду.`, true);
+      // Flash quests tab
+      let btn = document.getElementById('tab-btn-quests');
+      if(btn) btn.innerHTML = '📜 КВЕСТИ <span class="tab-badge">!</span>';
+      newQuestCount++;
+    }
+  });
+  if(anyNew) markDirty('full');
+}
+
+function claimQuest(id){
+  let q = QUESTS.find(x=>x.id===id);
+  if(!q||!q.done||q.claimed) return;
+  q.claimed = true;
+  // Give rewards
+  if(q.reward){
+    Object.entries(q.reward).forEach(([k,v])=>{ storage[k]=(storage[k]||0)+v; });
+  }
+  // Apply bonuses
+  if(q.bonus){
+    if(q.bonus.clickMult)  clickMult  += q.bonus.clickMult;
+    if(q.bonus.prodMult)   prodMult   += q.bonus.prodMult;
+    if(q.bonus.defenseBonus){
+      // Reduce goblin wave damage slightly
+      goblinWave.cityHp = Math.min(goblinWave.cityHpMax, goblinWave.cityHp + 100);
+    }
+    if(q.bonus.buildBonus) baseResMultiplier = Math.max(baseResMultiplier, baseResMultiplier + 0.2);
+  }
+  addPoints(500 * (q.cat==='Майбутнє'?10:q.cat==='Промисловість'?5:2), 'tech');
+  addLog(`🎁 Нагорода отримана: ${q.rewardDesc}`, true);
+  checkAchievements();
+  markDirty('full');
+}
+
+function renderQuestsTab(){
+  let div = document.getElementById('ui-quests');
+  if(!div) return;
+  checkQuests();
+
+  let claimedCount = QUESTS.filter(q=>q.claimed).length;
+  let doneCount    = QUESTS.filter(q=>q.done).length;
+  let totalCount   = QUESTS.length;
+
+  let html = `<div style="padding:6px 0 4px;">
+    <div class="sh">📜 КВЕСТИ <span class="sh-badge">${claimedCount}/${totalCount}</span></div>
+    <div class="ach-progress-bar">
+      <span style="font-size:11px;color:var(--dim)">Прогрес:</span>
+      <div class="ach-prog-track"><div class="ach-prog-fill" style="width:${(claimedCount/totalCount*100).toFixed(0)}%"></div></div>
+      <span style="font-size:11px;color:var(--gold)">${claimedCount}/${totalCount}</span>
+    </div>
+  </div>`;
+
+  // Group by category
+  let cats = [...new Set(QUESTS.map(q=>q.cat))];
+  cats.forEach(cat=>{
+    let catQuests = QUESTS.filter(q=>q.cat===cat);
+    let catDone = catQuests.filter(q=>q.claimed).length;
+    html += `<div class="quest-category-header">${cat} · ${catDone}/${catQuests.length}</div>`;
+    catQuests.forEach(q=>{
+      let qp = questProgress[q.id]||{prog:0,target:q.target||1};
+      let pct = Math.min(100, (qp.prog/qp.target*100)).toFixed(0);
+      let status = q.claimed ? 'completed' : q.done ? 'claimable' : 'active';
+      html += `<div class="quest-card ${status}">
+        <div class="quest-head">
+          <div class="quest-icon">${q.icon}</div>
+          <div>
+            <div class="quest-title">${q.title}</div>
+            <div class="quest-desc">${q.desc}</div>
+          </div>
+        </div>
+        ${!q.claimed?`
+        <div class="quest-progress-wrap">
+          <div class="quest-progress-bar ${q.done?'gold':''}" style="width:${pct}%"></div>
+        </div>
+        <div class="quest-prog-label">${fmt(qp.prog)} / ${fmt(qp.target)}</div>`:''}
+        <div class="quest-reward">🎁 Нагорода: <b>${q.rewardDesc}</b>${q.bonus?` <span style="color:var(--teal)">+ Бонус!</span>`:''}</div>
+        ${q.claimed?`<div class="quest-done-badge">✅ Виконано та отримано</div>`
+          :q.done?`<button class="quest-claim-btn" onclick="claimQuest('${q.id}')">🎁 ОТРИМАТИ НАГОРОДУ</button>`
+          :`<button class="quest-claim-btn" disabled>⏳ В процесі... ${pct}%</button>`}
+      </div>`;
+    });
+  });
+
+  div.innerHTML = html;
+  // Reset badge
+  let btn = document.getElementById('tab-btn-quests');
+  if(btn) btn.textContent = '📜 КВЕСТИ';
+  newQuestCount = 0;
+}
+
+// ============================================================
+// ACHIEVEMENTS SYSTEM
+// ============================================================
+const ACHIEVEMENTS = [
+  // Clicks
+  {id:'ach_click1',   cat:'Кліки',   icon:'👆', name:'Перший удар',      desc:'Зробити 1 клік',          type:'clicks',   target:1,       unlocked:false, bonus:'Декоративна'},
+  {id:'ach_click2',   cat:'Кліки',   icon:'✊', name:'Клікер-початківець',desc:'100 кліків',              type:'clicks',   target:100,     unlocked:false, bonus:'+5% до кліків'},
+  {id:'ach_click3',   cat:'Кліки',   icon:'💪', name:'Невтомні руки',     desc:'1000 кліків',             type:'clicks',   target:1000,    unlocked:false, bonus:'+10% до кліків', effect:{clickMult:0.1}},
+  {id:'ach_click4',   cat:'Кліки',   icon:'🦾', name:'Кіберрука',         desc:'10 000 кліків',           type:'clicks',   target:10000,   unlocked:false, bonus:'+20% до кліків', effect:{clickMult:0.2}},
+  {id:'ach_click5',   cat:'Кліки',   icon:'⚡', name:'Блискавичний',      desc:'100 000 кліків',          type:'clicks',   target:100000,  unlocked:false, bonus:'+50% до кліків', effect:{clickMult:0.5}},
+
+  // Buildings
+  {id:'ach_bld1',     cat:'Будівлі', icon:'🏚', name:'Перша хатинка',     desc:'Побудувати 1 споруду',    type:'builds',   target:1,       unlocked:false, bonus:'Декоративна'},
+  {id:'ach_bld2',     cat:'Будівлі', icon:'🏠', name:'Маленьке поселення',desc:'5 споруд',                type:'builds',   target:5,       unlocked:false, bonus:'+10% виробництво', effect:{prodMult:0.1}},
+  {id:'ach_bld3',     cat:'Будівлі', icon:'🏘', name:'Селище',            desc:'20 споруд',               type:'builds',   target:20,      unlocked:false, bonus:'+20% виробництво', effect:{prodMult:0.2}},
+  {id:'ach_bld4',     cat:'Будівлі', icon:'🏙', name:'Місто',             desc:'50 споруд',               type:'builds',   target:50,      unlocked:false, bonus:'+30% виробництво', effect:{prodMult:0.3}},
+  {id:'ach_bld5',     cat:'Будівлі', icon:'🌆', name:'Мегаполіс',         desc:'100 споруд',              type:'builds',   target:100,     unlocked:false, bonus:'+50% виробництво', effect:{prodMult:0.5}},
+  {id:'ach_bld6',     cat:'Будівлі', icon:'🌇', name:'Цивілізація',       desc:'200 споруд',              type:'builds',   target:200,     unlocked:false, bonus:'+100% виробництво', effect:{prodMult:1.0}},
+
+  // Epochs
+  {id:'ach_ep2',      cat:'Епохи',   icon:'🌾', name:'Осілий',            desc:'Досягти Епохи 2',         type:'epoch',    target:2,       unlocked:false, bonus:'Декоративна'},
+  {id:'ach_ep4',      cat:'Епохи',   icon:'🛡️', name:'Бронзовий вік',     desc:'Досягти Епохи 4',         type:'epoch',    target:4,       unlocked:false, bonus:'+15% виробництво', effect:{prodMult:0.15}},
+  {id:'ach_ep6',      cat:'Епохи',   icon:'🍷', name:'Середньовіччя',     desc:'Досягти Епохи 6',         type:'epoch',    target:6,       unlocked:false, bonus:'+25% виробництво', effect:{prodMult:0.25}},
+  {id:'ach_ep8',      cat:'Епохи',   icon:'🏭', name:'Промислова епоха',  desc:'Досягти Епохи 8',         type:'epoch',    target:8,       unlocked:false, bonus:'+40% виробництво', effect:{prodMult:0.4}},
+  {id:'ach_ep10',     cat:'Епохи',   icon:'⚡', name:'Електрифікація',    desc:'Досягти Епохи 10',        type:'epoch',    target:10,      unlocked:false, bonus:'+60% виробництво', effect:{prodMult:0.6}},
+  {id:'ach_ep12',     cat:'Епохи',   icon:'🤖', name:'Сингулярність',     desc:'Досягти Епохи 12',        type:'epoch',    target:12,      unlocked:false, bonus:'+100% виробництво', effect:{prodMult:1.0}},
+
+  // Tech
+  {id:'ach_tech1',    cat:'Технології',icon:'🔬',name:'Перший вчений',    desc:'Відкрити 1 технологію',   type:'tech',     target:1,       unlocked:false, bonus:'Декоративна'},
+  {id:'ach_tech3',    cat:'Технології',icon:'📚',name:'Бібліотека',       desc:'Відкрити 5 технологій',   type:'tech',     target:5,       unlocked:false, bonus:'+10% до кліків', effect:{clickMult:0.1}},
+  {id:'ach_tech5',    cat:'Технології',icon:'🎓',name:'Академія',         desc:'Відкрити 15 технологій',  type:'tech',     target:15,      unlocked:false, bonus:'+15% виробництво', effect:{prodMult:0.15}},
+  {id:'ach_tech7',    cat:'Технології',icon:'🏛️',name:'Університет',      desc:'Відкрити 30 технологій',  type:'tech',     target:30,      unlocked:false, bonus:'+25% виробництво', effect:{prodMult:0.25}},
+
+  // Defense & Goblins
+  {id:'ach_def1',     cat:'Оборона', icon:'🛡', name:'Перша стіна',       desc:'Збудувати оборонну споруду',type:'defense', target:1,       unlocked:false, bonus:'Декоративна'},
+  {id:'ach_wave1',    cat:'Оборона', icon:'⚔️', name:'Перша битва',       desc:'Відбити 1 хвилю',         type:'waves',    target:1,       unlocked:false, bonus:'Декоративна'},
+  {id:'ach_wave5',    cat:'Оборона', icon:'⚔️', name:'Захисник',          desc:'Відбити 5 хвиль',         type:'waves',    target:5,       unlocked:false, bonus:'+10% виробництво', effect:{prodMult:0.1}},
+  {id:'ach_wave10',   cat:'Оборона', icon:'🗡️', name:'Лицар',             desc:'Відбити 10 хвиль',        type:'waves',    target:10,      unlocked:false, bonus:'+15% до кліків', effect:{clickMult:0.15}},
+  {id:'ach_wave25',   cat:'Оборона', icon:'⚔️', name:'Легіон',            desc:'Відбити 25 хвиль',        type:'waves',    target:25,      unlocked:false, bonus:'+20% виробництво', effect:{prodMult:0.2}},
+  {id:'ach_wave50',   cat:'Оборона', icon:'🏆', name:'Непереможний',      desc:'Відбити 50 хвиль',        type:'waves',    target:50,      unlocked:false, bonus:'+30% виробництво', effect:{prodMult:0.3}},
+  {id:'ach_gob100',   cat:'Оборона', icon:'💀', name:'Знищувач гоблінів', desc:'Знищити 100 гоблінів',    type:'goblins',  target:100,     unlocked:false, bonus:'+10% до кліків', effect:{clickMult:0.1}},
+  {id:'ach_gob500',   cat:'Оборона', icon:'☠️', name:'Гоблінозабивник',   desc:'Знищити 500 гоблінів',    type:'goblins',  target:500,     unlocked:false, bonus:'+20% виробництво', effect:{prodMult:0.2}},
+
+  // Resources
+  {id:'ach_res_wood', cat:'Ресурси', icon:'🌲', name:'Лісоруб',           desc:'Зібрати 10 000 деревини', type:'res_total',res:'wood',target:10000,   unlocked:false, bonus:'Декоративна'},
+  {id:'ach_res_iron', cat:'Ресурси', icon:'🔩', name:'Коваль',            desc:'Зібрати 1 000 заліза',    type:'res_total',res:'iron',target:1000,    unlocked:false, bonus:'+10% виробництво', effect:{prodMult:0.1}},
+  {id:'ach_res_chip', cat:'Ресурси', icon:'🎛️', name:'Технократ',         desc:'Зібрати 500 мікросхем',   type:'res_total',res:'chips',target:500,    unlocked:false, bonus:'+30% виробництво', effect:{prodMult:0.3}},
+
+  // AC
+  {id:'ach_ac1',      cat:'Авто-клікер',icon:'🤖',name:'Перший автомат', desc:'Розблокувати автоклікер',  type:'ac',       target:1,       unlocked:false, bonus:'+5/с до AC', effect:{acBonus:5}},
+  {id:'ach_ac2',      cat:'Авто-клікер',icon:'🦿',name:'Машина',         desc:'AC рівня 10',              type:'ac_lvl',   target:10,      unlocked:false, bonus:'+10/с до AC', effect:{acBonus:10}},
+  {id:'ach_ac3',      cat:'Авто-клікер',icon:'⚙️',name:'Завод',          desc:'AC рівня 50',              type:'ac_lvl',   target:50,      unlocked:false, bonus:'+25/с до AC', effect:{acBonus:25}},
+];
+
+// Track total resources collected
+let resLifetimeTotal = {};
+Object.keys(RES).forEach(k=>resLifetimeTotal[k]=0);
+let achActiveFilter = 'all';
+
+function checkAchievements(){
+  let anyNew = false;
+  ACHIEVEMENTS.forEach(ach=>{
+    if(ach.unlocked) return;
+    let prog = 0;
+    switch(ach.type){
+      case 'clicks':   prog = totalClicks; break;
+      case 'builds':   prog = buildCount; break;
+      case 'epoch':    prog = epoch; break;
+      case 'tech':     prog = TECH_NODES.filter(n=>n.unlocked).length; break;
+      case 'waves':    prog = goblinWave.totalWaves; break;
+      case 'defense':  prog = Object.values(DEFENSE_STRUCTS).reduce((s,d)=>s+d.count,0); break;
+      case 'goblins':  prog = goblinWave.totalDefeated; break;
+      case 'res_total':prog = resLifetimeTotal[ach.res]||0; break;
+      case 'ac':       prog = AC_NODES.root?.unlocked ? 1 : 0; break;
+      case 'ac_lvl':   prog = AC_NODES.root?.lvl||0; break;
+    }
+    if(prog >= ach.target){
+      ach.unlocked = true;
+      anyNew = true;
+      // Apply effect immediately
+      if(ach.effect){
+        if(ach.effect.clickMult) clickMult += ach.effect.clickMult;
+        if(ach.effect.prodMult)  prodMult  += ach.effect.prodMult;
+        if(ach.effect.acBonus && AC_NODES.root?.unlocked){ AC_NODES.root.lvl += ach.effect.acBonus; recalcACRate(); }
+      }
+      addPoints(1000, 'tech');
+      addLog(`🏆 Ачівка: "${ach.name}" — ${ach.bonus}`, true);
+      // Flash badge
+      let btn = document.getElementById('tab-btn-ach');
+      if(btn) btn.innerHTML = '🏆 АЧІВКИ <span class="tab-badge">!</span>';
+    }
+  });
+  return anyNew;
+}
+
+function renderAchievementsTab(){
+  let div = document.getElementById('ui-achievements');
+  if(!div) return;
+
+  let unlockedCount = ACHIEVEMENTS.filter(a=>a.unlocked).length;
+  let totalCount = ACHIEVEMENTS.length;
+  let cats = ['all', ...new Set(ACHIEVEMENTS.map(a=>a.cat))];
+
+  let html = `<div style="padding:4px 0 6px;">
+    <div class="sh">🏆 ДОСЯГНЕННЯ <span class="sh-badge">${unlockedCount}/${totalCount}</span></div>
+    <div class="ach-progress-bar">
+      <span>Прогрес:</span>
+      <div class="ach-prog-track"><div class="ach-prog-fill" style="width:${(unlockedCount/totalCount*100).toFixed(0)}%"></div></div>
+      <span style="color:var(--gold)">${unlockedCount}/${totalCount}</span>
+    </div>
+    <div class="ach-filter-bar">`;
+
+  cats.forEach(c=>{
+    html += `<button class="ach-filter-btn ${achActiveFilter===c?'active':''}" onclick="setAchFilter('${c}')">${c==='all'?'🌍 Всі':c}</button>`;
+  });
+  html += `</div></div><div class="ach-grid">`;
+
+  let shown = ACHIEVEMENTS.filter(a=>achActiveFilter==='all'||a.cat===achActiveFilter);
+  shown.forEach(ach=>{
+    html += `<div class="ach-card ${ach.unlocked?'unlocked':'locked'}" title="${ach.desc}\nБонус: ${ach.bonus}">
+      <div class="ach-icon">${ach.icon}</div>
+      <div class="ach-name">${ach.name}</div>
+      <div class="ach-desc">${ach.unlocked?ach.desc:'???'}</div>
+      <div class="ach-bonus" style="color:${ach.unlocked?'var(--teal)':'var(--dim)'}">${ach.unlocked?ach.bonus:'🔒'}</div>
+    </div>`;
+  });
+  html += `</div>`;
+  div.innerHTML = html;
+  // Reset badge
+  let btn = document.getElementById('tab-btn-ach');
+  if(btn) btn.textContent = '🏆 АЧІВКИ';
+}
+
+function setAchFilter(cat){
+  achActiveFilter = cat;
+  renderAchievementsTab();
+}
+
+// ============================================================
+const GOBLIN_TYPES = [
+  {id:'grunt',    name:'Рядовий гоблін',    icon:'👺', baseHp:30,  baseLoot:{wood:5,stone:3},      color:'#c0392b'},
+  {id:'warrior',  name:'Гоблін-воїн',       icon:'⚔️👺',baseHp:80,  baseLoot:{logs:8,clay:5},        color:'#e74c3c'},
+  {id:'shaman',   name:'Шаман гоблінів',    icon:'🧙👺',baseHp:150, baseLoot:{charcoal:10,stone:8},  color:'#8e44ad'},
+  {id:'brute',    name:'Гоблін-громила',    icon:'🦍',  baseHp:300, baseLoot:{iron:5,boards:10},     color:'#d35400'},
+  {id:'chief',    name:'Вождь гоблінів',    icon:'👑👺',baseHp:600, baseLoot:{bronze:8,copper:6},    color:'#f39c12'},
+  {id:'warchief', name:'Воєначальник',      icon:'💀👺',baseHp:1200,baseLoot:{steel:10,iron:15},     color:'#c0392b'},
+  {id:'demon',    name:'Демонічний гоблін', icon:'😈',  baseHp:3000,baseLoot:{chips:3,electricity:20},color:'#8e44ad'},
+];
+
+// Defense structures
+const DEFENSE_STRUCTS = {
+  palisade: {
+    name:'🪵 Частокіл', desc:'Базова дерев\'яна стіна. Поглинає удари гоблінів.',
+    cost:{wood:50,stone:20}, hp:200, hpMax:200, count:0,
+    damageBlock:15, ep_req:1,
+    upgrade:{wood:100,stone:50}
+  },
+  tower: {
+    name:'🗼 Вежа лучника', desc:'Стрільці б\'ють гоблінів кожну хвилю. -2 гобліна на хвилю.',
+    cost:{boards:30,stone:40}, hp:150, hpMax:150, count:0,
+    killPerWave:2, ep_req:2,
+    upgrade:{boards:60,stone:80}
+  },
+  wall: {
+    name:'🧱 Кам\'яний мур', desc:'Міцний мур. Значно поглинає пошкодження.',
+    cost:{bricks:60,stone:80}, hp:500, hpMax:500, count:0,
+    damageBlock:50, ep_req:3,
+    upgrade:{bricks:120,stone:160}
+  },
+  cannon: {
+    name:'💣 Гармата', desc:'Знищує до 4 гоблінів за хвилю. Потребує пороху (вугілля).',
+    cost:{iron:30,boards:40}, hp:100, hpMax:100, count:0,
+    killPerWave:4, consumeRes:{charcoal:5}, ep_req:4,
+    upgrade:{iron:60,boards:80}
+  },
+  fortress: {
+    name:'🏰 Фортеця', desc:'Потужна оборонна споруда. Блокує великі пошкодження.',
+    cost:{steel:50,bricks:80,iron:40}, hp:1500, hpMax:1500, count:0,
+    damageBlock:200, ep_req:8,
+    upgrade:{steel:100,bricks:160,iron:80}
+  },
+};
+
+// Goblin wave state
+let goblinWave = {
+  waveNum: 0,
+  active: false,
+  goblins: [],    // current wave goblins: [{type, hp, maxHp, lvl}]
+  nextWaveIn: 60, // seconds until next wave
+  totalDefeated: 0,
+  totalWaves: 0,
+  cityHp: 1000,
+  cityHpMax: 1000,
+  waveTimer: null,
+  alertShown: false,
+};
+
+// Defense stats (recalculated)
+let defenseStats = {
+  totalDamageBlock: 0,
+  totalKillPerWave: 0,
+};
+
+function recalcDefenseStats(){
+  let block=0, kills=0;
+  Object.values(DEFENSE_STRUCTS).forEach(s=>{
+    if(s.count>0){
+      block += (s.damageBlock||0) * s.count;
+      kills += (s.killPerWave||0) * s.count;
+    }
+  });
+  defenseStats.totalDamageBlock = block;
+  defenseStats.totalKillPerWave = kills;
+}
+
+function buildDefenseStruct(id){
+  let s = DEFENSE_STRUCTS[id];
+  if(!s) return;
+  if(epoch < s.ep_req){ showToast(`⚠️ Потрібна Епоха ${s.ep_req}!`); return; }
+  let canAfford = Object.keys(s.cost).every(k=>(storage[k]||0)>=s.cost[k]);
+  if(!canAfford){ showToast('⚠️ Недостатньо ресурсів!'); return; }
+  Object.keys(s.cost).forEach(k=>storage[k]-=s.cost[k]);
+  s.count++;
+  s.hp = s.hpMax; // restore hp on new build
+  recalcDefenseStats();
+  addLog(`🛡 Збудовано: ${s.name}`,true);
+  markDirty('full');
+}
+
+function repairDefenseStruct(id){
+  let s = DEFENSE_STRUCTS[id];
+  if(!s||s.count===0||s.hp>=s.hpMax) return;
+  let repairCost = {};
+  Object.keys(s.cost).forEach(k=>repairCost[k]=Math.ceil(s.cost[k]*0.3));
+  let canAfford = Object.keys(repairCost).every(k=>(storage[k]||0)>=repairCost[k]);
+  if(!canAfford){ showToast('⚠️ Недостатньо ресурсів для ремонту!'); return; }
+  Object.keys(repairCost).forEach(k=>storage[k]-=repairCost[k]);
+  s.hp = s.hpMax;
+  addLog(`🔧 Відремонтовано: ${s.name}`);
+  markDirty('full');
+}
+
+function buildGoblinWave(waveNum){
+  // Wave difficulty scales with wave number and epoch
+  let size = 3 + Math.floor(waveNum * 1.5) + epoch;
+  let avgLvl = Math.max(1, Math.floor(waveNum * 0.8) + Math.floor(epoch * 0.5));
+  // Building count also affects goblin level
+  let bldLvlBonus = Math.floor(buildCount * 0.1);
+  let finalLvl = avgLvl + bldLvlBonus;
+
+  let goblins = [];
+  for(let i=0;i<size;i++){
+    // Higher waves get tougher goblin types
+    let typeIdx = Math.min(GOBLIN_TYPES.length-1, Math.floor(Math.random()*(1+waveNum*0.3)));
+    let gtype = GOBLIN_TYPES[typeIdx];
+    let lvl = Math.max(1, finalLvl + Math.floor((Math.random()-0.5)*2));
+    let hp = Math.floor(gtype.baseHp * lvl * (1 + waveNum * 0.2));
+    goblins.push({ type:gtype.id, hp, maxHp:hp, lvl, name:gtype.name, icon:gtype.icon, color:gtype.color });
+  }
+  return goblins;
+}
+
+function startGoblinWave(){
+  if(goblinWave.active) return;
+  goblinWave.waveNum++;
+  goblinWave.active = true;
+  goblinWave.goblins = buildGoblinWave(goblinWave.waveNum);
+  goblinWave.alertShown = false;
+  let waveEl = document.getElementById('wave-alert');
+  if(waveEl){ waveEl.style.display='block'; setTimeout(()=>waveEl.style.display='none', 4000); }
+  addLog(`⚔️ ХВИЛЯ ${goblinWave.waveNum} — ${goblinWave.goblins.length} гоблінів!`, true);
+  // Flash the defense tab
+  let tabBtn = document.getElementById('tab-btn-defense');
+  if(tabBtn){ tabBtn.style.color='var(--red)'; tabBtn.style.borderBottomColor='var(--red)'; }
+  markDirty('full');
+}
+
+function processGoblinWave(){
+  if(!goblinWave.active||!goblinWave.goblins.length) return;
+
+  // 1. Towers/Cannons kill some goblins first
+  let toKill = defenseStats.totalKillPerWave;
+  // Cannons consume charcoal
+  Object.values(DEFENSE_STRUCTS).forEach(s=>{
+    if(s.id==='cannon'&&s.count>0&&s.consumeRes){
+      let canFire = Object.keys(s.consumeRes).every(k=>(storage[k]||0)>=s.consumeRes[k]*s.count);
+      if(canFire){
+        Object.keys(s.consumeRes).forEach(k=>storage[k]-=s.consumeRes[k]*s.count);
+      } else {
+        toKill -= (s.killPerWave||0) * s.count; // no ammo = no kills
+      }
+    }
+  });
+  toKill = Math.max(0, toKill);
+
+  // Kill from the front
+  let killed = 0;
+  while(killed < toKill && goblinWave.goblins.length > 0){
+    let g = goblinWave.goblins[0];
+    // Award loot for killed goblin
+    awardGoblinLoot(g);
+    goblinWave.goblins.shift();
+    killed++;
+    goblinWave.totalDefeated++;
+  }
+
+  if(killed > 0) addLog(`🏹 Захисники знищили ${killed} гоблінів!`);
+
+  // 2. Remaining goblins deal damage, absorbed by walls/palisades
+  let remainingGoblins = goblinWave.goblins.length;
+  if(remainingGoblins > 0){
+    let rawDmg = remainingGoblins * 20 * (1 + goblinWave.waveNum * 0.1);
+    let absorbed = Math.min(rawDmg * 0.9, defenseStats.totalDamageBlock);
+
+    // Damage walls in order
+    let remainAbsorb = absorbed;
+    ['fortress','wall','palisade'].forEach(sid=>{
+      let s = DEFENSE_STRUCTS[sid];
+      if(!s||!s.count) return;
+      let dmgToWall = Math.min(remainAbsorb, s.damageBlock * s.count);
+      s.hp = Math.max(0, s.hp - dmgToWall);
+      remainAbsorb -= dmgToWall;
+      if(s.hp <= 0){ addLog(`💥 ${s.name} зруйнована!`); }
+    });
+
+    let cityDmg = Math.max(0, rawDmg - absorbed);
+    if(cityDmg > 0){
+      goblinWave.cityHp = Math.max(0, goblinWave.cityHp - cityDmg);
+      // Resource penalty
+      let penalty = Math.floor(cityDmg * 2);
+      let resKeys = Object.keys(RES).filter(k=>k!=='synth_energy'&&(storage[k]||0)>0);
+      if(resKeys.length>0){
+        let penRes = resKeys[Math.floor(Math.random()*resKeys.length)];
+        let penAmt = Math.min(penalty, storage[penRes]||0);
+        storage[penRes] -= penAmt;
+        addLog(`💀 Гобліни вкрали ${Math.floor(penAmt)} ${RES[penRes]?.n}!`);
+      }
+    }
+
+    // All remaining goblins die after dealing damage (they always die per spec)
+    goblinWave.goblins.forEach(g=>awardGoblinLoot(g));
+    goblinWave.totalDefeated += goblinWave.goblins.length;
+    goblinWave.goblins = [];
+  }
+
+  // Wave over
+  goblinWave.active = false;
+  goblinWave.totalWaves++;
+  // Restore city HP slowly
+  goblinWave.cityHp = Math.min(goblinWave.cityHpMax, goblinWave.cityHp + 50);
+  // Next wave timer scales down with waves
+  goblinWave.nextWaveIn = Math.max(30, 90 - goblinWave.waveNum * 3);
+  addLog(`✅ Хвиля ${goblinWave.waveNum} відбита! Наступна через ${goblinWave.nextWaveIn}с.`, true);
+
+  // Restore tab color
+  let tabBtn = document.getElementById('tab-btn-defense');
+  if(tabBtn){ tabBtn.style.color=''; tabBtn.style.borderBottomColor=''; }
+
+  recalcDefenseStats();
+  markDirty('full');
+}
+
+function awardGoblinLoot(g){
+  let gtype = GOBLIN_TYPES.find(t=>t.id===g.type)||GOBLIN_TYPES[0];
+  let lootMult = g.lvl; // higher level = more resources
+  let lootEntries = Object.entries(gtype.baseLoot);
+  let lootStr = '';
+  lootEntries.forEach(([res,baseAmt])=>{
+    let amt = Math.floor(baseAmt * lootMult);
+    if(amt>0){
+      storage[res] = (storage[res]||0) + amt;
+      lootStr += `+${amt}${RES[res]?.e||res} `;
+    }
+  });
+  // Also small chance of score points
+  addPoints(g.lvl * 10, 'resources');
+}
+
+// Wave countdown timer
+setInterval(()=>{
+  if(goblinWave.active){
+    // Process wave every second when active — handle damage over 3 ticks
+    if(goblinWave.goblins.length > 0){
+      // Slowly reduce goblins' HP as "battle" — resolve after 3s
+    }
+    return;
+  }
+  goblinWave.nextWaveIn = Math.max(0, goblinWave.nextWaveIn - 1);
+  if(goblinWave.nextWaveIn <= 10 && !goblinWave.alertShown){
+    goblinWave.alertShown = true;
+    let tabBtn = document.getElementById('tab-btn-defense');
+    if(tabBtn){ tabBtn.style.color='#ff8800'; }
+  }
+  if(goblinWave.nextWaveIn <= 0){
+    goblinWave.alertShown = false;
+    startGoblinWave();
+    setTimeout(processGoblinWave, 3000); // resolve after 3s
+  }
+  // Update timer display
+  let timerEl = document.getElementById('goblin-timer');
+  if(timerEl) timerEl.textContent = goblinWave.nextWaveIn;
+}, 1000);
+
+function renderDefenseTab(){
+  let div = document.getElementById('ui-defense');
+  if(!div) return;
+
+  let html = '';
+
+  // City HP
+  let cityPct = (goblinWave.cityHp / goblinWave.cityHpMax * 100).toFixed(0);
+  let cityColor = goblinWave.cityHp > 600 ? 'var(--green)' : goblinWave.cityHp > 300 ? 'var(--orange)' : 'var(--red)';
+  html += `<div class="goblin-wave-panel">
+    <div class="goblin-wave-title">⚔️ СИСТЕМА ОБОРОНИ
+      <span style="font-size:11px;color:var(--dim)">Хвиля <span style="color:var(--red)">${goblinWave.waveNum}</span></span>
+    </div>
+    <div class="goblin-wave-info">
+      <div class="gwi">🏰 Місто: <span style="color:${cityColor}">${goblinWave.cityHp}/${goblinWave.cityHpMax}</span></div>
+      <div class="gwi">💀 Знищено: <span>${goblinWave.totalDefeated}</span></div>
+      <div class="gwi">🛡 Блок: <span>${defenseStats.totalDamageBlock}</span></div>
+      <div class="gwi">🏹 Вбивств/хвиля: <span>${defenseStats.totalKillPerWave}</span></div>
+    </div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:4px;">Міцність міста:</div>
+    <div class="goblin-wave-bar-wrap"><div class="goblin-wave-bar" style="width:${cityPct}%;background:${cityColor}"></div></div>`;
+
+  if(goblinWave.active && goblinWave.goblins.length > 0){
+    html += `<div style="font-size:12px;color:var(--red);margin-bottom:5px;animation:wavealert .4s ease-in-out infinite alternate;">⚠️ АТАКА! ${goblinWave.goblins.length} гоблінів залишилось</div>
+    <div class="goblin-hp-bars">`;
+    goblinWave.goblins.slice(0,8).forEach(g=>{
+      let pct = (g.hp/g.maxHp*100).toFixed(0);
+      html += `<div class="goblin-row">
+        <div class="goblin-icon">${g.icon}</div>
+        <div class="goblin-info">
+          <div class="goblin-name">${g.name}</div>
+          <div class="goblin-hp-bar-wrap"><div class="goblin-hp-bar" style="width:${pct}%"></div></div>
+        </div>
+        <div class="goblin-lvl-badge">Рів.${g.lvl}</div>
+      </div>`;
+    });
+    if(goblinWave.goblins.length > 8){
+      html += `<div style="font-size:10px;color:var(--dim);text-align:center;">...ще ${goblinWave.goblins.length-8}</div>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<div class="wave-next-timer">⏱ Наступна хвиля через: <span id="goblin-timer">${goblinWave.nextWaveIn}</span>с</div>`;
+    if(!goblinWave.active){
+      html += `<div class="no-attack">✅ Місто в безпеці</div>`;
+    }
+  }
+  html += `</div>`;
+
+  // Defense structures
+  html += `<div class="sh">🛡 ЗАХИСНІ СПОРУДИ</div>
+  <div class="defense-structures">`;
+
+  Object.entries(DEFENSE_STRUCTS).forEach(([id,s])=>{
+    if(epoch < s.ep_req) return; // only show available for current epoch
+    let costStr = Object.entries(s.cost).map(([k,v])=>{
+      let have = storage[k]||0;
+      let cls = have>=v ? 'can-afford':'cant-afford';
+      return `<span class="${cls}">${RES[k]?.e||''}${v} ${RES[k]?.n||k}</span>`;
+    }).join(' + ');
+    let canBuild = Object.keys(s.cost).every(k=>(storage[k]||0)>=s.cost[k]);
+    let hpPct = s.count > 0 ? (s.hp/s.hpMax*100).toFixed(0) : 100;
+    let canRepair = s.count > 0 && s.hp < s.hpMax;
+
+    html += `<div class="def-struct-card ${s.count>0?'built':''}">
+      <div class="def-struct-head">
+        <div class="def-struct-name">${s.name}</div>
+        ${s.count>0?`<div class="def-struct-count">${s.count} шт</div>`:''}
+      </div>
+      <div class="def-struct-desc">${s.desc}</div>
+      <div class="def-struct-stats">`;
+    if(s.damageBlock) html += `🛡 Блок: ${s.damageBlock} пошкоджень · `;
+    if(s.killPerWave) html += `🏹 Вбиває: ${s.killPerWave}/хвилю · `;
+    if(s.consumeRes) html += `⚡ Вживає: ${Object.entries(s.consumeRes).map(([k,v])=>v+' '+RES[k]?.n).join(',')} · `;
+    html += `❤ HP: ${s.hpMax}</div>`;
+    if(s.count>0){
+      html += `<div style="height:4px;background:#1a0808;border:1px solid #2a1010;margin-bottom:5px;"><div style="height:100%;background:${hpPct>50?'var(--green)':hpPct>25?'var(--orange)':'var(--red)'};width:${hpPct}%"></div></div>`;
+    }
+    html += `<div class="def-struct-cost b-cost-block">💰 ${costStr}</div>
+      <div style="display:flex;gap:5px;">
+        <button class="def-struct-btn" onclick="buildDefenseStruct('${id}')" ${!canBuild?'disabled':''}>
+          ➕ ${s.count>0?'ЩЕ ОДНА':'ЗБУДУВАТИ'}
+        </button>
+        ${canRepair?`<button class="def-struct-btn" style="border-color:var(--orange);color:var(--orange);" onclick="repairDefenseStruct('${id}')">🔧 РЕМОНТ</button>`:''}
+      </div>
+    </div>`;
+  });
+
+  html += `</div>`;
+
+  // Show locked structures
+  let lockedAny = Object.entries(DEFENSE_STRUCTS).filter(([,s])=>epoch < s.ep_req);
+  if(lockedAny.length > 0){
+    html += `<div style="margin-top:6px;padding:6px;border:1px solid var(--border);font-size:11px;color:var(--dim);">🔒 Розблоковується: `;
+    html += lockedAny.map(([,s])=>`${s.name} (Еп.${s.ep_req})`).join(', ');
+    html += `</div>`;
+  }
+
+  div.innerHTML = html;
+}
+
+// ============================================================
+addLog("⛺ Гра розпочата. Клікай — здобувай — будуй!",true);
+addLog("⚔️ Гобліни атакують через 90 секунд! Будуй оборону у вкладці ОБОРОНА.",true);
+addLog("📜 Перевір вкладку КВЕСТИ для завдань та нагород!",true);
+
+// ============================================================
+// TELEGRAM MINI APP INTEGRATION
+// ============================================================
+
+const TG = window.Telegram?.WebApp;
+const TG_USER = TG?.initDataUnsafe?.user || null;
+const IS_TG = !!TG_USER;
+
+// Розгортаємо на весь екран
+if (TG) {
+  TG.ready();
+  TG.expand();
+  TG.disableVerticalSwipes?.();
+  // Кольори з теми Telegram
+  if (TG.colorScheme === 'light') {
+    document.documentElement.style.setProperty('--bg', '#f0f0f0');
+  }
+}
+
+// ============================================================
+// CLOUD SAVE SYSTEM
+// ============================================================
+
+const API_BASE = ''; // порожньо = той самий хост
+let _saveTimer = null;
+let _lastSaveHash = '';
+let _cloudEnabled = IS_TG;
+
+function showCloudStatus(state, msg) {
+  const el = document.getElementById('cloud-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'visible ' + state;
+  clearTimeout(el._hideTimer);
+  if (state === 'saved') {
+    el._hideTimer = setTimeout(() => { el.className = ''; }, 3000);
+  }
+}
+
+/** Серіалізуємо стан гри для збереження */
+function serializeGameState() {
+  return {
+    epoch, tech, buildCount, totalClicks,
+    storage: { ...storage },
+    psCounters: { ...psCounters },
+    resLifetimeTotal: { ...resLifetimeTotal },
+    clickMult, prodMult, acMult, bacMult,
+    baseResMultiplier, techCostDiscount, exchangeLevel,
+    acTotalRate,
+    logLines: logLines.slice(0, 20),
+    SCORES: { ...SCORES },
+    // AC nodes — тільки потрібні поля
+    acNodes: Object.fromEntries(
+      Object.entries(AC_NODES).map(([k, v]) => [k, { unlocked: v.unlocked, lvl: v.lvl }])
+    ),
+    // Tech nodes
+    techNodes: TECH_NODES.map(n => ({ id: n.id, unlocked: n.unlocked })),
+    // Binds
+    binds: BINDS.map(b => ({ lvl: b.lvl })),
+    // BASE_RES_BUILDINGS
+    baseResBuildings: Object.fromEntries(
+      Object.entries(BASE_RES_BUILDINGS).map(([k, v]) => [k, { lvl: v.lvl }])
+    ),
+    // Buildings instances
+    buildings: Object.fromEntries(
+      Object.entries(buildings).map(([id, b]) => [id, {
+        instances: b.instances.map(inst => ({
+          lvl: inst.lvl, tileR: inst.tileR, tileC: inst.tileC, autoClicker: inst.autoClicker
+        }))
+      }])
+    ),
+    // Defense
+    defenseStructs: Object.fromEntries(
+      Object.entries(DEFENSE_STRUCTS).map(([k, s]) => [k, { count: s.count, hp: s.hp }])
+    ),
+    goblinWave: {
+      waveNum: goblinWave.waveNum,
+      totalDefeated: goblinWave.totalDefeated,
+      totalWaves: goblinWave.totalWaves,
+      cityHp: goblinWave.cityHp,
+      cityHpMax: goblinWave.cityHpMax,
+      nextWaveIn: goblinWave.nextWaveIn,
+    },
+    // Quests
+    quests: QUESTS.map(q => ({ id: q.id, done: q.done, claimed: q.claimed, _maxSeen: q._maxSeen })),
+    // Achievements
+    achievements: ACHIEVEMENTS.map(a => ({ id: a.id, unlocked: a.unlocked })),
+    // Map tiles
+    mapTiles: mapTiles.map(row => row.map(t => ({
+      type: t.type, variation: t.variation,
+      building: t.building ? { ...t.building } : null
+    }))),
+  };
+}
+
+/** Відновлюємо стан гри із збереження */
+function deserializeGameState(s) {
+  if (!s) return;
+  try {
+    if (s.epoch) epoch = s.epoch;
+    if (s.tech !== undefined) tech = s.tech;
+    if (s.buildCount !== undefined) buildCount = s.buildCount;
+    if (s.totalClicks !== undefined) totalClicks = s.totalClicks;
+    if (s.storage) Object.assign(storage, s.storage);
+    if (s.psCounters) Object.assign(psCounters, s.psCounters);
+    if (s.resLifetimeTotal) Object.assign(resLifetimeTotal, s.resLifetimeTotal);
+    if (s.clickMult) clickMult = s.clickMult;
+    if (s.prodMult) prodMult = s.prodMult;
+    if (s.acMult) acMult = s.acMult;
+    if (s.bacMult) bacMult = s.bacMult;
+    if (s.baseResMultiplier) baseResMultiplier = s.baseResMultiplier;
+    if (s.techCostDiscount) techCostDiscount = s.techCostDiscount;
+    if (s.exchangeLevel) exchangeLevel = s.exchangeLevel;
+    if (s.SCORES) Object.assign(SCORES, s.SCORES);
+    if (s.logLines) logLines.splice(0, logLines.length, ...s.logLines);
+
+    // AC nodes
+    if (s.acNodes) {
+      Object.entries(s.acNodes).forEach(([k, v]) => {
+        if (AC_NODES[k]) { AC_NODES[k].unlocked = v.unlocked; AC_NODES[k].lvl = v.lvl || 0; }
+      });
+      recalcACRate();
+    }
+    // Tech nodes
+    if (s.techNodes) {
+      s.techNodes.forEach(sn => {
+        const n = TECH_NODES.find(x => x.id === sn.id);
+        if (n) n.unlocked = sn.unlocked;
+      });
+    }
+    // Binds
+    if (s.binds) s.binds.forEach((b, i) => { if (BINDS[i]) BINDS[i].lvl = b.lvl || 0; });
+    // Base res buildings
+    if (s.baseResBuildings) {
+      Object.entries(s.baseResBuildings).forEach(([k, v]) => {
+        if (BASE_RES_BUILDINGS[k]) BASE_RES_BUILDINGS[k].lvl = v.lvl || 0;
+      });
+    }
+    // Buildings instances
+    if (s.buildings) {
+      Object.entries(s.buildings).forEach(([id, bdata]) => {
+        if (buildings[id]) buildings[id].instances = bdata.instances || [];
+      });
+    }
+    // Defense
+    if (s.defenseStructs) {
+      Object.entries(s.defenseStructs).forEach(([k, v]) => {
+        if (DEFENSE_STRUCTS[k]) { DEFENSE_STRUCTS[k].count = v.count || 0; DEFENSE_STRUCTS[k].hp = v.hp || DEFENSE_STRUCTS[k].hpMax; }
+      });
+      recalcDefenseStats();
+    }
+    // Goblin wave
+    if (s.goblinWave) Object.assign(goblinWave, s.goblinWave);
+    // Quests
+    if (s.quests) {
+      s.quests.forEach(sq => {
+        const q = QUESTS.find(x => x.id === sq.id);
+        if (q) { q.done = sq.done; q.claimed = sq.claimed; if (sq._maxSeen) q._maxSeen = sq._maxSeen; }
+      });
+    }
+    // Achievements
+    if (s.achievements) {
+      s.achievements.forEach(sa => {
+        const a = ACHIEVEMENTS.find(x => x.id === sa.id);
+        if (a) a.unlocked = sa.unlocked;
+      });
+    }
+    // Map
+    if (s.mapTiles && s.mapTiles.length > 0) {
+      mapTiles.splice(0, mapTiles.length, ...s.mapTiles);
+    }
+    addLog('☁️ Прогрес завантажено з хмари!', true);
+  } catch (e) {
+    console.error('Deserialize error:', e);
+  }
+}
+
+/** Зберігаємо на сервер */
+async function cloudSave() {
+  if (!_cloudEnabled) {
+    // Fallback: localStorage
+    try { localStorage.setItem('cubic_save', JSON.stringify(serializeGameState())); } catch(e){}
+    return;
+  }
+
+  const state = serializeGameState();
+  const hash = JSON.stringify([state.epoch, state.buildCount, Math.floor(SCORES.total)]);
+  if (hash === _lastSaveHash) return; // нічого не змінилось
+  _lastSaveHash = hash;
+
+  showCloudStatus('saving', '💾 Збереження...');
+  try {
+    const resp = await fetch(API_BASE + '/api/save', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-telegram-init-data': TG?.initData || '',
+      },
+      body: JSON.stringify({
+        state,
+        epoch: state.epoch,
+        score: SCORES.total,
+      }),
+    });
+    if (resp.ok) {
+      showCloudStatus('saved', '✅ Збережено');
+    } else {
+      showCloudStatus('error', '⚠️ Помилка збереження');
+    }
+  } catch (e) {
+    showCloudStatus('error', '📵 Офлайн');
+    // Fallback to localStorage
+    try { localStorage.setItem('cubic_save_backup', JSON.stringify(serializeGameState())); } catch(_){}
+  }
+}
+
+/** Завантажуємо з сервера */
+async function cloudLoad() {
+  if (!_cloudEnabled) {
+    // Fallback: localStorage
+    try {
+      const raw = localStorage.getItem('cubic_save');
+      if (raw) deserializeGameState(JSON.parse(raw));
+    } catch(e){}
+    return;
+  }
+
+  showCloudStatus('saving', '☁️ Завантаження...');
+  try {
+    const resp = await fetch(API_BASE + '/api/save', {
+      headers: { 'x-telegram-init-data': TG?.initData || '' }
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.save) {
+        deserializeGameState(data.save);
+        showCloudStatus('saved', '✅ Завантажено');
+      } else {
+        showCloudStatus('saved', '🆕 Нова гра');
+      }
+    }
+  } catch (e) {
+    showCloudStatus('error', '📵 Офлайн — завантажую локально');
+    try {
+      const raw = localStorage.getItem('cubic_save') || localStorage.getItem('cubic_save_backup');
+      if (raw) deserializeGameState(JSON.parse(raw));
+    } catch(_){}
+  }
+}
+
+// Авто-збереження кожні 30 секунд
+setInterval(() => cloudSave(), 30000);
+
+// Зберігаємо при закритті/переключенні вкладки
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) cloudSave();
+});
+window.addEventListener('beforeunload', () => cloudSave());
+if (TG) {
+  TG.onEvent('viewportChanged', () => {
+    if (!TG.isExpanded) cloudSave();
+  });
+}
+
+// ============================================================
+// LEADERBOARD
+// ============================================================
+async function openLeaderboard() {
+  document.getElementById('lb-overlay').classList.add('open');
+  const list = document.getElementById('lb-list');
+  const myRankEl = document.getElementById('lb-my-rank');
+  list.innerHTML = '<div style="color:var(--dim);font-size:11px;padding:8px 0">Завантаження...</div>';
+
+  try {
+    const resp = await fetch(API_BASE + '/api/leaderboard');
+    const data = await resp.json();
+
+    if (!data.data || data.data.length === 0) {
+      list.innerHTML = '<div style="color:var(--dim);font-size:11px;padding:8px 0">Рейтинг поки порожній 🌱</div>';
+      return;
+    }
+
+    const medals = ['🥇','🥈','🥉','4','5','6','7','8','9','10'];
+    const myId = TG_USER?.id;
+    list.innerHTML = data.data.map((r, i) => {
+      const name = r.username ? '@' + r.username : (r.first_name || 'Гравець');
+      const isMine = r.tg_id === myId;
+      return `<div class="lb-row${isMine ? ' mine' : ''}">
+        <div class="lb-rank">${medals[i]}</div>
+        <div class="lb-name">${name}</div>
+        <div class="lb-ep">Еп.${r.epoch}</div>
+        <div class="lb-score">${r.score.toLocaleString()}</div>
+      </div>`;
+    }).join('');
+
+    // Мій ранг
+    if (myId) {
+      const rankResp = await fetch(API_BASE + '/api/rank/' + myId);
+      const rankData = await rankResp.json();
+      if (rankData.rank) myRankEl.textContent = '📍 Твій ранг: #' + rankData.rank;
+    }
+  } catch (e) {
+    list.innerHTML = '<div style="color:var(--red);font-size:11px;padding:8px 0">⚠️ Помилка завантаження</div>';
+  }
+}
+
+// ============================================================
+// STARTUP — завантажуємо хмарний прогрес
+// ============================================================
+(async function init() {
+  // Ініціалізуємо карту та UI
+  initMap();
+  recalcDefenseStats();
+  checkQuests();
+  checkAchievements();
+  markDirty('full');
+
+  // Завантажуємо збереження
+  await cloudLoad();
+
+  // Після завантаження оновлюємо UI
+  document.getElementById('map-epoch').textContent = epoch;
+  recalcACRate();
+  recalcDefenseStats();
+  markDirty('full');
+
+  addLog('☁️ Синхронізація з хмарою активна. Прогрес зберігається автоматично!', true);
+})();
+
+</script>
+</body>
+</html>
