@@ -460,37 +460,174 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .ac-sum-item span{color:var(--green);}
 
 /* ============================================================
-   TELEGRAM MINI APP — MOBILE OVERRIDES
+   TELEGRAM MINI APP — MOBILE LAYOUT
    ============================================================ */
 :root {
   --tg-safe-top: env(safe-area-inset-top, 0px);
   --tg-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --nav-h: 56px;
 }
+
 @media (max-width: 700px) {
-  html, body { overflow: auto !important; height: auto !important; }
-  .app { display: flex; flex-direction: column; height: auto; min-height: 100dvh;
-         padding-top: var(--tg-safe-top); padding-bottom: var(--tg-safe-bottom); }
-  header { flex-wrap: wrap; gap: 6px; padding: 6px 10px; height: auto !important; }
-  .logo { font-size: 8px !important; }
-  .epoch-name { font-size: 11px; }
-  .hstats { gap: 6px; margin-left: 0; flex-wrap: wrap; }
-  .hstat { font-size: 10px; }
-  .evo-btn { font-size: 7px; padding: 5px 8px; }
-  .score-bar { flex-wrap: wrap; gap: 4px; padding: 5px 8px; }
-  .score-breakdown { flex-wrap: wrap; gap: 4px; }
-  .score-item { font-size: 9px; }
-  .main { display: flex; flex-direction: column; overflow: visible; }
-  .left-panel { border-right: none; border-bottom: 1px solid var(--border); max-height: 420px; overflow: auto; }
-  .panel-tabs { overflow-x: auto; flex-shrink: 0; scrollbar-width: none; }
+  html, body {
+    overflow: hidden !important;
+    height: 100% !important;
+    height: 100dvh !important;
+  }
+
+  /* === APP SHELL === */
+  .app {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100dvh !important;
+    padding-top: var(--tg-safe-top);
+    overflow: hidden;
+  }
+
+  /* === HEADER — компактний === */
+  header {
+    flex-shrink: 0;
+    flex-wrap: nowrap !important;
+    height: auto !important;
+    padding: 5px 8px !important;
+    gap: 4px !important;
+    overflow: hidden;
+  }
+  .logo { font-size: 7px !important; flex-shrink: 0; }
+  .epoch-info { gap: 4px; min-width: 0; }
+  .epoch-name { font-size: 10px !important; white-space: nowrap; }
+  .hstats { gap: 4px; margin-left: auto !important; flex-wrap: nowrap !important; }
+  .hstat { font-size: 9px !important; white-space: nowrap; }
+  .evo-btn { font-size: 7px !important; padding: 4px 6px !important; flex-shrink: 0; }
+  #lb-btn { font-size: 8px !important; padding: 4px 6px !important; flex-shrink: 0; }
+
+  /* === SCORE BAR — прихований на мобільному (не критично) === */
+  .score-bar { display: none !important; }
+
+  /* === MAIN AREA — займає весь простір між header і nav === */
+  .main {
+    display: block !important;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* === МОБІЛЬНІ ПАНЕЛІ — кожна на весь екран, переключаються через nav === */
+  .left-panel,
+  .center-area,
+  .right-panel {
+    position: absolute !important;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: none !important;
+    border: none !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .left-panel.mob-active,
+  .center-area.mob-active,
+  .right-panel.mob-active {
+    display: flex !important;
+    flex-direction: column;
+  }
+
+  /* === LEFT PANEL (ресурси + вкладки) === */
+  .left-panel { padding-bottom: calc(var(--nav-h) + 8px); }
+  .panel-tabs {
+    flex-shrink: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-bottom: 1px solid var(--border);
+  }
   .panel-tabs::-webkit-scrollbar { display: none; }
-  .ptab { font-size: 8px !important; padding: 7px 8px !important; white-space: nowrap; }
-  .center-area { border-right: none; border-bottom: 1px solid var(--border); }
-  .map-area { height: 200px !important; min-height: 200px !important; }
-  .right-panel { max-height: 380px; overflow: auto; }
-  .clicker-btn { min-height: 52px !important; padding: 8px !important; }
-  .res-card { padding: 6px !important; }
-  .res-emoji { font-size: 18px !important; }
-  .res-val { font-size: 13px !important; }
+  .ptab {
+    font-size: 9px !important;
+    padding: 9px 10px !important;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .panel-content { flex: 1; overflow-y: auto; padding: 8px; }
+
+  /* Ресурси — 3 колонки на мобільному */
+  .res-grid { grid-template-columns: 1fr 1fr 1fr !important; gap: 5px !important; }
+  .res-card { padding: 6px 5px !important; text-align: center; }
+  .res-emoji { font-size: 20px !important; display: block; }
+  .res-val { font-size: 12px !important; }
+  .res-name { font-size: 8px !important; }
+  .res-ps { font-size: 8px !important; }
+
+  /* === CENTER AREA (карта + клікер) === */
+  .center-area { padding-bottom: calc(var(--nav-h) + 8px); }
+
+  /* Клікер — великі кнопки вгорі */
+  .clicker-strip {
+    flex-shrink: 0;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 10px !important;
+    justify-content: center;
+  }
+  .click-btn {
+    min-width: 72px !important;
+    min-height: 60px !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    font-size: 10px !important;
+    padding: 8px 10px !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .click-btn .cb-emoji { font-size: 24px !important; }
+  .click-btn .cb-amt { position: static !important; font-size: 9px !important; }
+  .click-btn .cb-ac { position: static !important; font-size: 8px !important; }
+
+  /* Карта — решта простору */
+  .map-area {
+    flex: 1 !important;
+    min-height: 200px !important;
+    height: auto !important;
+  }
+
+  /* === RIGHT PANEL (авто/квести/оборона) === */
+  .right-panel { padding-bottom: calc(var(--nav-h) + 8px); }
+  .rpanel-tabs { overflow-x: auto; scrollbar-width: none; }
+  .rpanel-tabs::-webkit-scrollbar { display: none; }
+
+  /* === BOTTOM NAV === */
+  #mob-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: var(--nav-h);
+    padding-bottom: var(--tg-safe-bottom);
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 1000;
+    flex-shrink: 0;
+  }
+  .mob-nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: transparent;
+    border: none;
+    color: var(--dim);
+    font-family: var(--font);
+    font-size: 8px;
+    cursor: pointer;
+    transition: all .15s;
+    padding: 4px 2px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mob-nav-btn .nav-icon { font-size: 20px; line-height: 1; }
+  .mob-nav-btn.active { color: var(--gold); }
+  .mob-nav-btn.active .nav-icon { transform: scale(1.1); }
 }
 /* Cloud save status */
 #cloud-status {
@@ -529,6 +666,20 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 </style>
 </head>
 <body>
+<div id="mob-nav">
+  <button class="mob-nav-btn active" id="nav-0" onclick="mobNav(0)">
+    <span class="nav-icon">⛏</span>РЕСУРСИ
+  </button>
+  <button class="mob-nav-btn" id="nav-1" onclick="mobNav(1)">
+    <span class="nav-icon">🗺</span>КАРТА
+  </button>
+  <button class="mob-nav-btn" id="nav-2" onclick="mobNav(2)">
+    <span class="nav-icon">⚙️</span>АВТО
+  </button>
+  <button class="mob-nav-btn" id="nav-3" onclick="mobNav(3)">
+    <span class="nav-icon">🏆</span>ТОП
+  </button>
+</div>
 <div id="cloud-status">💾 Збереження...</div>
 <div id="lb-overlay">
   <div id="lb-panel">
@@ -3770,40 +3921,42 @@ function deserializeGameState(s) {
 
 /** Зберігаємо на сервер */
 async function cloudSave() {
-  if (!_cloudEnabled) {
-    // Fallback: localStorage
-    try { localStorage.setItem('cubic_save', JSON.stringify(serializeGameState())); } catch(e){}
-    return;
-  }
-
   const state = serializeGameState();
-  const hash = JSON.stringify([state.epoch, state.buildCount, Math.floor(SCORES.total)]);
-  if (hash === _lastSaveHash) return; // нічого не змінилось
+  const hash = JSON.stringify([state.epoch, state.buildCount, Math.floor(SCORES.total || 0)]);
+  if (hash === _lastSaveHash) return;
   _lastSaveHash = hash;
+
+  // Завжди зберігаємо локально як backup
+  try { localStorage.setItem('cubic_save', JSON.stringify(state)); } catch(e){}
+
+  if (!_cloudEnabled) return;
 
   showCloudStatus('saving', '💾 Збереження...');
   try {
+    const body = {
+      state,
+      epoch: state.epoch || 1,
+      score: Math.floor(SCORES.total || 0),
+      tg_user_id: TG_USER?.id || null,
+      tg_first_name: TG_USER?.first_name || null,
+    };
     const resp = await fetch(API_BASE + '/api/save', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-telegram-init-data': TG?.initData || '',
       },
-      body: JSON.stringify({
-        state,
-        epoch: state.epoch,
-        score: SCORES.total,
-      }),
+      body: JSON.stringify(body),
     });
     if (resp.ok) {
       showCloudStatus('saved', '✅ Збережено');
     } else {
-      showCloudStatus('error', '⚠️ Помилка збереження');
+      const err = await resp.json().catch(() => ({}));
+      console.warn('Save failed:', resp.status, err);
+      showCloudStatus('error', '⚠️ ' + (err.error || 'Помилка збереження'));
     }
   } catch (e) {
-    showCloudStatus('error', '📵 Офлайн');
-    // Fallback to localStorage
-    try { localStorage.setItem('cubic_save_backup', JSON.stringify(serializeGameState())); } catch(_){}
+    showCloudStatus('error', '📵 Офлайн — збережено локально');
   }
 }
 
@@ -3920,6 +4073,55 @@ async function openLeaderboard() {
   addLog('☁️ Синхронізація з хмарою активна. Прогрес зберігається автоматично!', true);
 })();
 
+
+// ============================================================
+// MOBILE NAV — переключення панелей
+// ============================================================
+function isMobile() { return window.innerWidth <= 700; }
+
+function mobNav(idx) {
+  if (!isMobile()) return;
+
+  const panels = [
+    document.querySelector('.left-panel'),
+    document.querySelector('.center-area'),
+    document.querySelector('.right-panel'),
+  ];
+
+  // Панель 3 = лідерборд (не окрема панель)
+  if (idx === 3) {
+    openLeaderboard();
+    return;
+  }
+
+  panels.forEach((p, i) => {
+    if (!p) return;
+    p.classList.toggle('mob-active', i === idx);
+  });
+
+  document.querySelectorAll('.mob-nav-btn').forEach((b, i) => {
+    b.classList.toggle('active', i === idx);
+  });
+}
+
+// Ініціалізуємо мобільну навігацію після завантаження
+function initMobNav() {
+  if (!isMobile()) return;
+  // За замовчуванням — перша панель (ресурси)
+  mobNav(0);
+}
+
+window.addEventListener('resize', () => {
+  if (!isMobile()) {
+    // Скидаємо мобільні класи на десктопі
+    document.querySelectorAll('.left-panel,.center-area,.right-panel')
+      .forEach(p => p.classList.remove('mob-active'));
+  } else {
+    initMobNav();
+  }
+});
+
+initMobNav();
 </script>
 </body>
 </html>
