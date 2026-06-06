@@ -711,17 +711,21 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
    TUTORIAL / НАВЧАННЯ SYSTEM
    ============================================================ */
 #tutorial-overlay {
-  position: fixed; inset: 0; z-index: 20000;
+  position: fixed; inset: 0; z-index: 99999;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.75);
-  backdrop-filter: blur(2px);
+  background: rgba(0,0,0,0.82);
+  touch-action: manipulation;
+  pointer-events: all;
+  -webkit-tap-highlight-color: transparent;
 }
-#tutorial-overlay.hidden { display: none; }
+#tutorial-overlay.hidden { display: none !important; pointer-events: none; }
 #tutorial-box {
   background: var(--panel); border: 2px solid var(--gold);
   max-width: 340px; width: 92vw; padding: 20px;
   box-shadow: 0 0 40px rgba(232,184,75,0.3);
   position: relative;
+  touch-action: manipulation;
+  pointer-events: all;
 }
 .tut-step-badge {
   font-size: 9px; color: var(--dim); margin-bottom: 8px; letter-spacing: 1px;
@@ -751,13 +755,16 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   box-shadow: 0 0 5px var(--gold); }
 .tut-btns { display: flex; gap: 8px; }
 .tut-btn {
-  font-family: var(--font); font-size: 11px; padding: 8px 14px;
+  font-family: var(--font); font-size: 13px; padding: 12px 14px;
   border: 1px solid var(--border); background: transparent;
   color: var(--dim); cursor: pointer; transition: all .15s; flex: 1;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 44px;
 }
 .tut-btn.primary { border-color: var(--gold); color: var(--gold); }
-.tut-btn.primary:hover { background: var(--gold); color: #000; }
-.tut-btn:hover { border-color: var(--text); color: var(--text); }
+.tut-btn.primary:hover, .tut-btn.primary:active { background: var(--gold); color: #000; }
+.tut-btn:hover, .tut-btn:active { border-color: var(--text); color: var(--text); }
 
 /* ============================================================
    CITY TAB / MAP VISUAL IMPROVEMENTS
@@ -850,8 +857,8 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     <div class="tut-tip" id="tut-tip">💡 Навчання можна пропустити або переглянути знову через меню.</div>
     <div class="tut-progress" id="tut-dots"></div>
     <div class="tut-btns">
-      <button class="tut-btn" onclick="skipTutorial()">⏭ ПРОПУСТИТИ</button>
-      <button class="tut-btn primary" id="tut-next-btn" onclick="tutorialNext()">ДАЛІ →</button>
+      <button class="tut-btn" onclick="skipTutorial()" ontouchstart="skipTutorial()">⏭ ПРОПУСТИТИ</button>
+      <button class="tut-btn primary" id="tut-next-btn" onclick="tutorialNext()" ontouchstart="tutorialNext()">ДАЛІ →</button>
     </div>
   </div>
 </div>
@@ -2162,7 +2169,10 @@ function renderTutorialStep(){
   }
 }
 
+let _tutActionLock = false;
+
 function tutorialNext(){
+  if(_tutActionLock) return; _tutActionLock=true; setTimeout(()=>_tutActionLock=false,400);
   tutorialStep++;
   if(tutorialStep >= TUTORIAL_STEPS.length){
     skipTutorial();
@@ -2172,6 +2182,7 @@ function tutorialNext(){
 }
 
 function skipTutorial(){
+  if(_tutActionLock) return; _tutActionLock=true; setTimeout(()=>_tutActionLock=false,400);
   document.getElementById('tutorial-overlay').classList.add('hidden');
   tutorialDone = true;
   sessionStorage.setItem('tut_done','1');
