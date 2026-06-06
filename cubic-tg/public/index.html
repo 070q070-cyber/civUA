@@ -1427,17 +1427,205 @@ const BRANCHES = [
 const BR_EMOJI = ["🌲","⛏️","🌾","⚒️","⚙️","🍷","🧵","🧪","⚡","💾","🤖","🔭"];
 
 // Building templates per epoch — logically named
+// Шаблони будівель — кожна ГІЛКА має унікальний профіль
+// bIdx: 0=Лісова 1=Гірнича 2=Аграрна 3=Ковальська 4=Металург
+//        5=Харчова 6=Текстильна 7=Хімічна 8=Енергетична 9=Електронна
+//        10=Робото 11=Наукова
+const BRANCH_EP_TEMPLATES = {
+  // === Лісова (0) ===
+  0: {
+    1:{name:"Лісопильня",       inp:{wood:2},              out:{logs:3,charcoal:0.3},      cost:{wood:30,stone:15}},
+    2:{name:"Деревообробня",    inp:{logs:2,water:1},      out:{boards:2,bark:0.5},        cost:{logs:40,clay:20}},
+    3:{name:"Смолокурня",       inp:{logs:3,charcoal:1},   out:{charcoal:2,resin:0.5},     cost:{logs:60,stone:40}},
+    4:{name:"Деревяна майстерня",inp:{boards:2,charcoal:1},out:{tools:1,bronze:0.3},       cost:{boards:50,bricks:30}},
+    5:{name:"Вугільня",         inp:{logs:4,raw_ore:1},    out:{charcoal:3,iron:0.3},      cost:{boards:60,bricks:40}},
+    6:{name:"Папероробня",      inp:{logs:3,water:2},      out:{paper:2,flour:0.3},        cost:{boards:70,iron:15}},
+    7:{name:"Друкарня",         inp:{paper:2,charcoal:1},  out:{books:1,paper:0.5},        cost:{boards:80,iron:25}},
+    8:{name:"Коксова піч",      inp:{charcoal:3,iron:1},   out:{coke:2,steel:0.3},         cost:{bricks:100,iron:40}},
+    9:{name:"Целюлозний завод", inp:{logs:5,water:3},      out:{paper:3,rubber:0.5},       cost:{steel:40,iron:60}},
+    10:{name:"Деревна електростанція",inp:{charcoal:4,logs:2},out:{electricity:3,coke:0.5},cost:{steel:60,iron:50}},
+    11:{name:"Вуглецева лабораторія",inp:{charcoal:3,electricity:2},out:{silicon:0.5,chips:0.2},cost:{steel:80,electricity:40}},
+    12:{name:"Нанолісозавод",   inp:{chips:1,logs:3,electricity:2},out:{auto_drone:0.1,robot:0.2},cost:{steel:100,chips:50}},
+  },
+  // === Гірнича (1) ===
+  1: {
+    1:{name:"Кам'яна яма",      inp:{stone:2},             out:{raw_ore:2,stone:0.5},      cost:{wood:30,stone:20}},
+    2:{name:"Шахта",            inp:{raw_ore:2,wood:1},    out:{copper:1,raw_ore:1},       cost:{logs:50,stone:30}},
+    3:{name:"Мідна кузня",      inp:{raw_ore:3,charcoal:2},out:{copper:2,bronze:0.5},      cost:{logs:60,stone:40}},
+    4:{name:"Ливарня",          inp:{copper:2,charcoal:2}, out:{bronze:2,tools:0.5},       cost:{boards:60,bricks:30}},
+    5:{name:"Залізний кар'єр",  inp:{raw_ore:4,charcoal:3},out:{iron:2,tools:0.5},         cost:{boards:70,bronze:20}},
+    6:{name:"Рудозбагачувальна",inp:{raw_ore:3,water:2},   out:{iron:1.5,copper:0.5},      cost:{boards:80,iron:15}},
+    7:{name:"Доменна піч",      inp:{iron:3,charcoal:3},   out:{steel:1.5,coke:0.5},       cost:{bricks:90,iron:30}},
+    8:{name:"Сталеварня",       inp:{iron:4,coke:2},       out:{steel:3,tools:0.3},        cost:{bricks:120,iron:50}},
+    9:{name:"Нафтошахта",       inp:{raw_ore:4,tools:1},   out:{oil:2,rubber:0.3},         cost:{steel:50,iron:60}},
+    10:{name:"Вугільна шахта",  inp:{raw_ore:3,electricity:1},out:{coke:2,electricity:0.5},cost:{steel:60,iron:50}},
+    11:{name:"Кристалічна шахта",inp:{electricity:2,raw_ore:3},out:{silicon:1.5,chips:0.3},cost:{steel:90,electricity:40}},
+    12:{name:"Роботошахта",     inp:{chips:2,electricity:3,raw_ore:2},out:{robot:0.3,auto_drone:0.15},cost:{steel:110,chips:60}},
+  },
+  // === Аграрна (2) ===
+  2: {
+    1:{name:"Городина",         inp:{water:1,vegetation:1},out:{wheat:2,vegetation:0.5},   cost:{wood:25,stone:15}},
+    2:{name:"Пасіка",           inp:{vegetation:2,water:1},out:{barley:2,wheat:0.5},       cost:{logs:40,clay:20}},
+    3:{name:"Млин",             inp:{wheat:3,water:1},     out:{flour:2,barley:0.5},       cost:{logs:60,stone:40}},
+    4:{name:"Пивоварня",        inp:{barley:2,water:2},    out:{beer:2,flour:0.3},         cost:{boards:50,bricks:30}},
+    5:{name:"Виноробня",        inp:{wheat:2,water:2},     out:{wine:2,beer:0.3},          cost:{boards:60,bricks:40}},
+    6:{name:"Хлібопекарня",     inp:{flour:2,water:1},     out:{flour:1.5,wine:0.3},       cost:{boards:70,iron:15}},
+    7:{name:"Ферма тварин",     inp:{wheat:3,water:2},     out:{paper:1,barley:1},         cost:{boards:80,iron:25}},
+    8:{name:"Агрохімічний завод",inp:{vegetation:4,water:3},out:{rubber:1,oil:0.3},        cost:{bricks:100,iron:40}},
+    9:{name:"Теплиця",          inp:{water:3,electricity:1},out:{vegetation:3,wheat:1},    cost:{steel:40,iron:60}},
+    10:{name:"Агролабораторія", inp:{electricity:2,water:3},out:{electricity:1,vegetation:2},cost:{steel:60,iron:50}},
+    11:{name:"Гідропоніка",     inp:{electricity:3,water:2},out:{silicon:0.3,wheat:3},     cost:{steel:80,electricity:40}},
+    12:{name:"Нанофабрика їжі", inp:{chips:1,electricity:2,water:2},out:{robot:0.15,auto_drone:0.1},cost:{steel:100,chips:40}},
+  },
+  // === Ковальська (3) ===
+  3: {
+    1:{name:"Каменяр",          inp:{stone:3},             out:{bricks:2,stone:0.5},       cost:{wood:30,stone:20}},
+    2:{name:"Гончарня",         inp:{clay:2,water:1},      out:{bricks:2,clay:0.5},        cost:{logs:40,clay:30}},
+    3:{name:"Кузня",            inp:{raw_ore:2,charcoal:2},out:{tools:2,bronze:0.5},       cost:{logs:60,stone:40}},
+    4:{name:"Бронзова кузня",   inp:{bronze:2,charcoal:2}, out:{tools:2.5,copper:0.3},     cost:{boards:50,bricks:30}},
+    5:{name:"Залізна кузня",    inp:{iron:2,charcoal:2},   out:{tools:2,iron:0.5},         cost:{boards:70,bronze:20}},
+    6:{name:"Ремісничий цех",   inp:{iron:2,tools:1},      out:{tools:3,iron:0.3},         cost:{boards:80,iron:20}},
+    7:{name:"Зброярня",         inp:{iron:3,bronze:1},     out:{tools:3,steel:0.3},        cost:{bricks:90,iron:30}},
+    8:{name:"Сталева кузня",    inp:{steel:2,coke:1},      out:{tools:3,steel:1},          cost:{bricks:110,iron:50}},
+    9:{name:"Механічна майстерня",inp:{steel:2,iron:2},    out:{rubber:0.5,tools:3},       cost:{steel:50,iron:60}},
+    10:{name:"Електрокузня",    inp:{electricity:2,steel:2},out:{cable:1,tools:3},         cost:{steel:60,iron:50}},
+    11:{name:"Мікрозавод",      inp:{electricity:3,steel:2},out:{chips:0.5,tools:2},       cost:{steel:80,electricity:40}},
+    12:{name:"Роботомайстерня", inp:{chips:2,steel:2,electricity:2},out:{robot:0.2,auto_drone:0.2},cost:{steel:100,chips:50}},
+  },
+  // === Металургійна (4) ===
+  4: {
+    1:{name:"Вапнярня",         inp:{stone:3,wood:1},      out:{bricks:3,charcoal:0.3},    cost:{wood:35,stone:25}},
+    2:{name:"Цегельня",         inp:{clay:3,charcoal:1},   out:{bricks:3,clay:0.3},        cost:{logs:50,clay:30}},
+    3:{name:"Мідна виплавка",   inp:{raw_ore:3,charcoal:2},out:{copper:2,bronze:0.3},      cost:{logs:70,stone:50}},
+    4:{name:"Бронзоварня",      inp:{copper:3,charcoal:2}, out:{bronze:2.5,tools:0.3},     cost:{boards:60,bricks:35}},
+    5:{name:"Залізоварня",      inp:{raw_ore:5,coke:2},    out:{iron:2.5,tools:0.5},       cost:{boards:70,bronze:25}},
+    6:{name:"Чавунна піч",      inp:{iron:3,coke:3},       out:{iron:2,steel:0.5},         cost:{boards:80,iron:20}},
+    7:{name:"Прокатний стан",   inp:{iron:4,coke:2},       out:{steel:2,iron:0.5},         cost:{bricks:100,iron:40}},
+    8:{name:"Мартенівська піч", inp:{iron:5,coke:3},       out:{steel:3,coke:0.3},         cost:{bricks:130,iron:60}},
+    9:{name:"Нафтохімія",       inp:{oil:3,raw_ore:2},     out:{plastic:2,rubber:1},       cost:{steel:55,iron:65}},
+    10:{name:"Проводка",        inp:{copper:3,electricity:1},out:{cable:2,electricity:0.5},cost:{steel:65,iron:55}},
+    11:{name:"Мікросхемний завод",inp:{silicon:2,electricity:3},out:{chips:1,silicon:0.3}, cost:{steel:85,electricity:45}},
+    12:{name:"Автозавод",       inp:{steel:3,chips:2,electricity:3},out:{robot:0.25,auto_drone:0.2},cost:{steel:120,chips:60}},
+  },
+  // === Харчова (5) ===
+  5: {
+    1:{name:"Рибальська хатина",inp:{water:2},             out:{water:1,wheat:1},          cost:{wood:25,stone:10}},
+    2:{name:"Солеварня",        inp:{water:3,stone:1},     out:{barley:1.5,water:0.5},     cost:{logs:40,stone:25}},
+    3:{name:"М'ясна крамниця",  inp:{wheat:2,vegetation:2},out:{flour:2,beer:0.3},         cost:{logs:60,clay:30}},
+    4:{name:"Пивоварний цех",   inp:{barley:3,water:2},    out:{beer:3,flour:0.3},         cost:{boards:55,bricks:30}},
+    5:{name:"Винний льох",      inp:{wheat:3,water:1},     out:{wine:3,beer:0.3},          cost:{boards:65,bricks:40}},
+    6:{name:"Кулінарний цех",   inp:{flour:3,water:1},     out:{wine:1,beer:1,flour:1},    cost:{boards:75,iron:18}},
+    7:{name:"Харчова фабрика",  inp:{wheat:4,water:3},     out:{flour:3,paper:0.3},        cost:{boards:85,iron:28}},
+    8:{name:"Рафінерія",        inp:{oil:2,wheat:2},       out:{oil:1.5,plastic:0.5},      cost:{bricks:110,iron:45}},
+    9:{name:"Хімічна кухня",    inp:{oil:3,water:2},       out:{rubber:1.5,plastic:1},     cost:{steel:45,iron:65}},
+    10:{name:"Електрокухня",    inp:{electricity:2,flour:2},out:{electricity:1,cable:0.5}, cost:{steel:65,iron:55}},
+    11:{name:"Нанохарчування",  inp:{electricity:3,water:3},out:{silicon:0.3,chips:0.2},   cost:{steel:80,electricity:45}},
+    12:{name:"Синтез їжі",      inp:{chips:1,electricity:3,water:2},out:{auto_drone:0.12,robot:0.18},cost:{steel:105,chips:45}},
+  },
+  // === Текстильна (6) ===
+  6: {
+    1:{name:"Прядильня",        inp:{vegetation:2},        out:{bark:1.5,vegetation:0.5},  cost:{wood:28,stone:12}},
+    2:{name:"Ткацький стан",    inp:{bark:2,water:1},      out:{bark:2,flour:0.3},         cost:{logs:42,clay:22}},
+    3:{name:"Фарбувальня",      inp:{vegetation:3,water:2},out:{bark:2,charcoal:0.5},      cost:{logs:62,stone:42}},
+    4:{name:"Шкіряна майстерня",inp:{barley:2,water:2},    out:{tools:1,bark:1.5},         cost:{boards:52,bricks:32}},
+    5:{name:"Швейна майстерня", inp:{bark:3,iron:1},       out:{tools:1.5,bark:1},         cost:{boards:62,bricks:42}},
+    6:{name:"Суконна фабрика",  inp:{bark:3,water:2},      out:{paper:1,bark:2},           cost:{boards:72,iron:16}},
+    7:{name:"Паперова фабрика", inp:{logs:3,bark:2},       out:{paper:3,books:0.2},        cost:{boards:82,iron:26}},
+    8:{name:"Хімволокна",       inp:{oil:2,bark:2},        out:{rubber:1,plastic:0.5},     cost:{bricks:105,iron:42}},
+    9:{name:"Полімерна фабрика",inp:{plastic:2,rubber:2},  out:{plastic:2,rubber:1},       cost:{steel:42,iron:62}},
+    10:{name:"Синтетичний завод",inp:{electricity:2,plastic:2},out:{cable:1.5,plastic:0.5},cost:{steel:62,iron:52}},
+    11:{name:"Нанотекстиль",    inp:{electricity:3,plastic:3},out:{silicon:0.4,chips:0.2}, cost:{steel:82,electricity:42}},
+    12:{name:"Молекулярний ткач",inp:{chips:2,electricity:2,plastic:2},out:{robot:0.2,auto_drone:0.15},cost:{steel:102,chips:52}},
+  },
+  // === Хімічна (7) ===
+  7: {
+    1:{name:"Дьогтярня",        inp:{wood:3,charcoal:1},   out:{charcoal:2,resin:0.8},     cost:{wood:32,stone:18}},
+    2:{name:"Лужарня",          inp:{charcoal:2,water:2},  out:{bricks:1,charcoal:1},      cost:{logs:45,clay:25}},
+    3:{name:"Смолоперегонка",   inp:{charcoal:3,logs:2},   out:{coke:1,charcoal:1.5},      cost:{logs:65,stone:45}},
+    4:{name:"Бронзова алхімія", inp:{copper:2,charcoal:2}, out:{bronze:2,coke:0.5},        cost:{boards:55,bricks:32}},
+    5:{name:"Хімічна піч",      inp:{coke:2,iron:2},       out:{iron:2,coke:1},            cost:{boards:68,bronze:22}},
+    6:{name:"Дистиляційня",     inp:{oil:2,water:3},       out:{oil:2,rubber:0.8},         cost:{boards:78,iron:18}},
+    7:{name:"Хімлабораторія",   inp:{oil:3,copper:1},      out:{plastic:2,rubber:1},       cost:{boards:88,iron:28}},
+    8:{name:"Нафтохімічний завод",inp:{oil:4,coke:2},      out:{plastic:3,rubber:1},       cost:{bricks:115,iron:48}},
+    9:{name:"Полімерний завод",  inp:{plastic:3,oil:2},    out:{rubber:2,plastic:2},       cost:{steel:48,iron:68}},
+    10:{name:"Електрохімія",    inp:{electricity:3,oil:2}, out:{cable:1,electricity:1},    cost:{steel:68,iron:52}},
+    11:{name:"Молекулярна хімія",inp:{electricity:3,plastic:3},out:{silicon:1,chips:0.4},  cost:{steel:88,electricity:48}},
+    12:{name:"Синтезатор",      inp:{chips:3,electricity:3,plastic:2},out:{robot:0.3,auto_drone:0.2},cost:{steel:118,chips:58}},
+  },
+  // === Енергетична (8) ===
+  8: {
+    1:{name:"Водяний млин",     inp:{water:3},             out:{water:2,logs:0.5},         cost:{wood:30,stone:20}},
+    2:{name:"Вітряк",           inp:{logs:2,stone:2},      out:{flour:1.5,logs:0.5},       cost:{logs:48,clay:28}},
+    3:{name:"Водяна колесо",    inp:{water:3,logs:2},      out:{charcoal:1,logs:1.5},      cost:{logs:68,stone:48}},
+    4:{name:"Парова машина",    inp:{charcoal:3,water:2},  out:{coke:1,bronze:0.5},        cost:{boards:58,bricks:35}},
+    5:{name:"Парова піч",       inp:{coke:3,iron:1},       out:{iron:2,steam:1},           cost:{boards:68,bronze:25}},
+    6:{name:"Паровий завод",    inp:{coke:3,water:3},      out:{steam:2,oil:0.3},          cost:{boards:78,iron:20}},
+    7:{name:"Нафтова станція",  inp:{oil:3,water:2},       out:{oil:2,steam:1},            cost:{boards:88,iron:30}},
+    8:{name:"Парогенератор",    inp:{coke:4,water:3},      out:{electricity:2,steam:1},    cost:{bricks:108,iron:48}},
+    9:{name:"Нафтова електростанція",inp:{oil:4,water:2},  out:{electricity:3,oil:0.5},    cost:{steel:52,iron:68}},
+    10:{name:"Ядерний реактор", inp:{electricity:3,oil:2}, out:{electricity:5,cable:0.5},  cost:{steel:72,iron:58}},
+    11:{name:"Сонячна панель",  inp:{silicon:2,electricity:1},out:{electricity:4,silicon:0.3},cost:{steel:88,electricity:52}},
+    12:{name:"Термоядерний реактор",inp:{chips:2,electricity:5,silicon:2},out:{electricity:8,robot:0.1},cost:{steel:125,chips:65}},
+  },
+  // === Електронна (9) ===
+  9: {
+    1:{name:"Ковальський цех",  inp:{raw_ore:2,charcoal:1},out:{copper:1.5,raw_ore:0.5},  cost:{wood:32,stone:22}},
+    2:{name:"Мідярня",          inp:{copper:2,charcoal:1}, out:{copper:2,bronze:0.3},      cost:{logs:48,stone:32}},
+    3:{name:"Дротяний завод",   inp:{copper:3,charcoal:2}, out:{copper:2,bronze:0.5},      cost:{logs:68,stone:48}},
+    4:{name:"Бронзовий провід", inp:{bronze:2,copper:2},   out:{bronze:2.5,tools:0.3},     cost:{boards:58,bricks:35}},
+    5:{name:"Залізний провід",  inp:{iron:3,copper:1},     out:{iron:2,tools:0.5},         cost:{boards:72,bronze:25}},
+    6:{name:"Кабельний завод",  inp:{copper:3,iron:2},     out:{cable:2,iron:0.5},         cost:{boards:82,iron:22}},
+    7:{name:"Трансформатор",    inp:{copper:4,iron:2},     out:{cable:3,electricity:0.3},  cost:{boards:92,iron:32}},
+    8:{name:"Електрозавод",     inp:{copper:4,coke:2},     out:{cable:3,electricity:0.5},  cost:{bricks:112,iron:52}},
+    9:{name:"Кремнієвий завод", inp:{electricity:3,raw_ore:3},out:{silicon:2,cable:0.5},   cost:{steel:52,iron:72}},
+    10:{name:"Електронна плата",inp:{silicon:2,copper:2,electricity:2},out:{chips:1,silicon:0.5},cost:{steel:72,electricity:52}},
+    11:{name:"Мікропроцесор",   inp:{chips:2,silicon:2,electricity:3},out:{chips:2,silicon:0.3},cost:{steel:92,electricity:58}},
+    12:{name:"Квантовий процесор",inp:{chips:4,electricity:5,silicon:3},out:{auto_drone:0.25,robot:0.2},cost:{steel:132,chips:72}},
+  },
+  // === Робототехнічна (10) ===
+  10: {
+    1:{name:"Стругальня",       inp:{wood:2,stone:1},      out:{logs:2,bark:0.5},          cost:{wood:32,stone:18}},
+    2:{name:"Цвяховий завод",   inp:{copper:1,charcoal:1}, out:{bronze:1,tools:0.5},       cost:{logs:48,clay:28}},
+    3:{name:"Механічний цех",   inp:{bronze:2,charcoal:2}, out:{tools:2,bronze:0.3},       cost:{logs:68,stone:48}},
+    4:{name:"Пружинний завод",  inp:{bronze:3,iron:1},     out:{tools:2.5,bronze:0.5},     cost:{boards:58,bricks:35}},
+    5:{name:"Шестірний завод",  inp:{iron:3,bronze:1},     out:{tools:3,iron:0.5},         cost:{boards:72,bronze:25}},
+    6:{name:"Механічна машина", inp:{iron:3,tools:2},      out:{tools:3,iron:0.5},         cost:{boards:82,iron:22}},
+    7:{name:"Паровий автомат",  inp:{steel:2,coke:2},      out:{tools:3,steel:0.3},        cost:{boards:92,iron:32}},
+    8:{name:"Механічний завод", inp:{steel:3,coke:2},      out:{tools:4,steel:0.5},        cost:{bricks:112,iron:52}},
+    9:{name:"Пневматичний завод",inp:{steel:2,oil:2},      out:{rubber:2,tools:2},         cost:{steel:52,iron:72}},
+    10:{name:"Роботомайстерня", inp:{steel:3,electricity:2},out:{cable:1,tools:3},         cost:{steel:72,electricity:52}},
+    11:{name:"Кібермайстерня",  inp:{chips:2,electricity:3,steel:2},out:{robot:0.5,chips:0.3},cost:{steel:92,electricity:58}},
+    12:{name:"Мегаробот",       inp:{robot:1,chips:3,electricity:5},out:{robot:1,auto_drone:0.3},cost:{steel:132,chips:72}},
+  },
+  // === Наукова (11) ===
+  11: {
+    1:{name:"Обсерваторія",     inp:{stone:2,wood:1},      out:{stone:1.5,raw_ore:0.5},    cost:{wood:35,stone:25}},
+    2:{name:"Бібліотека",       inp:{logs:2,vegetation:1}, out:{books:1,logs:0.5},         cost:{logs:50,clay:30}},
+    3:{name:"Алхімічна лабораторія",inp:{charcoal:2,water:2},out:{coke:1,charcoal:1.5},   cost:{logs:70,stone:50}},
+    4:{name:"Астрологічна вежа",inp:{books:1,stone:2},     out:{books:1.5,bronze:0.3},     cost:{boards:60,bricks:35}},
+    5:{name:"Анатомічний театр",inp:{books:1,iron:1},      out:{books:2,tools:0.5},        cost:{boards:72,bricks:45}},
+    6:{name:"Наукова академія", inp:{books:2,wine:1},      out:{books:2.5,paper:0.5},      cost:{boards:82,iron:20}},
+    7:{name:"Університет",      inp:{books:3,paper:2},     out:{books:3,paper:1},          cost:{boards:92,iron:32}},
+    8:{name:"Хімічний інститут",inp:{books:2,steel:1},     out:{coke:1,plastic:0.5},       cost:{bricks:115,iron:50}},
+    9:{name:"Дослідний реактор",inp:{books:2,oil:2},       out:{silicon:0.5,rubber:1},     cost:{steel:52,iron:70}},
+    10:{name:"Технологічний центр",inp:{books:3,electricity:2},out:{chips:0.5,electricity:1},cost:{steel:72,electricity:52}},
+    11:{name:"НДІ мікроелектроніки",inp:{books:2,chips:2,electricity:3},out:{chips:1.5,silicon:0.5},cost:{steel:92,electricity:60}},
+    12:{name:"Наукова сингулярність",inp:{chips:4,books:3,electricity:4},out:{auto_drone:0.3,robot:0.25},cost:{steel:130,chips:68}},
+  },
+};
+
+// Fallback для гілок без шаблону
 const EP_TEMPLATES = {
   1:{name:"Збирацька стоянка",   inp:{wood:2},           out:{logs:2,charcoal:0.5},    cost:{wood:30,stone:15}},
-  2:{name:"Сільськогосподарська ферма",inp:{water:1,vegetation:1},out:{wheat:1.5,barley:0.5},cost:{logs:40,clay:20}},
+  2:{name:"Аграрна ферма",       inp:{water:1,vegetation:1},out:{wheat:1.5,barley:0.5},cost:{logs:40,clay:20}},
   3:{name:"Ремісничий цех",      inp:{logs:2,charcoal:1},out:{boards:2,bricks:1},       cost:{logs:60,stone:40}},
   4:{name:"Бронзова ковальня",   inp:{raw_ore:3,charcoal:2},out:{copper:1.5,bronze:0.8},cost:{boards:50,bricks:30}},
   5:{name:"Залізоплавильний цех",inp:{raw_ore:4,charcoal:3},out:{iron:1.5,tools:0.5},   cost:{boards:60,bronze:20,bricks:40}},
   6:{name:"Середньовічна майстерня",inp:{wheat:2,water:1},out:{wine:1,beer:0.8,flour:0.5},cost:{boards:70,iron:15,bricks:50}},
-  7:{name:"Друкарсько-паперова фабрика",inp:{logs:3,water:2},out:{paper:2,books:0.3},   cost:{boards:80,iron:25,bricks:60}},
+  7:{name:"Паперова фабрика",    inp:{logs:3,water:2},   out:{paper:2,books:0.3},       cost:{boards:80,iron:25,bricks:60}},
   8:{name:"Промислова доменна піч",inp:{iron:2,charcoal:3},out:{steel:1,coke:0.8},      cost:{bricks:100,iron:40,boards:80}},
   9:{name:"Нафтопереробний завод",inp:{raw_ore:5,water:3},out:{oil:2,rubber:0.5,plastic:0.8},cost:{steel:40,iron:60,bricks:80}},
-  10:{name:"Електростанція",      inp:{copper:2,oil:1},   out:{cable:1,electricity:3},  cost:{steel:60,iron:50,plastic:30}},
+  10:{name:"Електростанція",      inp:{copper:2,oil:1},  out:{cable:1,electricity:3},  cost:{steel:60,iron:50,plastic:30}},
   11:{name:"Мікроелектронний завод",inp:{electricity:3,plastic:2},out:{silicon:1,chips:0.5},cost:{steel:80,electricity:40,plastic:50}},
   12:{name:"Автоматизований комплекс",inp:{chips:2,steel:1,electricity:3},out:{robot:0.3,auto_drone:0.2},cost:{steel:100,chips:50,electricity:60}}
 };
@@ -1452,16 +1640,17 @@ const EP_NAME_PREFIX = {
 let buildings = {};
 BRANCHES.forEach((branch,bIdx)=>{
   for(let ep=1;ep<=12;ep++){
-    let tmpl = EP_TEMPLATES[ep];
+    // Використовуємо гілковий шаблон якщо є, інакше fallback
+    let branchTemplates = BRANCH_EP_TEMPLATES[bIdx];
+    let tmpl = (branchTemplates && branchTemplates[ep]) ? branchTemplates[ep] : EP_TEMPLATES[ep];
     let id = `b${bIdx}_${ep}`;
-    let costScale = 1 + bIdx * 0.15;
+    let costScale = 1 + bIdx * 0.12;
     let cost = {};
     Object.keys(tmpl.cost).forEach(k=>{ cost[k] = Math.round(tmpl.cost[k] * costScale); });
-    // Unique name: "EpochPrefix BranchEmoji BuildingType [Branch]"
-    let uniqueName = `${BR_EMOJI[bIdx]} ${EP_NAME_PREFIX[ep]} ${tmpl.name.replace(/^[🌲⛏️🌾⚒️⚙️🍷🧵🧪⚡💾🤖🔭]\s*/,'')} [${branch}]`;
+    let uniqueName = `${BR_EMOJI[bIdx]} ${tmpl.name} [${branch}]`;
     buildings[id] = {
       name: uniqueName,
-      shortName: `${EP_NAME_PREFIX[ep]} ${tmpl.name.replace(/^[🌲⛏️🌾⚒️⚙️🍷🧵🧪⚡💾🤖🔭]\s*/,'')}`,
+      shortName: tmpl.name,
       epoch: ep, branch, brIdx: bIdx,
       cost, inputs:{...tmpl.inp}, outputs:{...tmpl.out},
       instances: [], mapTile: null
@@ -2277,7 +2466,7 @@ setInterval(()=>{
     if(b.epoch>epoch && b.instances.length===0) return;
     b.instances.forEach((inst,iIdx)=>{
       if(inst.disabled) return; // вимкнена споруда — пропускаємо
-      let m=inst.lvl*prodMult;
+      let m=inst.lvl*prodMult*getCityProductionMult();
       if(inst.autoClicker) m*=getBuildingACMult();
       let ok=Object.keys(b.inputs).every(k=>(storage[k]||0)>=b.inputs[k]*m*0.1);
       if(ok){
@@ -2407,6 +2596,23 @@ function renderUI(){
 
   // Resources
   let resDiv=document.getElementById('ui-resources');
+  // Попередження про пошкодження міста
+  let cityMult = getCityProductionMult();
+  let cityWarnHtml = '';
+  if (cityMult < 1.0) {
+    let pct = Math.round(goblinWave.cityHp / goblinWave.cityHpMax * 100);
+    let col = cityMult >= 0.5 ? 'var(--orange)' : 'var(--red)';
+    let penalty = Math.round((1-cityMult)*100);
+    cityWarnHtml = `<div style="padding:6px 10px;margin-bottom:6px;border:1px solid ${col};color:${col};font-size:11px;">
+      ⚠️ Місто пошкоджено (${pct}% HP) — виробництво −${penalty}%
+      ${cityMult===0?'<br>🚨 МІСТО ЗРУЙНОВАНЕ — виробництво зупинено!':''}
+      <br><span style="color:var(--dim);font-size:10px">Відремонтуй місто у вкладці ОБОРОНА</span>
+    </div>`;
+  }
+  if(resDiv) resDiv.insertAdjacentHTML('beforebegin', cityWarnHtml.replace(/^/, '<div id="city-warn">').replace(/$/, '</div>'));
+  // Видаляємо старе попередження
+  let oldWarn = document.getElementById('city-warn');
+  if(oldWarn && !cityWarnHtml) oldWarn.remove();
   resDiv.innerHTML='';
   Object.keys(RES).forEach(k=>{
     if(k==='synth_energy') return; // shown separately
@@ -3597,6 +3803,7 @@ function processGoblinWave(){
   if(tabBtn){ tabBtn.style.color=''; tabBtn.style.borderBottomColor=''; }
 
   recalcDefenseStats();
+  tickCityRepair(0.5); // 0.5 сек тік
   markDirty('full');
 }
 
@@ -4086,10 +4293,129 @@ async function openLeaderboard() {
   recalcDefenseStats();
   markDirty('full');
 
+  checkOfflineEarnings(); // перевіряємо офлайн заробіток
   addLog('☁️ Синхронізація з хмарою активна. Прогрес зберігається автоматично!', true);
 })();
 
 
+
+
+
+// ============================================================
+// ОФЛАЙН ЗАРОБІТОК (10% від онлайн-виробництва)
+// ============================================================
+const OFFLINE_RATE = 0.10; // 10%
+const OFFLINE_MAX_HOURS = 12; // максимум 12 годин офлайну
+
+function calcOfflineEarnings(secondsOffline) {
+  if (secondsOffline < 60) return null; // менше хвилини — не рахуємо
+  let capped = Math.min(secondsOffline, OFFLINE_MAX_HOURS * 3600);
+
+  let earned = {};
+
+  // Base resource buildings
+  Object.entries(BASE_RES_BUILDINGS).forEach(([id, b]) => {
+    if (!b.lvl || b.ep_req > epoch) return;
+    let prod = b.prodBase * b.lvl * baseResMultiplier * OFFLINE_RATE * capped;
+    if (prod > 0.01) earned[b.res] = (earned[b.res] || 0) + prod;
+  });
+
+  // Виробничі будівлі
+  Object.entries(buildings).forEach(([id, b]) => {
+    if (b.epoch > epoch && b.instances.length === 0) return;
+    b.instances.forEach(inst => {
+      if (inst.disabled) return;
+      let m = inst.lvl * prodMult * getCityProductionMult() * OFFLINE_RATE;
+      let ok = Object.keys(b.inputs).every(k => (storage[k] || 0) >= b.inputs[k] * m * 0.1);
+      if (!ok) return;
+      Object.keys(b.outputs).forEach(k => {
+        let gain = b.outputs[k] * m * capped * 0.5;
+        earned[k] = (earned[k] || 0) + gain;
+      });
+    });
+  });
+
+  // Фільтруємо нульові
+  Object.keys(earned).forEach(k => { if (earned[k] < 0.01) delete earned[k]; });
+  return Object.keys(earned).length > 0 ? { earned, seconds: capped } : null;
+}
+
+function applyOfflineEarnings(result) {
+  if (!result) return;
+  Object.entries(result.earned).forEach(([k, v]) => {
+    storage[k] = (storage[k] || 0) + v;
+  });
+}
+
+function showOfflineModal(result) {
+  if (!result) return;
+  let hours = Math.floor(result.seconds / 3600);
+  let mins  = Math.floor((result.seconds % 3600) / 60);
+  let timeStr = hours > 0 ? `${hours}г ${mins}хв` : `${mins}хв`;
+
+  let rows = Object.entries(result.earned)
+    .sort((a,b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([k, v]) => `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:18px">${RES[k]?.e || '📦'}</span>
+      <span style="flex:1;font-size:12px;color:var(--dim)">${RES[k]?.n || k}</span>
+      <span style="font-size:13px;color:var(--green)">+${fmt(v)}</span>
+    </div>`).join('');
+
+  let modal = document.createElement('div');
+  modal.id = 'offline-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:20000;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `<div style="background:var(--panel);border:1px solid var(--gold);padding:20px;max-width:340px;width:92vw;max-height:80vh;overflow:auto;">
+    <div style="font-family:var(--font2);font-size:11px;color:var(--gold);margin-bottom:4px;">💤 ОФЛАЙН-ЗАРОБІТОК</div>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:12px;">Поки тебе не було (${timeStr}), місто працювало на ${Math.round(OFFLINE_RATE*100)}%:</div>
+    ${rows}
+    <button onclick="document.getElementById('offline-modal').remove()" style="margin-top:14px;width:100%;font-family:var(--font);background:var(--gold);color:#000;border:none;padding:9px;cursor:pointer;font-size:12px;">
+      ✅ ЗАБРАТИ РЕСУРСИ
+    </button>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+function checkOfflineEarnings() {
+  let lastTime = parseInt(localStorage.getItem('cubic_last_online') || '0');
+  let now = Math.floor(Date.now() / 1000);
+  if (lastTime > 0) {
+    let diff = now - lastTime;
+    if (diff > 60) {
+      let result = calcOfflineEarnings(diff);
+      if (result) {
+        applyOfflineEarnings(result);
+        setTimeout(() => showOfflineModal(result), 2000);
+      }
+    }
+  }
+  // Оновлюємо час кожні 30 секунд
+  localStorage.setItem('cubic_last_online', now);
+  setInterval(() => {
+    localStorage.setItem('cubic_last_online', Math.floor(Date.now() / 1000));
+  }, 30000);
+}
+
+// ============================================================
+// CITY DAMAGE PENALTY — виробництво падає при низькому HP
+// ============================================================
+function getCityProductionMult() {
+  if (!goblinWave) return 1;
+  let pct = goblinWave.cityHp / goblinWave.cityHpMax;
+  if (pct >= 0.75) return 1.0;          // 75-100% HP — норма
+  if (pct >= 0.50) return 0.75;         // 50-75% HP  — -25%
+  if (pct >= 0.25) return 0.50;         // 25-50% HP  — -50%
+  if (pct > 0)     return 0.25;         // 1-25% HP   — -75%
+  return 0.0;                            // 0 HP       — виробництво зупинено!
+}
+
+// Повільне самовідновлення міста (0.5 HP/сек)
+function tickCityRepair(dt) {
+  if (!goblinWave || goblinWave.active) return;
+  if (goblinWave.cityHp >= goblinWave.cityHpMax) return;
+  let heal = 0.5 * dt;
+  goblinWave.cityHp = Math.min(goblinWave.cityHpMax, goblinWave.cityHp + heal);
+}
 
 // ============================================================
 // РЕМОНТ МІСТА
