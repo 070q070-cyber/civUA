@@ -580,11 +580,36 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   .click-btn .cb-amt { position: static !important; font-size: 9px !important; }
   .click-btn .cb-ac { position: static !important; font-size: 8px !important; }
 
-  /* Карта — решта простору */
+  /* Карта — займає весь простір */
+  .center-area.mob-active {
+    padding: 0 !important;
+    padding-bottom: calc(var(--nav-h)) !important;
+  }
+  /* Ховаємо клікер і epoch-bar щоб карта була більшою */
+  .center-area.mob-active .clicker-strip { display: none !important; }
+  .center-area.mob-active .epoch-res-bar { display: none !important; }
+  .center-area.mob-active .build-selector { display: none !important; }
   .map-area {
     flex: 1 !important;
-    min-height: 200px !important;
-    height: auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+  #isoCanvas {
+    width: 100% !important;
+    height: 100% !important;
+    touch-action: none;
+  }
+  /* Тач-підтримка для карти */
+  .map-controls-hint {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    color: var(--dim);
+    pointer-events: none;
+    white-space: nowrap;
   }
 
   /* === RIGHT PANEL (авто/квести/оборона) === */
@@ -592,7 +617,24 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   .rpanel-tabs { overflow-x: auto; scrollbar-width: none; }
   .rpanel-tabs::-webkit-scrollbar { display: none; }
 
-  /* === BOTTOM NAV === */
+  /* === КЛІКЕР режим === */
+  .center-area.mob-clicker-mode .map-area { display: none !important; }
+  .center-area.mob-clicker-mode .build-selector { display: none !important; }
+  .center-area.mob-clicker-mode .clicker-strip {
+    flex: 1; flex-wrap: wrap !important; gap: 10px !important;
+    padding: 16px 10px !important; justify-content: center; align-content: flex-start; overflow-y: auto;
+  }
+  .click-btn { min-width: 80px !important; min-height: 72px !important; flex-direction: column !important; gap: 3px !important; font-size: 10px !important; padding: 10px !important; align-items: center !important; justify-content: center !important; }
+  .click-btn .cb-emoji { font-size: 28px !important; }
+  .center-area.mob-map-mode { padding: 0 !important; padding-bottom: calc(var(--nav-h)) !important; }
+  .center-area.mob-map-mode .clicker-strip,
+  .center-area.mob-map-mode .epoch-res-bar,
+  .center-area.mob-map-mode .build-selector { display: none !important; }
+  .map-area { flex: 1 !important; width: 100% !important; height: 100% !important; min-height: 0 !important; }
+  #isoCanvas { display: block !important; width: 100% !important; height: 100% !important; touch-action: none; }
+  .map-controls-hint { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 9px; color: var(--dim); pointer-events: none; white-space: nowrap; }
+
+    /* === BOTTOM NAV === */
   #mob-nav {
     position: fixed;
     bottom: 0; left: 0; right: 0;
@@ -664,16 +706,19 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 <body>
 <div id="mob-nav">
   <button class="mob-nav-btn active" id="nav-0" onclick="mobNav(0)">
-    <span class="nav-icon">⛏</span>РЕСУРСИ
+    <span class="nav-icon">📦</span>РЕСУРСИ
   </button>
   <button class="mob-nav-btn" id="nav-1" onclick="mobNav(1)">
-    <span class="nav-icon">🗺</span>МІСТО
+    <span class="nav-icon">⛏</span>КЛІКЕР
   </button>
   <button class="mob-nav-btn" id="nav-2" onclick="mobNav(2)">
-    <span class="nav-icon">🤖</span>УПРАВЛ.
+    <span class="nav-icon">🗺</span>МІСТО
   </button>
   <button class="mob-nav-btn" id="nav-3" onclick="mobNav(3)">
-    <span class="nav-icon">🏆</span>ТОП
+    <span class="nav-icon">🏗</span>СПОРУДИ
+  </button>
+  <button class="mob-nav-btn" id="nav-4" onclick="mobNav(4)">
+    <span class="nav-icon">🤖</span>УПРАВЛ.
   </button>
 </div>
 <div id="cloud-status">💾 Збереження...</div>
@@ -770,10 +815,11 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   <div class="epoch-res-bar" id="ui-epoch-res-bar">
     <span class="ep-res-label">РЕСУРСИ:</span>
   </div>
-  <div class="map-area">
-    <canvas id="isoCanvas"></canvas>
-    <div style="position:absolute;top:8px;left:10px;font-size:10px;color:var(--dim);">Карта · Еп.<span id="map-epoch" style="color:var(--gold)">1</span></div>
+  <div class="map-area" id="map-area-wrap">
+    <canvas id="isoCanvas" style="display:block;width:100%;height:100%;"></canvas>
+    <div style="position:absolute;top:8px;left:10px;font-size:10px;color:var(--dim);">🗺 Еп.<span id="map-epoch" style="color:var(--gold)">1</span></div>
     <div id="map-tooltip"></div>
+    <div class="map-controls-hint">👆 Тап — вибрати клітинку · Перетягни — прокрутити</div>
   </div>
   <div class="build-selector">
     <div class="build-selector-title">ФІЛЬТР:</div>
@@ -1849,19 +1895,50 @@ function initMap(){
   canvas.addEventListener('mousedown', onMapMouseDown);
   canvas.addEventListener('mouseup', onMapMouseUp);
   canvas.addEventListener('mouseleave', ()=>{mapDrag.active=false; mapHover={col:-1,row:-1};});
+
+  // Touch events для мобільного
+  let _touchStart = null;
+  canvas.addEventListener('touchstart', e=>{
+    e.preventDefault();
+    let t = e.touches[0];
+    _touchStart = {x: t.clientX, y: t.clientY};
+    let rect = canvas.getBoundingClientRect();
+    onMapMouseDown({offsetX: t.clientX-rect.left, offsetY: t.clientY-rect.top});
+  }, {passive:false});
+  canvas.addEventListener('touchmove', e=>{
+    e.preventDefault();
+    let t = e.touches[0];
+    let rect = canvas.getBoundingClientRect();
+    onMapMouse({offsetX: t.clientX-rect.left, offsetY: t.clientY-rect.top});
+  }, {passive:false});
+  canvas.addEventListener('touchend', e=>{
+    e.preventDefault();
+    let t = e.changedTouches[0];
+    let rect = canvas.getBoundingClientRect();
+    let dx = _touchStart ? Math.abs(t.clientX - _touchStart.x) : 99;
+    let dy = _touchStart ? Math.abs(t.clientY - _touchStart.y) : 99;
+    if(dx < 8 && dy < 8) onMapClick({offsetX: t.clientX-rect.left, offsetY: t.clientY-rect.top});
+    onMapMouseUp();
+    mapDrag.active = false;
+  }, {passive:false});
+
   window.addEventListener('resize', ()=>{ resizeCanvas(); drawMap(); });
 }
 
 function resizeCanvas(){
   let area = document.querySelector('.map-area');
   if(!area||!canvas) return;
-  canvas.width  = area.clientWidth;
-  canvas.height = area.clientHeight;
+  // Отримуємо реальні розміри (навіть якщо display:none)
+  let w = area.offsetWidth || area.parentElement?.offsetWidth || window.innerWidth;
+  let h = area.offsetHeight || Math.floor(window.innerHeight * 0.6);
+  if(w < 10) w = window.innerWidth;
+  if(h < 10) h = Math.floor(window.innerHeight * 0.6);
+  canvas.width  = w;
+  canvas.height = h;
   ctx = canvas.getContext('2d');
-  // Center map properly
   mapOffset.x = Math.max(0, Math.floor((canvas.width  - MAP_COLS*CELL)/2));
   mapOffset.y = Math.max(0, Math.floor((canvas.height - MAP_ROWS*CELL)/2));
-  _mapDirty=true;
+  _mapDirty = true;
 }
 
 function screenToTile(sx,sy){
@@ -2609,10 +2686,18 @@ function renderUI(){
       <br><span style="color:var(--dim);font-size:10px">Відремонтуй місто у вкладці ОБОРОНА</span>
     </div>`;
   }
-  if(resDiv) resDiv.insertAdjacentHTML('beforebegin', cityWarnHtml.replace(/^/, '<div id="city-warn">').replace(/$/, '</div>'));
-  // Видаляємо старе попередження
-  let oldWarn = document.getElementById('city-warn');
-  if(oldWarn && !cityWarnHtml) oldWarn.remove();
+  // Оновлюємо або створюємо єдиний блок попередження (без спаму)
+  let warnEl = document.getElementById('city-warn');
+  if (cityWarnHtml) {
+    if (!warnEl) {
+      warnEl = document.createElement('div');
+      warnEl.id = 'city-warn';
+      resDiv.parentNode.insertBefore(warnEl, resDiv);
+    }
+    warnEl.innerHTML = cityWarnHtml;
+  } else {
+    if (warnEl) warnEl.remove();
+  }
   resDiv.innerHTML='';
   Object.keys(RES).forEach(k=>{
     if(k==='synth_energy') return; // shown separately
@@ -4498,35 +4583,62 @@ const _origProcessBuildings = typeof processBuildings === 'function' ? processBu
 // ============================================================
 function isMobile() { return window.innerWidth <= 700; }
 
+// Підпанелі для мобільного:
+// 0 = РЕСУРСИ (left-panel, sub=resources)
+// 1 = КЛІКЕР  (center-area, ховаємо карту, показуємо клікер)
+// 2 = МІСТО   (center-area, показуємо карту)
+// 3 = СПОРУДИ (right-panel, без логу)
+// 4 = УПРАВЛ. (left-panel, sub=tech/quests/defense)
+
 function mobNav(idx) {
   if (!isMobile()) return;
 
-  const panels = [
-    document.querySelector('.left-panel'),
-    document.querySelector('.center-area'),
-    document.querySelector('.right-panel'),
-  ];
+  const leftPanel   = document.querySelector('.left-panel');
+  const centerArea  = document.querySelector('.center-area');
+  const rightPanel  = document.querySelector('.right-panel');
 
-  // Панель 3 = лідерборд (не окрема панель)
-  if (idx === 3) {
-    openLeaderboard();
-    return;
-  }
-
-  panels.forEach((p, i) => {
-    if (!p) return;
-    p.classList.toggle('mob-active', i === idx);
-  });
+  // Скидаємо все
+  [leftPanel, centerArea, rightPanel].forEach(p => p && p.classList.remove('mob-active'));
 
   document.querySelectorAll('.mob-nav-btn').forEach((b, i) => {
     b.classList.toggle('active', i === idx);
   });
+
+  if (idx === 0) {
+    // РЕСУРСИ — ліва панель, вкладка resources
+    leftPanel && leftPanel.classList.add('mob-active');
+    switchTab('resources');
+
+  } else if (idx === 1) {
+    // КЛІКЕР — center без карти
+    centerArea && centerArea.classList.add('mob-active');
+    centerArea && centerArea.classList.add('mob-clicker-mode');
+    centerArea && centerArea.classList.remove('mob-map-mode');
+
+  } else if (idx === 2) {
+    // МІСТО — center з картою на весь екран
+    centerArea && centerArea.classList.add('mob-active');
+    centerArea && centerArea.classList.add('mob-map-mode');
+    centerArea && centerArea.classList.remove('mob-clicker-mode');
+    // Перемальовуємо карту після анімації
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      resizeCanvas(); drawMap();
+    }));
+
+  } else if (idx === 3) {
+    // СПОРУДИ — права панель
+    rightPanel && rightPanel.classList.add('mob-active');
+
+  } else if (idx === 4) {
+    // УПРАВЛІННЯ — ліва панель, вкладка defense
+    leftPanel && leftPanel.classList.add('mob-active');
+    switchTab('defense');
+  }
 }
 
 // Ініціалізуємо мобільну навігацію після завантаження
 function initMobNav() {
   if (!isMobile()) return;
-  // За замовчуванням — перша панель (ресурси)
   mobNav(0);
 }
 
