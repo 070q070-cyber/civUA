@@ -6,37 +6,64 @@ const DB_NAME = 'cubic_civ';
 
 let client = null;
 let db = null;
+let connecting = false;
 
 async function connect() {
-  if (db) return db;
+  if (db) {
+    // Перевіряємо чи з'єднання живе
+    try { await db.command({ ping: 1 }); return db; } catch(e) {
+      console.warn('⚠️ MongoDB ping failed, reconnecting...');
+      db = null; client = null;
+    }
+  }
+  if (connecting) {
+    // Чекаємо поки інший connect завершиться
+    await new Promise(r => setTimeout(r, 500));
+    return db;
+  }
   if (!MONGODB_URI) {
     console.warn('⚠️  MONGODB_URI не вказаний — використовую in-memory fallback');
     return null;
   }
+  connecting = true;
   try {
     client = new MongoClient(MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000,
+      socketTimeoutMS: 30000,
+      maxPoolSize: 5,
+      retryWrites: true,
     });
     await client.connect();
     db = client.db(DB_NAME);
-    // Індекси
     await db.collection('saves').createIndex({ tg_id: 1 }, { unique: true });
     await db.collection('saves').createIndex({ score: -1 });
     console.log('✅ MongoDB підключено');
+
+    // Обробка розриву з'єднання
+    client.on('close', () => { console.warn('⚠️ MongoDB з\'єднання закрито'); db = null; });
+    client.on('error', e => { console.error('MongoDB error:', e.message); db = null; });
+
     return db;
   } catch (e) {
     console.error('❌ MongoDB помилка підключення:', e.message);
+    db = null; client = null;
     return null;
+  } finally {
+    connecting = false;
   }
 }
 
+// Автоматичний keep-alive пінг кожні 4 хвилини (Render засинає через 15хв)
+setInterval(async () => {
+  try {
+    const d = await connect();
+    if (d) await d.command({ ping: 1 });
+  } catch(e) { /* ігноруємо */ }
+}, 4 * 60 * 1000);
+
 // In-memory fallback якщо MongoDB недоступна
 const memStore = { players: {}, saves: {} };
-
-// ============================================================
-// API (async)
-// ============================================================
 
 const upsertPlayer = {
   async run({ tg_id, username, first_name, last_name }) {
@@ -58,6 +85,7 @@ const upsertSave = {
   async run({ tg_id, save_data, epoch, score }) {
     const d = await connect();
     if (!d) {
+      console.warn(`⚠️ Збереження в пам'ять (MongoDB недоступна) для ${tg_id}`);
       memStore.saves[tg_id] = { tg_id, save_data, epoch, score, updated_at: Date.now() };
       return;
     }
