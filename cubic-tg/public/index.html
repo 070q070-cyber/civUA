@@ -393,7 +393,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .base-b-lvl{font-size:9px;color:var(--gold);}
 .base-b-out{font-size:10px;color:var(--green);margin:2px 0;}
 .base-b-cost{font-size:9px;color:var(--orange);margin:2px 0;}
-.base-b-btn{font-family:var(--font);font-size:9px;padding:2px 8px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;transition:all .15s;width:100%;margin-top:3px;}
+.base-b-btn{font-family:var(--font);font-size:9px;padding:4px 6px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;transition:all .15s;margin-top:4px;min-height:28px;}
 .base-b-btn.can{border-color:var(--green);color:var(--green);}
 .base-b-btn.can:hover{background:var(--green);color:#000;}
 .base-b-btn:disabled{opacity:.3;cursor:not-allowed;}
@@ -3429,11 +3429,11 @@ function renderBaseBuildings(){
       ${b.lvl>0?`<div class="base-b-out">+${prod} ${RES[b.res]?.e} ${RES[b.res]?.n}/с</div>`
                :`<div style="font-size:9px;color:var(--dim)">+${b.prodBase} ${RES[b.res]?.e}/с за рів.</div>`}
       <div class="base-b-cost">${costStr}</div>
-      <div style="display:flex;gap:4px;">
-        <button class="base-b-btn ${canAfford?'can':''}" onclick="buyBaseResBuilding('${id}')" ${!canAfford?'disabled':''} style="flex:1">
-          ${b.lvl===0?'🏗 ЗБУДУВАТИ':'⬆ РІВЕНЬ'}
+      <div style="display:flex;gap:3px;margin-top:4px;">
+        <button class="base-b-btn ${canAfford?'can':''}" onclick="buyBaseResBuilding('${id}')" ${!canAfford?'disabled':''} style="flex:1;margin-top:0;">
+          ${b.lvl===0?'🏗 БУДУВАТИ':'+РІВ'}
         </button>
-        ${b.lvl>0?`<button class="base-b-btn can" style="border-color:var(--gold);color:var(--gold);flex:0 0 auto;" onclick="maxBuyBaseResBuilding('${id}')" ${!canAfford?'disabled':''} title="Вкласти максимум ресурсів">МАХ⬆</button>`:''}
+        ${b.lvl>0?`<button class="base-b-btn can" style="border-color:var(--gold);color:var(--gold);flex:0 0 28px;margin-top:0;" onclick="maxBuyBaseResBuilding('${id}')" ${!canAfford?'disabled':''} title="Максимум">МАХ</button>`:''}
       </div>
     </div>`;
   });
@@ -3535,11 +3535,11 @@ function renderBuildings(){
       ${b.lvl>0?`<div class="base-b-out">+${prod} ${res?.e||''} ${res?.n||b.res}/с</div>`
                :`<div style="font-size:9px;color:var(--dim)">+${b.prodBase} ${res?.e||''}/с за рів.</div>`}
       <div class="base-b-cost">${costStr}</div>
-      <div style="display:flex;gap:4px;">
-        <button class="base-b-btn ${canAfford?'can':''}" onclick="buyBaseResBuilding('${id}')" ${!canAfford?'disabled':''} style="flex:1">
-          ${b.lvl===0?'🏗 ЗБУДУВАТИ':'⬆ РІВЕНЬ'}
+      <div style="display:flex;gap:3px;margin-top:4px;">
+        <button class="base-b-btn ${canAfford?'can':''}" onclick="buyBaseResBuilding('${id}')" ${!canAfford?'disabled':''} style="flex:1;margin-top:0;">
+          ${b.lvl===0?'🏗 БУДУВАТИ':'+РІВ'}
         </button>
-        ${b.lvl>0?`<button class="base-b-btn can" style="border-color:var(--gold);color:var(--gold);flex:0 0 auto;" onclick="maxBuyBaseResBuilding('${id}')" ${!canAfford?'disabled':''} title="Вкласти максимум ресурсів">МАХ⬆</button>`:''}
+        ${b.lvl>0?`<button class="base-b-btn can" style="border-color:var(--gold);color:var(--gold);flex:0 0 28px;margin-top:0;" onclick="maxBuyBaseResBuilding('${id}')" ${!canAfford?'disabled':''} title="Максимум">МАХ</button>`:''}
       </div>
     </div>`;
   });
