@@ -849,17 +849,17 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 </div>
 <div class="toast" id="toast"></div>
 
-<div id="tutorial-overlay">
-  <div id="tutorial-box">
-    <div class="tut-step-badge" id="tut-step-label">КРОК 1 / 8</div>
-    <div class="tut-title" id="tut-title">⚒ ЛАСКАВО ПРОСИМО ДО КУБІЧНОЇ ЕВОЛЮЦІЇ!</div>
-    <div class="tut-body" id="tut-body">Ця гра — клікер-стратегія, де ти розвиваєш цивілізацію від кам'яного віку до майбутнього. Кожна дія наближає тебе до нової епохи!</div>
-    <div class="tut-tip" id="tut-tip">💡 Навчання можна пропустити або переглянути знову через меню.</div>
-    <div class="tut-progress" id="tut-dots"></div>
-    <div class="tut-btns">
-      <button class="tut-btn" onclick="skipTutorial()" ontouchstart="skipTutorial()">⏭ ПРОПУСТИТИ</button>
-      <button class="tut-btn primary" id="tut-next-btn" onclick="tutorialNext()" ontouchstart="tutorialNext()">ДАЛІ →</button>
-    </div>
+<div id="tut-banner" style="display:none;position:fixed;bottom:70px;left:8px;right:8px;z-index:9000;background:#0d1219;border:2px solid var(--gold);padding:12px 14px;box-shadow:0 0 20px rgba(232,184,75,0.25);">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+    <div style="font-family:var(--font2);font-size:9px;color:var(--gold)" id="tut-step-label">КРОК 1 / 8</div>
+    <div style="display:flex;gap:3px;" id="tut-dots"></div>
+  </div>
+  <div style="font-size:12px;color:var(--text);margin-bottom:6px;line-height:1.5;" id="tut-title"></div>
+  <div style="font-size:11px;color:var(--dim);margin-bottom:8px;line-height:1.5;" id="tut-body"></div>
+  <div style="font-size:10px;color:var(--teal);background:#071a14;border:1px solid var(--teal);padding:4px 8px;margin-bottom:10px;" id="tut-tip"></div>
+  <div style="display:flex;gap:8px;">
+    <button id="tut-skip-btn" style="flex:1;font-family:var(--font);font-size:12px;padding:10px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;">⏭ ПРОПУСТИТИ</button>
+    <button id="tut-next-btn" style="flex:1;font-family:var(--font);font-size:12px;padding:10px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;font-weight:bold;">ДАЛІ →</button>
   </div>
 </div>
 
@@ -2134,12 +2134,26 @@ let tutorialStep = 0;
 let tutorialDone = false;
 
 function initTutorial(){
-  // Check if already done (stored in sessionStorage for this session)
   if(sessionStorage.getItem('tut_done')==='1'){
-    document.getElementById('tutorial-overlay').classList.add('hidden');
     tutorialDone = true;
     return;
   }
+  let banner = document.getElementById('tut-banner');
+  if(!banner) return;
+  banner.style.display = 'block';
+
+  // Use addEventListener instead of onclick for Telegram compatibility
+  let skipBtn = document.getElementById('tut-skip-btn');
+  let nextBtn = document.getElementById('tut-next-btn');
+  if(skipBtn) {
+    skipBtn.addEventListener('click', skipTutorial);
+    skipBtn.addEventListener('touchend', function(e){ e.preventDefault(); skipTutorial(); });
+  }
+  if(nextBtn) {
+    nextBtn.addEventListener('click', tutorialNext);
+    nextBtn.addEventListener('touchend', function(e){ e.preventDefault(); tutorialNext(); });
+  }
+
   renderTutorialStep();
 }
 
@@ -2147,43 +2161,36 @@ function renderTutorialStep(){
   let step = TUTORIAL_STEPS[tutorialStep];
   if(!step){ skipTutorial(); return; }
 
-  document.getElementById('tut-step-label').textContent = `КРОК ${tutorialStep+1} / ${TUTORIAL_STEPS.length}`;
-  document.getElementById('tut-title').textContent = step.title;
-  document.getElementById('tut-body').textContent = step.body;
-  document.getElementById('tut-tip').textContent = step.tip;
+  let el = id => document.getElementById(id);
+  el('tut-step-label').textContent = `КРОК ${tutorialStep+1} / ${TUTORIAL_STEPS.length}`;
+  el('tut-title').textContent = step.title;
+  el('tut-body').textContent = step.body;
+  el('tut-tip').textContent = step.tip;
 
-  // Dots
-  let dotsDiv = document.getElementById('tut-dots');
+  let dotsDiv = el('tut-dots');
   dotsDiv.innerHTML = '';
   TUTORIAL_STEPS.forEach((_,i)=>{
-    let cls = i < tutorialStep ? 'done' : i === tutorialStep ? 'active' : '';
-    dotsDiv.innerHTML += `<div class="tut-dot ${cls}"></div>`;
+    let d = document.createElement('div');
+    d.style.cssText = `width:7px;height:7px;border:1px solid ${i<tutorialStep?'var(--gold)':i===tutorialStep?'var(--gold)':'var(--border)'};background:${i<tutorialStep?'var(--gold)':'transparent'};${i===tutorialStep?'box-shadow:0 0 4px var(--gold);':''}`;
+    dotsDiv.appendChild(d);
   });
 
-  // Last step button
-  let btn = document.getElementById('tut-next-btn');
-  if(tutorialStep === TUTORIAL_STEPS.length-1){
-    btn.textContent = '✅ ПОЧАТИ ГРУ!';
-  } else {
-    btn.textContent = 'ДАЛІ →';
-  }
+  let btn = el('tut-next-btn');
+  btn.textContent = tutorialStep === TUTORIAL_STEPS.length-1 ? '✅ ПОЧАТИ!' : 'ДАЛІ →';
 }
 
-let _tutActionLock = false;
-
+let _tutLock = false;
 function tutorialNext(){
-  if(_tutActionLock) return; _tutActionLock=true; setTimeout(()=>_tutActionLock=false,400);
+  if(_tutLock) return; _tutLock=true; setTimeout(()=>_tutLock=false,300);
   tutorialStep++;
-  if(tutorialStep >= TUTORIAL_STEPS.length){
-    skipTutorial();
-  } else {
-    renderTutorialStep();
-  }
+  if(tutorialStep >= TUTORIAL_STEPS.length) skipTutorial();
+  else renderTutorialStep();
 }
 
 function skipTutorial(){
-  if(_tutActionLock) return; _tutActionLock=true; setTimeout(()=>_tutActionLock=false,400);
-  document.getElementById('tutorial-overlay').classList.add('hidden');
+  if(_tutLock) return; _tutLock=true; setTimeout(()=>_tutLock=false,300);
+  let banner = document.getElementById('tut-banner');
+  if(banner) banner.style.display = 'none';
   tutorialDone = true;
   sessionStorage.setItem('tut_done','1');
 }
