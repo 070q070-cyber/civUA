@@ -861,6 +861,9 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   <button class="mob-nav-btn" id="nav-4" onclick="mobNav(4)">
     <span class="nav-icon">🔬</span><span class="nav-label">ТЕХНО</span>
   </button>
+  <button class="mob-nav-btn" id="nav-5" onclick="mobNav(5)">
+    <span class="nav-icon">📦</span><span class="nav-label">РЕСУРСИ</span>
+  </button>
 </div>
 <div id="cloud-status">💾 Збереження...</div>
 <div id="lb-overlay">
@@ -928,7 +931,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 <!-- LEFT PANEL -->
 <div class="left-panel">
   <div class="panel-tabs">
-    <button class="ptab active" onclick="switchTab('resources')" style="display:none">📦 РЕСУРСИ</button>
+    <button class="ptab active" onclick="switchTab('resources')" id="tab-btn-resources">📦 РЕСУРСИ</button>
     <button class="ptab" onclick="switchTab('tech')">🔬 ТЕХНО</button>
     <button class="ptab" onclick="switchTab('exchange')">⚗️ БІРЖА</button>
     <button class="ptab" onclick="switchTab('binds')">⚡ ІНСТР.</button>
@@ -4983,6 +4986,11 @@ function mobNav(idx) {
     // ТЕХНО — ліва панель, вкладка tech
     leftPanel && leftPanel.classList.add('mob-active');
     switchTab('tech');
+
+  } else if (idx === 5) {
+    // РЕСУРСИ — ліва панель, вкладка resources
+    leftPanel && leftPanel.classList.add('mob-active');
+    switchTab('resources');
   }
 }
 
