@@ -25,15 +25,19 @@ connect().catch(e => console.error('DB connect error:', e.message));
 // ============================================================
 let bot;
 if (BOT_TOKEN) {
-  const botMode = process.env.BOT_MODE || 'polling';
+  const botMode = process.env.BOT_MODE || (GAME_URL.includes('localhost') ? 'polling' : 'webhook');
   if (botMode === 'webhook') {
     bot = new TelegramBot(BOT_TOKEN, { webHook: true });
     const webhookPath = `/webhook/${BOT_TOKEN}`;
-    bot.setWebHook(`${GAME_URL}${webhookPath}`);
+    // Спочатку видаляємо старий webhook щоб уникнути конфліктів
+    bot.deleteWebHook().then(() => {
+      bot.setWebHook(`${GAME_URL}${webhookPath}`);
+      console.log('🤖 Бот: webhook →', `${GAME_URL}${webhookPath}`);
+    });
     app.post(webhookPath, (req, res) => { bot.processUpdate(req.body); res.sendStatus(200); });
-    console.log('🤖 Бот: webhook');
   } else {
-    bot = new TelegramBot(BOT_TOKEN, { polling: true });
+    // Локальна розробка — polling
+    bot = new TelegramBot(BOT_TOKEN, { polling: { interval: 2000, autoStart: true } });
     console.log('🤖 Бот: polling');
   }
   setupBotHandlers(bot);
