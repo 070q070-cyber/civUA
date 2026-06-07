@@ -1,4 +1,4 @@
-// server/index.js
+\// server/index.js
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -104,6 +104,7 @@ app.post('/api/save', requireTgAuth, async (req, res) => {
   try {
     const { state, epoch = 1, score = 0 } = req.body;
     if (!state || typeof state !== 'object') return res.status(400).json({ ok: false, error: 'Invalid state' });
+    console.log(`💾 Save: user=${req.tgUser?.id} epoch=${epoch} score=${score}`);
 
     const user = req.tgUser;
     await upsertPlayer.run({
