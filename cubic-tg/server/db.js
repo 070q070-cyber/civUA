@@ -32,10 +32,6 @@ async function connect() {
       connectTimeoutMS: 15000,
       socketTimeoutMS: 30000,
       maxPoolSize: 5,
-      retryWrites: true,
-      tls: true,
-      tlsAllowInvalidCertificates: false,
-      tlsAllowInvalidHostnames: false,
     });
     await client.connect();
     db = client.db(DB_NAME);
