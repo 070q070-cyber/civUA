@@ -148,4 +148,15 @@ app.get('/health', (req, res) => res.json({ ok: true, uptime: process.uptime() }
 app.listen(PORT, () => {
   console.log(`\n🎮 Сервер запущено на порту ${PORT}`);
   console.log(`🌐 ${GAME_URL}`);
+
+  // Self-ping кожні 13 хвилин щоб Render не засипав (безкоштовний план засинає через 15хв)
+  if (GAME_URL && !GAME_URL.includes('localhost')) {
+    setInterval(() => {
+      const http = GAME_URL.startsWith('https') ? require('https') : require('http');
+      http.get(`${GAME_URL}/health`, r => {
+        console.log(`🏓 Self-ping: ${r.statusCode}`);
+      }).on('error', e => console.warn('Self-ping error:', e.message));
+    }, 13 * 60 * 1000);
+    console.log('🏓 Self-ping активовано (кожні 13 хв)');
+  }
 });
