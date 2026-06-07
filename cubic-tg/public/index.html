@@ -941,6 +941,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   </div>
   <div class="tab-content active" id="tab-resources">
     <div class="sh">📦 РЕСУРСИ ЕПОХИ <span id="res-ep-label" class="sh-badge">1</span></div>
+    <button onclick="confirmResetGame()" style="margin:6px 8px 0;width:calc(100% - 16px);font-family:var(--font);font-size:10px;padding:6px;border:1px solid var(--red);background:transparent;color:var(--red);cursor:pointer;letter-spacing:1px;" title="Скинути весь прогрес і почати заново">🔄 ПОЧАТИ З ПОЧАТКУ</button>
     <div class="res-grid" id="ui-resources"></div>
   </div>
   <div class="tab-content" id="tab-tech">
@@ -2126,6 +2127,11 @@ const TUTORIAL_STEPS = [
     tip: "💡 Навчання покаже основні механіки за кілька хвилин."
   },
   {
+    title: "🚀 ЯК ПОЧАТИ — ПЕРШІ КРОКИ",
+    body: "1️⃣ Тисни ⛏️ КЛІКЕР — збирай ресурси кліком\n2️⃣ Відкрий 🏗️ СПОРУДИ → збудуй Лісозаготівлю та Каменоломню\n3️⃣ Накопич 50 🪵 Колод → натисни 🚀 ЕВОЛЮЦІЯ\n4️⃣ Повторюй — кожна епоха відкриває нові ресурси!",
+    tip: "💡 Починай з БАЗОВИХ СПОРУД — вони виробляють ресурси автоматично без витрат!"
+  },
+  {
     title: "👆 ЗБІР РЕСУРСІВ — КЛІКЕР",
     body: "Тисни на кнопки у рядку ВИДОБУТОК вгорі, щоб збирати ресурси. Кожен клік дає деревину, камінь, воду або іншу сировину поточної епохи.",
     tip: "💡 Кнопки з рамкою 🔵 — основні ресурси поточної епохи. Збирай їх насамперед!"
@@ -2654,7 +2660,7 @@ function upgradeInstance(e,id,idx){
   let b=buildings[id];
   let inst=b.instances[idx];
   if(inst.lvl>=999) return;
-  let scale=inst.lvl*2;
+  let scale=Math.max(1, inst.lvl*2 * (1 + b.epoch*0.3));
   let canAfford=Object.keys(b.cost).every(r=>(storage[r]||0)>=b.cost[r]*scale);
   if(!canAfford) return;
   Object.keys(b.cost).forEach(r=>storage[r]-=b.cost[r]*scale);
@@ -2675,7 +2681,7 @@ function maxUpgradeInstance(e,id,idx){
   let inst=b.instances[idx];
   let leveled=0;
   while(inst.lvl<999){
-    let scale=inst.lvl*2;
+    let scale=Math.max(1, inst.lvl*2 * (1 + b.epoch*0.3));
     let canAfford=Object.keys(b.cost).every(r=>(storage[r]||0)>=b.cost[r]*scale);
     if(!canAfford) break;
     Object.keys(b.cost).forEach(r=>storage[r]-=b.cost[r]*scale);
@@ -3035,10 +3041,13 @@ function renderUI(){
     let v=storage[k]||0,ps=psCounters[k]||0;
     let lit=ps>0.5?'lit':'';
     let tipText=`${RES[k].n} (${RES[k].e})\nЗапас: ${fmt(v)}\nВиробництво: ${ps>=0?'+':''}${ps.toFixed(1)}/с\nЕпоха: ${RES[k].ep}`;
-    resDiv.innerHTML+=`<div class="res-card ${lit}" title="${tipText}">
+    let isNegPs = ps < -0.05;
+    let isNegVal = v < 0;
+    let negStyle = isNegPs ? 'box-shadow:0 0 6px rgba(255,60,60,0.3);border-color:rgba(255,60,60,0.5);' : '';
+    resDiv.innerHTML+=`<div class="res-card ${lit}" title="${tipText}" style="${negStyle}">
       <div class="res-emoji" style="font-size:16px;flex-shrink:0">${RES[k].e}</div>
       <div class="res-name" style="flex:1;font-size:11px;color:var(--dim)">${RES[k].n}</div>
-      <div class="res-val" style="font-size:14px;min-width:60px;text-align:right">${fmt(v)}</div>
+      <div class="res-val" style="font-size:14px;min-width:60px;text-align:right;color:${isNegVal?'var(--red)':'inherit'}">${fmt(v)}</div>
       <div class="res-ps ${ps>0?'pos':ps<0?'neg':'zero'}" style="font-size:10px;min-width:55px;text-align:right">${ps>=0?'+':''}${ps.toFixed(1)}/с</div>
     </div>`;
   });
@@ -3576,14 +3585,14 @@ function renderBuildings(){
     let instHtml='';
     let showInst=b.instances.slice(0,5);
     showInst.forEach((inst,idx)=>{
-      let upScale=inst.lvl*2;
-      let upCost=Object.keys(b.cost).map(r=>`${fmt(b.cost[r]*upScale)}${RES[r]?.e||''}`).join('+');
-      let canUp=inst.lvl<999&&Object.keys(b.cost).every(r=>(storage[r]||0)>=b.cost[r]*upScale);
+      let upScale=Math.max(1, inst.lvl*2 * (1 + b.epoch*0.3));
+      let upCost=Object.keys(b.cost).map(r=>`${fmt(Math.ceil(b.cost[r]*upScale))}${RES[r]?.e||''}`).join('+');
+      let canUp=inst.lvl<999&&Object.keys(b.cost).every(r=>(storage[r]||0)>=Math.ceil(b.cost[r]*upScale));
       let canAC=!!topBld&&!inst.autoClicker&&(storage[acCostRes]||0)>=acCostAmt;
       let bldMult=inst.autoClicker?getBuildingACMult():1;
       let effProd=inst.lvl*prodMult*bldMult;
       let psOut=Object.keys(b.outputs).map(r=>`+${(b.outputs[r]*effProd*0.5).toFixed(1)}${RES[r]?.e||''}/с`).join(' ');
-      let upTip=`Апгрейд рів.${inst.lvl}→${inst.lvl+1}\nВартість: ${Object.keys(b.cost).map(r=>`${b.cost[r]*upScale} ${RES[r]?.n}`).join(', ')}`;
+      let upTip=`Апгрейд рів.${inst.lvl}→${inst.lvl+1}\nВартість: ${Object.keys(b.cost).map(r=>`${Math.ceil(b.cost[r]*upScale)} ${RES[r]?.n}`).join(', ')}\n(Коеф. епохи ×${(1+b.epoch*0.3).toFixed(1)})`;
       let acTip=inst.autoClicker?'Зняти автоклікер (звільнити)':`Призначити автоклікер: ${acCostAmt} ${RES[acCostRes]?.n}`;
 
       instHtml+=`<div class="inst-row" style="${inst.disabled?'opacity:0.45;':''}">
@@ -3594,7 +3603,7 @@ function renderBuildings(){
         <div class="inst-row-btns">
           <button class="inst-boost-btn" onclick="boostInstance(event,'${id}',${idx})" title="Разовий буст: витратити ресурси та отримати велику кількість продукції">⚡ БУСТ</button>
           <button class="inst-btn ${canUp?'can':''}" onclick="upgradeInstance(event,'${id}',${idx})" ${!canUp?'disabled':''} title="${upTip}">⬆ ${upCost}</button>
-          <button class="inst-btn can" style="border-color:var(--gold);color:var(--gold);" onclick="maxUpgradeInstance(event,'${id}',${idx})" ${!canUp?'disabled':''} title="Максимально підвищити рівень на наявні ресурси">МАХ⬆</button>
+          <button class="inst-btn can" style="border-color:var(--gold);color:var(--gold);padding:4px 6px;font-size:10px;" onclick="maxUpgradeInstance(event,'${id}',${idx})" ${!canUp?'disabled':''} title="Максимально підвищити рівень на наявні ресурси">МАХ</button>
           <button class="inst-ac-btn ${inst.autoClicker?'active':''}" onclick="toggleACOnBuilding(event,'${id}',${idx})" ${!canAC&&!inst.autoClicker?'disabled':''} title="${acTip}">
             ${inst.autoClicker?'🤖 ЗНЯТИ':`🤖 ${acCostAmt}${RES[acCostRes]?.e}`}
           </button>
@@ -4998,6 +5007,40 @@ function mobNav(idx) {
 function initMobNav() {
   if (!isMobile()) return;
   mobNav(0);
+}
+
+
+// ============================================================
+// RESET GAME
+// ============================================================
+function confirmResetGame(){
+  let overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:#0d1219;border:2px solid var(--red);max-width:300px;width:90vw;padding:20px;text-align:center;">
+      <div style="font-family:var(--font2);font-size:11px;color:var(--red);margin-bottom:12px;">⚠️ СКИНУТИ ГРУ?</div>
+      <div style="font-size:12px;color:var(--dim);margin-bottom:16px;line-height:1.6;">Весь прогрес буде видалено назавжди. Ресурси, споруди, технології — все зникне.</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="this.closest('div[style]').remove()" style="flex:1;font-family:var(--font);font-size:12px;padding:10px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;">❌ СКАСУВАТИ</button>
+        <button onclick="doResetGame()" style="flex:1;font-family:var(--font);font-size:12px;padding:10px;border:1px solid var(--red);background:rgba(180,40,40,0.15);color:var(--red);cursor:pointer;font-weight:bold;">🔄 ТАК, СКИНУТИ</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function doResetGame(){
+  // Clear sessionStorage so tutorial shows again
+  sessionStorage.removeItem('tut_done');
+  // Clear server save
+  if(IS_TG && TG_USER){
+    fetch(API_BASE+'/api/save',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-telegram-init-data':TG?.initData||''},
+      body:JSON.stringify({state:{_reset:true,epoch:1,storage:{},scores:{total:0}},epoch:1,score:0})
+    }).catch(()=>{});
+  }
+  // Reload page — full reset
+  setTimeout(()=>location.reload(), 300);
 }
 
 window.addEventListener('resize', () => {
