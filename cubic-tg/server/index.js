@@ -17,19 +17,21 @@ app.use(cors());
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// Підключаємось до MongoDB при старті — з retry
+// ============================================================
+// DB — підключення з retry
+// ============================================================
 async function connectWithRetry(attempts = 5) {
   for (let i = 0; i < attempts; i++) {
     try {
       await connect();
       console.log('✅ MongoDB підключено');
-      return;
+      return true;
     } catch (e) {
       console.error(`❌ MongoDB спроба ${i+1}/${attempts}:`, e.message);
       if (i < attempts - 1) await new Promise(r => setTimeout(r, 3000));
     }
   }
-  console.error('❌ MongoDB не вдалось підключитись після', attempts, 'спроб');
+  return false;
 }
 connectWithRetry();
 
@@ -60,24 +62,21 @@ function setupBotHandlers(bot) {
   bot.onText(/\/start/, async (msg) => {
     const name = msg.from.first_name || 'Мандрівнику';
     await bot.sendMessage(msg.chat.id,
-      `⚒ *Ласкаво просимо до Кубічної Цивілізації!*\n\nПривіт, ${name}!\n\n🏰 Побудуй цивілізацію від кам'яного віку до автоматизованого майбутнього!\n⚔️ Захищай місто від хвиль гоблінів\n🔬 Досліджуй 12 епох розвитку\n🏆 Змагайся у рейтингу\n\n👇 Натисни кнопку нижче!`,
+      `⚒ *Ласкаво просимо до Кубічної Цивілізації!*\n\nПривіт, ${name}!\n\n🏰 Побудуй цивілізацію від кам\'яного віку до автоматизованого майбутнього!\n⚔️ Захищай місто від хвиль гоблінів\n🔬 Досліджуй 12 епох розвитку\n🏆 Змагайся у рейтингу\n\n👇 Натисни кнопку нижче!`,
       { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [[{ text: '⚒ ГРАТИ', web_app: { url: GAME_URL } }]] } }
     );
   });
-
   bot.onText(/\/play/, async (msg) => {
     await bot.sendMessage(msg.chat.id, '▶️ Відкрий гру:', {
       reply_markup: { inline_keyboard: [[{ text: '⚒ ГРАТИ', web_app: { url: GAME_URL } }]] }
     });
   });
-
   bot.onText(/\/help/, async (msg) => {
     await bot.sendMessage(msg.chat.id,
       `⚒ *Кубічна Цивілізація — Довідка*\n\n📦 Клікай по ресурсах\n🏗 Будуй виробничі споруди\n🔬 Відкривай технології\n⚔️ Захищай місто від гоблінів\n💾 Прогрес зберігається автоматично!`,
       { parse_mode: 'Markdown' }
     );
   });
-
   bot.onText(/\/top|\/leaderboard/, async (msg) => {
     try {
       const rows = await getLeaderboard.all();
@@ -96,15 +95,12 @@ function setupBotHandlers(bot) {
       bot.sendMessage(msg.chat.id, '⚠️ Помилка завантаження рейтингу');
     }
   });
-
   bot.on('polling_error', e => console.error('Polling:', e.message));
 }
 
 // ============================================================
-// API — з retry при DB помилці
+// DB retry wrapper
 // ============================================================
-
-// Retry wrapper — якщо MongoDB не відповідає, пробує ще раз після reconnect
 async function withDbRetry(fn, res) {
   for (let i = 0; i < 3; i++) {
     try {
@@ -113,14 +109,17 @@ async function withDbRetry(fn, res) {
       console.error(`DB error (спроба ${i+1}/3):`, e.message);
       if (i < 2) {
         await connect().catch(() => {});
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 1500));
       } else {
-        res.status(500).json({ ok: false, error: 'DB error' });
+        if (!res.headersSent) res.status(500).json({ ok: false, error: 'DB error' });
       }
     }
   }
 }
 
+// ============================================================
+// API
+// ============================================================
 app.get('/api/save', requireTgAuth, async (req, res) => {
   await withDbRetry(async () => {
     const row = await getSave.get(req.tgUser.id);
@@ -132,9 +131,8 @@ app.get('/api/save', requireTgAuth, async (req, res) => {
 app.post('/api/save', requireTgAuth, async (req, res) => {
   const { state, epoch = 1, score = 0 } = req.body;
   if (!state || typeof state !== 'object') return res.status(400).json({ ok: false, error: 'Invalid state' });
-  if (state._reset) return res.json({ ok: true }); // reset request
+  if (state._reset) return res.json({ ok: true });
   console.log(`💾 Save: user=${req.tgUser?.id} epoch=${epoch} score=${score}`);
-
   await withDbRetry(async () => {
     const user = req.tgUser;
     await upsertPlayer.run({
@@ -167,19 +165,41 @@ app.get('/api/rank/:tg_id', async (req, res) => {
   }, res);
 });
 
-app.get('/health', (req, res) => res.json({ ok: true, uptime: process.uptime(), db: !!global._mongoDb }));
+app.get('/health', (req, res) => {
+  res.json({ ok: true, uptime: Math.floor(process.uptime()), ts: Date.now() });
+});
 
+// ============================================================
+// KEEP ALIVE — через Telegram bot (надійніше ніж self-ping)
+// Кожні 14 хвилин бот надсилає webhook запит сам собі
+// ============================================================
 app.listen(PORT, () => {
   console.log(`\n🎮 Сервер запущено на порту ${PORT}`);
   console.log(`🌐 ${GAME_URL}`);
 
   if (GAME_URL && !GAME_URL.includes('localhost')) {
-    setInterval(() => {
-      const http = GAME_URL.startsWith('https') ? require('https') : require('http');
-      http.get(`${GAME_URL}/health`, r => {
-        console.log(`🏓 Self-ping: ${r.statusCode}`);
-      }).on('error', e => console.warn('Self-ping error:', e.message));
-    }, 13 * 60 * 1000);
-    console.log('🏓 Self-ping активовано (кожні 13 хв)');
+    // Ping через зовнішній запит до власного /health
+    // Render блокує self-ping але не блокує зовнішні запити
+    const keepAlive = () => {
+      const https = require('https');
+      const url = new URL(GAME_URL + '/health');
+      const options = {
+        hostname: url.hostname,
+        path: url.pathname,
+        method: 'GET',
+        headers: { 'User-Agent': 'KeepAlive/1.0' }
+      };
+      const req = https.request(options, r => {
+        console.log(`🏓 Keep-alive: ${r.statusCode} (uptime: ${Math.floor(process.uptime())}s)`);
+      });
+      req.on('error', e => console.warn('Keep-alive error:', e.message));
+      req.end();
+    };
+
+    // Пінгуємо кожні 14 хвилин
+    setInterval(keepAlive, 14 * 60 * 1000);
+    // Перший пінг через 1 хвилину після старту
+    setTimeout(keepAlive, 60 * 1000);
+    console.log('🏓 Keep-alive активовано (кожні 14 хв)');
   }
 });
