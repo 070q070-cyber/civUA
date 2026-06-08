@@ -4682,43 +4682,56 @@ async function cloudSave() {
   _lastSaveHash = hash;
 
   // Завжди зберігаємо локально як backup
-  try { localStorage.setItem('cubic_save', JSON.stringify(state)); } catch(e){}
+  try {
+    localStorage.setItem('cubic_save', JSON.stringify(state));
+    localStorage.setItem('cubic_save_backup', JSON.stringify(state));
+    localStorage.setItem('cubic_save_ts', Date.now().toString());
+  } catch(e){}
 
   if (!_cloudEnabled) return;
 
   showCloudStatus('saving', '💾 Збереження...');
-  try {
-    const body = {
-      state,
-      epoch: state.epoch || 1,
-      score: Math.floor(SCORES.total || 0),
-      tg_user_id: TG_USER?.id || null,
-      tg_first_name: TG_USER?.first_name || null,
-    };
-    const resp = await fetch(API_BASE + '/api/save', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-telegram-init-data': TG?.initData || '',
-      },
-      body: JSON.stringify(body),
-    });
-    if (resp.ok) {
-      showCloudStatus('saved', '✅ Збережено');
-    } else {
-      const err = await resp.json().catch(() => ({}));
-      console.warn('Save failed:', resp.status, err);
-      showCloudStatus('error', '⚠️ ' + (err.error || 'Помилка збереження'));
+  const body = {
+    state,
+    epoch: state.epoch || 1,
+    score: Math.floor(SCORES.total || 0),
+    tg_user_id: TG_USER?.id || null,
+    tg_first_name: TG_USER?.first_name || null,
+  };
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 2000));
+      const resp = await fetch(API_BASE + '/api/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-telegram-init-data': TG?.initData || '',
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (resp.ok) {
+        showCloudStatus('saved', '✅ Збережено');
+        return;
+      } else {
+        const err = await resp.json().catch(() => ({}));
+        console.warn('Save failed:', resp.status, err);
+        if (resp.status === 401) {
+          showCloudStatus('error', '⚠️ Помилка авт.');
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn(`cloudSave attempt ${attempt+1} failed:`, e.message);
     }
-  } catch (e) {
-    showCloudStatus('error', '📵 Офлайн — збережено локально');
   }
+  showCloudStatus('error', '📵 Тільки локально');
 }
 
-/** Завантажуємо з сервера */
+/** Завантажуємо з сервера — з retry для Render wake-up */
 async function cloudLoad() {
   if (!_cloudEnabled) {
-    // Fallback: localStorage
     try {
       const raw = localStorage.getItem('cubic_save');
       if (raw) deserializeGameState(JSON.parse(raw));
@@ -4727,25 +4740,43 @@ async function cloudLoad() {
   }
 
   showCloudStatus('saving', '☁️ Завантаження...');
-  try {
-    const resp = await fetch(API_BASE + '/api/save', {
-      headers: { 'x-telegram-init-data': TG?.initData || '' }
-    });
-    if (resp.ok) {
-      const data = await resp.json();
-      if (data.save) {
-        deserializeGameState(data.save);
-        showCloudStatus('saved', '✅ Завантажено');
-      } else {
-        showCloudStatus('saved', '🆕 Нова гра');
+
+  // Спробуємо 4 рази з паузами — Render може прокидатись до 15 сек
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      if (attempt > 0) {
+        showCloudStatus('saving', `☁️ Спроба ${attempt+1}/4...`);
+        await new Promise(r => setTimeout(r, attempt * 3000));
+      }
+      const resp = await fetch(API_BASE + '/api/save', {
+        headers: { 'x-telegram-init-data': TG?.initData || '' },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.save) {
+          deserializeGameState(data.save);
+          showCloudStatus('saved', '✅ Завантажено');
+        } else {
+          showCloudStatus('saved', '🆕 Нова гра');
+        }
+        return; // успіх
+      } else if (resp.status === 401) {
+        // Авторизація провалилась — не ретраїти
+        showCloudStatus('error', '⚠️ Помилка авторизації');
+        return;
+      }
+    } catch (e) {
+      console.warn(`cloudLoad attempt ${attempt+1} failed:`, e.message);
+      if (attempt === 3) {
+        // Всі спроби провалились — завантажуємо localStorage
+        showCloudStatus('error', '📵 Офлайн — завантажую локально');
+        try {
+          const raw = localStorage.getItem('cubic_save') || localStorage.getItem('cubic_save_backup');
+          if (raw) deserializeGameState(JSON.parse(raw));
+        } catch(_){}
       }
     }
-  } catch (e) {
-    showCloudStatus('error', '📵 Офлайн — завантажую локально');
-    try {
-      const raw = localStorage.getItem('cubic_save') || localStorage.getItem('cubic_save_backup');
-      if (raw) deserializeGameState(JSON.parse(raw));
-    } catch(_){}
   }
 }
 
@@ -4772,36 +4803,48 @@ async function openLeaderboard() {
   const myRankEl = document.getElementById('lb-my-rank');
   list.innerHTML = '<div style="color:var(--dim);font-size:11px;padding:8px 0">Завантаження...</div>';
 
-  try {
-    const resp = await fetch(API_BASE + '/api/leaderboard');
-    const data = await resp.json();
-
-    if (!data.data || data.data.length === 0) {
-      list.innerHTML = '<div style="color:var(--dim);font-size:11px;padding:8px 0">Рейтинг поки порожній 🌱</div>';
-      return;
+  let data = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      if (attempt > 0) {
+        list.innerHTML = `<div style="color:var(--dim);font-size:11px;padding:8px 0">Спроба ${attempt+1}/3...</div>`;
+        await new Promise(r => setTimeout(r, 2000 * attempt));
+      }
+      const resp = await fetch(API_BASE + '/api/leaderboard', {
+        signal: AbortSignal.timeout(10000)
+      });
+      data = await resp.json();
+      if (data.ok) break;
+    } catch (e) {
+      console.warn('Leaderboard attempt', attempt+1, 'failed:', e.message);
     }
+  }
 
-    const medals = ['🥇','🥈','🥉','4','5','6','7','8','9','10'];
-    const myId = TG_USER?.id;
-    list.innerHTML = data.data.map((r, i) => {
-      const name = r.username ? '@' + r.username : (r.first_name || 'Гравець');
-      const isMine = r.tg_id === myId;
-      return `<div class="lb-row${isMine ? ' mine' : ''}">
-        <div class="lb-rank">${medals[i]}</div>
-        <div class="lb-name">${name}</div>
-        <div class="lb-ep">Еп.${r.epoch}</div>
-        <div class="lb-score">${r.score.toLocaleString()}</div>
-      </div>`;
-    }).join('');
+  if (!data || !data.data || data.data.length === 0) {
+    list.innerHTML = '<div style="color:var(--dim);font-size:11px;padding:8px 0">Рейтинг поки порожній 🌱<br><small>Збережи прогрес і спробуй знову</small></div>';
+    return;
+  }
 
-    // Мій ранг
-    if (myId) {
-      const rankResp = await fetch(API_BASE + '/api/rank/' + myId);
+  const medals = ['🥇','🥈','🥉','4','5','6','7','8','9','10'];
+  const myId = TG_USER?.id;
+  list.innerHTML = data.data.map((r, i) => {
+    const name = r.username ? '@' + r.username : (r.first_name || 'Гравець');
+    const isMine = r.tg_id === myId;
+    return `<div class="lb-row${isMine ? ' mine' : ''}">
+      <div class="lb-rank">${medals[i]}</div>
+      <div class="lb-name">${name}</div>
+      <div class="lb-ep">Еп.${r.epoch}</div>
+      <div class="lb-score">${(r.score||0).toLocaleString()}</div>
+    </div>`;
+  }).join('');
+
+  // Мій ранг
+  if (myId) {
+    try {
+      const rankResp = await fetch(API_BASE + '/api/rank/' + myId, { signal: AbortSignal.timeout(5000) });
       const rankData = await rankResp.json();
       if (rankData.rank) myRankEl.textContent = '📍 Твій ранг: #' + rankData.rank;
-    }
-  } catch (e) {
-    list.innerHTML = '<div style="color:var(--red);font-size:11px;padding:8px 0">⚠️ Помилка завантаження</div>';
+    } catch(e){}
   }
 }
 
