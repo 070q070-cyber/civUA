@@ -117,7 +117,7 @@ const getLeaderboard = {
       { $sort: { score: -1 } },
       { $limit: 10 },
       { $lookup: { from: 'players', localField: 'tg_id', foreignField: 'tg_id', as: 'player' } },
-      { $unwind: { path: '$player', preserveNullAndEmpty: true } },
+      { $unwind: { path: '$player', preserveNullAndEmptyArrays: true } },
       { $project: {
           tg_id: 1, epoch: 1, score: 1,
           first_name: { $ifNull: ['$player.first_name', 'Гравець'] },
