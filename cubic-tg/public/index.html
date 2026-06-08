@@ -4502,7 +4502,8 @@ if (TG) {
 const API_BASE = ''; // порожньо = той самий хост
 let _saveTimer = null;
 let _lastSaveHash = '';
-let _cloudEnabled = IS_TG;
+// Cloud enabled якщо є TG_USER (навіть без initData — fallback через tg_user_id в body)
+let _cloudEnabled = !!(TG_USER?.id);
 
 function showCloudStatus(state, msg) {
   const el = document.getElementById('cloud-status');
@@ -4749,7 +4750,10 @@ async function cloudLoad() {
         await new Promise(r => setTimeout(r, attempt * 3000));
       }
       const resp = await fetch(API_BASE + '/api/save', {
-        headers: { 'x-telegram-init-data': TG?.initData || '' },
+        headers: {
+          'x-telegram-init-data': TG?.initData || '',
+          'x-tg-user-id': TG_USER?.id ? String(TG_USER.id) : '',
+        },
         signal: AbortSignal.timeout(10000),
       });
       if (resp.ok) {
