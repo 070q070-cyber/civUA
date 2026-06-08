@@ -3474,8 +3474,8 @@ function renderTechTree(){
     else {
       resHtml+='<div style="font-size:9px;color:var(--dim);margin-bottom:3px;">'+(RES[r.costRes]?.e||'')+' '+fmt(cost)+' '+(RES[r.costRes]?.n||r.costRes)+'</div>';
       resHtml+='<div style="display:flex;gap:3px;">';
-      resHtml+='<button onclick="buyResearch(''+r.id+'')" '+(canAfford?'':'disabled')+' style="flex:1;font-family:var(--font);font-size:9px;padding:4px 2px;border:1px solid '+(canAfford?cvar:'var(--border)')+';background:transparent;color:'+(canAfford?cvar:'var(--dim)')+';cursor:pointer;">'+(r.lvl===0?'🔬 ДОСЛ.':'+РІВ')+'</button>';
-      if(r.lvl>0) resHtml+='<button onclick="maxBuyResearch(''+r.id+'')" '+(canAfford?'':'disabled')+' style="font-family:var(--font);font-size:9px;padding:4px 6px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;">МАХ</button>';
+      resHtml+='<button data-rid="'+r.id+'" onclick="buyResearch(this.dataset.rid)" '+(canAfford?'':'disabled')+' style="flex:1;font-family:var(--font);font-size:9px;padding:4px 2px;border:1px solid '+(canAfford?cvar:'var(--border)')+';background:transparent;color:'+(canAfford?cvar:'var(--dim)')+';cursor:pointer;">'+(r.lvl===0?'🔬 ДОСЛ.':'+РІВ')+'</button>';
+      if(r.lvl>0) resHtml+='<button data-rid="'+r.id+'" onclick="maxBuyResearch(this.dataset.rid)" '+(canAfford?'':'disabled')+' style="font-family:var(--font);font-size:9px;padding:4px 6px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;">МАХ</button>';
       resHtml+='</div>';
     }
     resHtml+='</div>';
