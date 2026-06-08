@@ -2559,6 +2559,61 @@ function clickGather(res,e){
 
 function unlockACTier(idx){ /* legacy stub — unused */ }
 
+
+// ============================================================
+// RESEARCH SYSTEM
+// ============================================================
+const RESEARCH_DEFS = [
+  {id:'r_click',  name:'⚡ Квантовий клікер',   icon:'⚡', desc:'+1 до кліку за рівень',              effect:'clickPower',  ep_req:1, costRes:'logs',        costBase:500,  costMult:1.15, maxLvl:999, lvl:0, color:'--orange'},
+  {id:'r_prod',   name:'🏭 Виробничий протокол', icon:'🏭', desc:'+2% виробництво споруд за рівень',   effect:'prodMult',    ep_req:2, costRes:'boards',      costBase:800,  costMult:1.15, maxLvl:999, lvl:0, color:'--teal'},
+  {id:'r_base',   name:'⛏ Базовий видобуток',   icon:'⛏', desc:'+3% базові споруди за рівень',       effect:'baseResMult', ep_req:1, costRes:'stone',       costBase:400,  costMult:1.13, maxLvl:999, lvl:0, color:'--green'},
+  {id:'r_storage',name:'📦 Розширені сховища',   icon:'📦', desc:'+500 ліміт сховища за рівень',      effect:'storage',     ep_req:2, costRes:'bricks',      costBase:600,  costMult:1.12, maxLvl:999, lvl:0, color:'--blue'},
+  {id:'r_defense',name:'🛡 Фортифікація',        icon:'🛡', desc:'+50 HP міста за рівень',            effect:'defense',     ep_req:3, costRes:'iron',        costBase:1000, costMult:1.18, maxLvl:999, lvl:0, color:'--red'},
+  {id:'r_tech',   name:'🔬 Наукова база',        icon:'🔬', desc:'-0.1% вартість технологій за рів.', effect:'techDiscount',ep_req:4, costRes:'books',       costBase:1500, costMult:1.20, maxLvl:999, lvl:0, color:'--purple'},
+  {id:'r_ac',     name:'🤖 Нейроприскорювач',   icon:'🤖', desc:'+0.5/с автоклікер за рівень',       effect:'acRate',      ep_req:5, costRes:'steel',       costBase:2000, costMult:1.20, maxLvl:999, lvl:0, color:'--synth'},
+  {id:'r_epoch',  name:'🚀 Еволюційний каталізатор',icon:'🚀',desc:'+5% бонус очок епохи за рівень', effect:'epochBonus',  ep_req:6, costRes:'wine',        costBase:3000, costMult:1.22, maxLvl:999, lvl:0, color:'--gold'},
+];
+
+function getResearchCost(r){ return Math.floor(r.costBase * Math.pow(r.costMult, r.lvl)); }
+
+function buyResearch(id){
+  let r=RESEARCH_DEFS.find(x=>x.id===id);
+  if(!r||epoch<r.ep_req||r.lvl>=r.maxLvl) return;
+  let cost=getResearchCost(r);
+  if((storage[r.costRes]||0)<cost){ showToast('Недостатньо ресурсів!'); return; }
+  storage[r.costRes]-=cost;
+  r.lvl++;
+  applyResearchEffects();
+  addPoints(500*r.ep_req*r.lvl,'tech');
+  addLog('🔬 '+r.name+' → рів.'+r.lvl,true);
+  markDirty('full');
+}
+
+function maxBuyResearch(id){
+  let r=RESEARCH_DEFS.find(x=>x.id===id);
+  if(!r||epoch<r.ep_req) return;
+  let leveled=0;
+  while(r.lvl<r.maxLvl){
+    let cost=getResearchCost(r);
+    if((storage[r.costRes]||0)<cost) break;
+    storage[r.costRes]-=cost; r.lvl++; leveled++;
+  }
+  if(leveled>0){ applyResearchEffects(); addLog('🔬🔬 МАХ '+r.name+' рів.'+r.lvl+' (+'+leveled+')',true); markDirty('full'); }
+  else showToast('Недостатньо ресурсів!');
+}
+
+function applyResearchEffects(){
+  let baseBonus=RESEARCH_DEFS.find(x=>x.id==='r_base')?.lvl||0;
+  baseResMultiplier=1+baseBonus*0.03;
+  let discBonus=RESEARCH_DEFS.find(x=>x.id==='r_tech')?.lvl||0;
+  techCostDiscount=Math.max(0.1,1-discBonus*0.001);
+}
+
+function getResearchBonus(effect){
+  let r=RESEARCH_DEFS.find(x=>x.effect===effect);
+  return r?r.lvl:0;
+}
+
 function unlockTech(idx){
   let node=TECH_NODES[idx];
   if(!node||node.unlocked) return;
@@ -3313,11 +3368,12 @@ function renderTechTree(){
     {key:"speed",    label:"⚡ ШВИДКІСТЬ",color:"--orange",  nodes:["spd_c1","spd_c2","spd_c3","spd_c4"]}
   ];
 
-  acHtml+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:6px;">`;
+  acHtml+=`<div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">`;
   BRANCH_DEFS.forEach(br=>{
     let cvar=`var(${br.color})`;
-    acHtml+=`<div class="ac-branch-block">
-      <div class="ac-branch-label" style="color:${cvar};border-left:3px solid ${cvar};font-size:10px;">${br.label}</div>`;
+    acHtml+=`<div class="ac-branch-block" style="border:1px solid ${cvar};padding:6px;">
+      <div class="ac-branch-label" style="color:${cvar};border-left:3px solid ${cvar};font-size:10px;padding-left:6px;margin-bottom:4px;">${br.label}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">`;
     br.nodes.forEach(nid=>{
       let node=AC_NODES[nid];
       if(!node) return;
@@ -3328,21 +3384,18 @@ function renderTechTree(){
       let canLvl=node.unlocked&&node.lvl<node.maxLvl&&(storage[node.lvlCostRes]||0)>=nextCost;
       let nodeCls=node.unlocked?'unlocked':canUnlock?'available':'';
       let statVal=node.ratePerLvl?('+'+node.lvl*node.ratePerLvl+'/с'):node.speedPerLvl?('+'+node.lvl*node.speedPerLvl+'/с'):('×'+(1+node.lvl*(node.buildingMultPerLvl||0)).toFixed(1));
-      acHtml+=`<div class="ac-compact-node ${nodeCls}" style="margin-bottom:2px;${node.unlocked?`border-left:2px solid ${cvar};`:''}">
-        <div style="font-size:13px">${node.unlocked?'✅':epOk&&prereqOk&&root.unlocked?node.icon:'🔒'}</div>
-        <div style="flex:1;">
-          <div style="font-size:10px;color:var(--text)">${node.name}</div>
-          ${node.unlocked?`<div style="font-size:9px;color:${cvar}">${statVal}</div>`:''}
-          ${!node.unlocked&&!epOk?`<div style="font-size:9px;color:var(--dim)">Еп.${node.ep_req}</div>`:''}
-        </div>
-        <div style="display:flex;flex-direction:column;gap:2px;">
-          ${!node.unlocked&&epOk&&prereqOk&&root.unlocked?`<button class="ac-buy-btn" style="font-size:9px;padding:2px 5px" onclick="unlockACNode('${nid}')" ${!canUnlock?'disabled':''}>🔓 ${node.unlockCostAmt}${RES[node.unlockCostRes]?.e}</button>`:''}
-          ${node.unlocked?`<button class="ac-lvl-btn" style="font-size:9px;padding:2px 5px" onclick="levelUpACNode('${nid}')" ${!canLvl?'disabled':''}>${node.lvl>=node.maxLvl?'MAX':`⬆${fmt(nextCost)}${RES[node.lvlCostRes]?.e}`}</button>
-            <button class="ac-lvl-btn" style="font-size:9px;padding:2px 5px;border-color:var(--gold);color:var(--gold)" onclick="maxLevelACNode('${nid}')" ${!canLvl?'disabled':''}>МАХ⬆</button>`:''}
+      acHtml+=`<div style="background:var(--panel);border:1px solid ${node.unlocked?cvar:'var(--border)'};padding:5px;">
+        <div style="font-size:10px;margin-bottom:2px;">${node.unlocked?'✅':epOk&&prereqOk&&root.unlocked?node.icon:'🔒'} <span style="color:var(--text)">${node.name}</span></div>
+        ${node.unlocked?`<div style="font-size:9px;color:${cvar};margin-bottom:3px;">РІВ.${node.lvl} ${statVal}</div>`:''}
+        ${!node.unlocked&&!epOk?`<div style="font-size:9px;color:var(--dim)">🔒 Еп.${node.ep_req}</div>`:''}
+        <div style="display:flex;gap:2px;flex-wrap:wrap;">
+          ${!node.unlocked&&epOk&&prereqOk&&root.unlocked?`<button class="ac-buy-btn" style="font-size:8px;padding:2px 4px" onclick="unlockACNode('${nid}')" ${!canUnlock?'disabled':''}>🔓 ${node.unlockCostAmt}${RES[node.unlockCostRes]?.e}</button>`:''}
+          ${node.unlocked?`<button class="ac-lvl-btn" style="font-size:8px;padding:2px 4px" onclick="levelUpACNode('${nid}')" ${!canLvl?'disabled':''}>${node.lvl>=node.maxLvl?'MAX':`⬆${fmt(nextCost)}${RES[node.lvlCostRes]?.e}`}</button>
+            <button class="ac-lvl-btn" style="font-size:8px;padding:2px 4px;border-color:var(--gold);color:var(--gold)" onclick="maxLevelACNode('${nid}')" ${!canLvl?'disabled':''}>МАХ</button>`:''}
         </div>
       </div>`;
     });
-    acHtml+=`</div>`;
+    acHtml+=`</div></div>`;
   });
   acHtml+=`</div></div>`;
   // ── END AC SECTION ────────────────────────────────────────
@@ -3405,7 +3458,30 @@ function renderTechTree(){
   }
   techHtml+='</div>';
 
-  tDiv.innerHTML = acHtml + techHtml;
+  let resHtml='<div style="margin-bottom:8px;"><div class="sh" style="margin-bottom:6px;">🔬 ДОСЛІДЖЕННЯ <span class="sh-badge">Постійні бонуси до 999 рів.</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">';
+  RESEARCH_DEFS.forEach(function(r){
+    let cost=getResearchCost(r);
+    let locked=epoch<r.ep_req;
+    let canAfford=!locked&&(storage[r.costRes]||0)>=cost&&r.lvl<r.maxLvl;
+    let cvar='var('+r.color+')';
+    let pct=r.lvl>0?Math.round(r.lvl/r.maxLvl*100):0;
+    resHtml+='<div style="background:var(--panel2);border:1px solid '+(r.lvl>0?cvar:'var(--border)')+';padding:7px;opacity:'+(locked?0.45:1)+';">';
+    resHtml+='<div style="font-size:11px;color:'+(r.lvl>0?cvar:'var(--text)')+';margin-bottom:2px;">'+r.icon+' '+r.name+'</div>';
+    resHtml+='<div style="font-size:9px;color:var(--dim);margin-bottom:3px;line-height:1.4;">'+r.desc+'</div>';
+    if(r.lvl>0){ resHtml+='<div style="height:3px;background:var(--border);margin-bottom:3px;"><div style="height:100%;width:'+Math.min(100,pct)+'%;background:'+cvar+';"></div></div>'; }
+    if(r.lvl>0){ resHtml+='<div style="font-size:9px;color:'+cvar+';margin-bottom:3px;">РІВ.'+r.lvl+' / 999</div>'; }
+    if(locked){ resHtml+='<div style="font-size:9px;color:var(--dim)">🔒 Еп.'+r.ep_req+'</div>'; }
+    else {
+      resHtml+='<div style="font-size:9px;color:var(--dim);margin-bottom:3px;">'+(RES[r.costRes]?.e||'')+' '+fmt(cost)+' '+(RES[r.costRes]?.n||r.costRes)+'</div>';
+      resHtml+='<div style="display:flex;gap:3px;">';
+      resHtml+='<button onclick="buyResearch(''+r.id+'')" '+(canAfford?'':'disabled')+' style="flex:1;font-family:var(--font);font-size:9px;padding:4px 2px;border:1px solid '+(canAfford?cvar:'var(--border)')+';background:transparent;color:'+(canAfford?cvar:'var(--dim)')+';cursor:pointer;">'+(r.lvl===0?'🔬 ДОСЛ.':'+РІВ')+'</button>';
+      if(r.lvl>0) resHtml+='<button onclick="maxBuyResearch(''+r.id+'')" '+(canAfford?'':'disabled')+' style="font-family:var(--font);font-size:9px;padding:4px 6px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;">МАХ</button>';
+      resHtml+='</div>';
+    }
+    resHtml+='</div>';
+  });
+  resHtml+='</div></div>';
+  tDiv.innerHTML = acHtml + resHtml + techHtml;
 }
 
 function renderBaseBuildings(){
@@ -4458,6 +4534,7 @@ function serializeGameState() {
     ),
     // Tech nodes
     techNodes: TECH_NODES.map(n => ({ id: n.id, unlocked: n.unlocked })),
+        researchLvls: RESEARCH_DEFS.map(r=>({id:r.id,lvl:r.lvl})),
     // Binds
     binds: BINDS.map(b => ({ lvl: b.lvl })),
     // BASE_RES_BUILDINGS
@@ -4538,6 +4615,13 @@ function deserializeGameState(s) {
         const n = TECH_NODES.find(x => x.id === sn.id);
         if (n) n.unlocked = sn.unlocked;
       });
+      if(Array.isArray(s.researchLvls)){
+        s.researchLvls.forEach(function(sr){
+          let r=RESEARCH_DEFS.find(x=>x.id===sr.id);
+          if(r&&sr.lvl) r.lvl=sr.lvl;
+        });
+        applyResearchEffects();
+      }
     }
     // Binds
     if (s.binds) s.binds.forEach((b, i) => { if (BINDS[i]) BINDS[i].lvl = b.lvl || 0; });
