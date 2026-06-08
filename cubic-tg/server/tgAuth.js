@@ -45,8 +45,8 @@ function requireTgAuth(req, res, next) {
     console.warn('TG auth failed:', result.error, '| initData length:', initData.length);
   }
 
-  // 2. Fallback: tg_user_id з тіла запиту (деякі версії Telegram не передають initData)
-  const fallbackId = req.body?.tg_user_id;
+  // 2. Fallback: tg_user_id з тіла запиту або заголовку
+  const fallbackId = req.body?.tg_user_id || req.headers['x-tg-user-id'];
   if (fallbackId) {
     const uid = parseInt(fallbackId);
     if (uid > 0) {
