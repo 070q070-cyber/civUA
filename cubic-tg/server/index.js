@@ -17,8 +17,21 @@ app.use(cors());
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// Підключаємось до MongoDB при старті
-connect().catch(e => console.error('DB connect error:', e.message));
+// Підключаємось до MongoDB при старті — з retry
+async function connectWithRetry(attempts = 5) {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      await connect();
+      console.log('✅ MongoDB підключено');
+      return;
+    } catch (e) {
+      console.error(`❌ MongoDB спроба ${i+1}/${attempts}:`, e.message);
+      if (i < attempts - 1) await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+  console.error('❌ MongoDB не вдалось підключитись після', attempts, 'спроб');
+}
+connectWithRetry();
 
 // ============================================================
 // BOT
@@ -29,14 +42,12 @@ if (BOT_TOKEN) {
   if (botMode === 'webhook') {
     bot = new TelegramBot(BOT_TOKEN, { webHook: true });
     const webhookPath = `/webhook/${BOT_TOKEN}`;
-    // Спочатку видаляємо старий webhook щоб уникнути конфліктів
     bot.deleteWebHook().then(() => {
       bot.setWebHook(`${GAME_URL}${webhookPath}`);
       console.log('🤖 Бот: webhook →', `${GAME_URL}${webhookPath}`);
     });
     app.post(webhookPath, (req, res) => { bot.processUpdate(req.body); res.sendStatus(200); });
   } else {
-    // Локальна розробка — polling
     bot = new TelegramBot(BOT_TOKEN, { polling: { interval: 2000, autoStart: true } });
     console.log('🤖 Бот: polling');
   }
@@ -90,26 +101,41 @@ function setupBotHandlers(bot) {
 }
 
 // ============================================================
-// API
+// API — з retry при DB помилці
 // ============================================================
 
+// Retry wrapper — якщо MongoDB не відповідає, пробує ще раз після reconnect
+async function withDbRetry(fn, res) {
+  for (let i = 0; i < 3; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      console.error(`DB error (спроба ${i+1}/3):`, e.message);
+      if (i < 2) {
+        await connect().catch(() => {});
+        await new Promise(r => setTimeout(r, 1000));
+      } else {
+        res.status(500).json({ ok: false, error: 'DB error' });
+      }
+    }
+  }
+}
+
 app.get('/api/save', requireTgAuth, async (req, res) => {
-  try {
+  await withDbRetry(async () => {
     const row = await getSave.get(req.tgUser.id);
     if (!row) return res.json({ ok: true, save: null });
     res.json({ ok: true, save: JSON.parse(row.save_data) });
-  } catch (e) {
-    console.error('GET /api/save:', e.message);
-    res.status(500).json({ ok: false, error: 'DB error' });
-  }
+  }, res);
 });
 
 app.post('/api/save', requireTgAuth, async (req, res) => {
-  try {
-    const { state, epoch = 1, score = 0 } = req.body;
-    if (!state || typeof state !== 'object') return res.status(400).json({ ok: false, error: 'Invalid state' });
-    console.log(`💾 Save: user=${req.tgUser?.id} epoch=${epoch} score=${score}`);
+  const { state, epoch = 1, score = 0 } = req.body;
+  if (!state || typeof state !== 'object') return res.status(400).json({ ok: false, error: 'Invalid state' });
+  if (state._reset) return res.json({ ok: true }); // reset request
+  console.log(`💾 Save: user=${req.tgUser?.id} epoch=${epoch} score=${score}`);
 
+  await withDbRetry(async () => {
     const user = req.tgUser;
     await upsertPlayer.run({
       tg_id: user.id,
@@ -124,37 +150,29 @@ app.post('/api/save', requireTgAuth, async (req, res) => {
       score: Math.max(0, parseInt(score) || 0),
     });
     res.json({ ok: true });
-  } catch (e) {
-    console.error('POST /api/save:', e.message);
-    res.status(500).json({ ok: false, error: 'DB error' });
-  }
+  }, res);
 });
 
 app.get('/api/leaderboard', async (req, res) => {
-  try {
+  await withDbRetry(async () => {
     const rows = await getLeaderboard.all();
     res.json({ ok: true, data: rows });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: 'DB error' });
-  }
+  }, res);
 });
 
 app.get('/api/rank/:tg_id', async (req, res) => {
-  try {
+  await withDbRetry(async () => {
     const row = await getPlayerRank.get(parseInt(req.params.tg_id));
     res.json({ ok: true, rank: row?.rank || null });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: 'DB error' });
-  }
+  }, res);
 });
 
-app.get('/health', (req, res) => res.json({ ok: true, uptime: process.uptime() }));
+app.get('/health', (req, res) => res.json({ ok: true, uptime: process.uptime(), db: !!global._mongoDb }));
 
 app.listen(PORT, () => {
   console.log(`\n🎮 Сервер запущено на порту ${PORT}`);
   console.log(`🌐 ${GAME_URL}`);
 
-  // Self-ping кожні 13 хвилин щоб Render не засипав (безкоштовний план засинає через 15хв)
   if (GAME_URL && !GAME_URL.includes('localhost')) {
     setInterval(() => {
       const http = GAME_URL.startsWith('https') ? require('https') : require('http');
