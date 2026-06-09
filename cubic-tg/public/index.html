@@ -5163,13 +5163,43 @@ function confirmResetGame(){
 }
 
 function doResetGame(){
-  // Clear sessionStorage so tutorial shows again
+  // 1. Видаляємо всі локальні збереження
+  ['cubic_save','cubic_save_backup','cubic_save_ts','cubic_last_online'].forEach(k => localStorage.removeItem(k));
   sessionStorage.removeItem('tut_done');
-  // Clear localStorage saves
-  localStorage.removeItem('cubic_save');
-  localStorage.removeItem('cubic_save_backup');
-  localStorage.removeItem('cubic_save_ts');
-  // Clear server save
+
+  // 2. Скидаємо стан гри у пам'яті (щоб хмарне збереження перезаписалось нулями)
+  try {
+    epoch = 1; tech = 0; buildCount = 0; totalClicks = 0;
+    clickMult = 1; prodMult = 1; acMult = 1; bacMult = 1;
+    baseResMultiplier = 1; techCostDiscount = 1; exchangeLevel = 0;
+    Object.keys(storage).forEach(k => { storage[k] = 0; });
+    Object.keys(psCounters).forEach(k => { psCounters[k] = 0; });
+    Object.keys(resLifetimeTotal).forEach(k => { resLifetimeTotal[k] = 0; });
+    Object.keys(SCORES).forEach(k => { SCORES[k] = 0; });
+    logLines.length = 0;
+    // Скидаємо AC
+    Object.values(AC_NODES).forEach(n => { n.unlocked = false; n.lvl = 0; });
+    // Скидаємо Tech
+    TECH_NODES.forEach(n => { n.unlocked = false; });
+    // Скидаємо BINDS
+    BINDS.forEach(b => { b.lvl = 0; });
+    // Скидаємо BASE_RES_BUILDINGS
+    Object.values(BASE_RES_BUILDINGS).forEach(b => { b.lvl = 0; });
+    // Скидаємо будівлі
+    Object.values(buildings).forEach(b => { b.instances = []; });
+    // Скидаємо захист
+    Object.values(DEFENSE_STRUCTS).forEach(s => { s.count = 0; s.hp = s.hpMax; });
+    goblinWave.waveNum = 0; goblinWave.totalDefeated = 0; goblinWave.totalWaves = 0;
+    goblinWave.cityHp = 1000; goblinWave.nextWaveIn = 90; goblinWave.active = false;
+    // Скидаємо квести
+    QUESTS.forEach(q => { q.done = false; q.claimed = false; q._maxSeen = 0; });
+    // Скидаємо ачівки
+    ACHIEVEMENTS.forEach(a => { a.unlocked = false; });
+    // Скидаємо дослідження
+    if(typeof RESEARCH_DEFS !== 'undefined') RESEARCH_DEFS.forEach(r => { r.lvl = 0; });
+  } catch(e) { console.warn('Reset state error:', e); }
+
+  // 3. Надсилаємо порожнє збереження у хмару
   if(IS_TG && TG_USER){
     fetch(API_BASE+'/api/save',{
       method:'POST',
@@ -5177,8 +5207,9 @@ function doResetGame(){
       body:JSON.stringify({state:{_reset:true,epoch:1,storage:{},scores:{total:0}},epoch:1,score:0})
     }).catch(()=>{});
   }
-  // Reload page — full reset
-  setTimeout(()=>location.reload(), 300);
+
+  // 4. Перезавантажуємо сторінку
+  setTimeout(()=>location.reload(), 400);
 }
 
 window.addEventListener('resize', () => {
