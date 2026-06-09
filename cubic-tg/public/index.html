@@ -23,7 +23,7 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;overflow:hidden;}
 body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:15px;}
-body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.05) 3px,rgba(0,0,0,.05) 4px);pointer-events:none;z-index:9999;}
+/* УВАГА: body::after з z-index:9999 блокує кліки на iOS WebView — прибрано */
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:#080a0e;}
 ::-webkit-scrollbar-thumb{background:var(--border);}
@@ -238,12 +238,14 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
    BUILDING RICH TOOLTIP
    ============================================================ */
 #bld-tooltip{
-  position:fixed;z-index:9990;
+  position:fixed;z-index:300;
   background:#0d1219ee;border:1px solid var(--gold);
   padding:10px 13px;max-width:260px;min-width:180px;
   pointer-events:none;display:none;
   box-shadow:0 4px 24px rgba(0,0,0,.7),0 0 12px rgba(232,184,75,.15);
   animation:ttfadein .12s ease-out;
+  /* iOS: явно вимикаємо взаємодію */
+  -webkit-user-select:none; user-select:none;
 }
 @keyframes ttfadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
 #bld-tooltip .tt-name{font-size:13px;color:var(--gold);margin-bottom:5px;font-family:var(--font);}
@@ -260,12 +262,13 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 
 /* BASE building tooltip */
 #base-bld-tooltip{
-  position:fixed;z-index:9990;
+  position:fixed;z-index:300;
   background:#0d1219ee;border:1px solid var(--teal);
   padding:10px 13px;max-width:240px;
   pointer-events:none;display:none;
   box-shadow:0 4px 24px rgba(0,0,0,.7);
   animation:ttfadein .12s ease-out;
+  -webkit-user-select:none; user-select:none;
 }
 #base-bld-tooltip .tt-name{font-size:12px;color:var(--teal);margin-bottom:4px;}
 #base-bld-tooltip .tt-desc{font-size:11px;color:var(--dim);margin-bottom:5px;line-height:1.4;}
@@ -365,7 +368,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .def-struct-btn:disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;}
 
 /* Wave incoming alert */
-.wave-alert{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#1a0808ee;border:2px solid var(--red);color:var(--red);font-family:var(--font2);font-size:9px;padding:10px 20px;z-index:9998;display:none;animation:wavealert 0.4s ease-in-out infinite alternate;text-align:center;}
+.wave-alert{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#1a0808ee;border:2px solid var(--red);color:var(--red);font-family:var(--font2);font-size:9px;padding:10px 20px;z-index:150;display:none;animation:wavealert 0.4s ease-in-out infinite alternate;text-align:center;pointer-events:none;}
 @keyframes wavealert{from{box-shadow:0 0 8px var(--red);}to{box-shadow:0 0 20px var(--red),0 0 40px #ff000066;}}
 .wave-next-timer{font-size:11px;color:var(--dim);text-align:center;padding:4px;}
 .wave-next-timer span{color:var(--orange);}
@@ -500,26 +503,43 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 :root {
   --tg-safe-top: env(safe-area-inset-top, 0px);
   --tg-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --tg-safe-left: env(safe-area-inset-left, 0px);
+  --tg-safe-right: env(safe-area-inset-right, 0px);
   --nav-h: 56px;
 }
 
 @media (max-width: 700px) {
+  /* iOS: використовуємо -webkit-fill-available як fallback для dvh */
+  html {
+    height: -webkit-fill-available;
+    height: 100dvh;
+  }
   html, body {
     overflow: hidden !important;
-    height: 100% !important;
-    height: 100dvh !important;
+    /* НЕ ставимо height: 100% бо iOS Safari рахує це з адресним рядком */
+    min-height: -webkit-fill-available;
+  }
+  body {
+    height: 100dvh;
+    height: -webkit-fill-available;
   }
 
   /* === APP SHELL === */
   .app {
     display: flex !important;
     flex-direction: column !important;
+    /* iOS: -webkit-fill-available щоб не залізало під address bar */
     height: 100dvh !important;
+    height: -webkit-fill-available !important;
     padding-top: var(--tg-safe-top);
+    /* НЕ overflow:hidden — це блокує scroll на iOS */
     overflow: hidden;
+    /* iOS fix: ensure app is above everything */
+    position: relative;
+    z-index: 0;
   }
 
-  /* === HEADER — компактний === */
+  /* === HEADER === */
   header {
     flex-shrink: 0;
     flex-wrap: nowrap !important;
@@ -527,27 +547,30 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     padding: 5px 8px !important;
     gap: 4px !important;
     overflow: hidden;
+    /* iOS: fix для landscape — враховуємо safe areas зліва/справа */
+    padding-left: calc(8px + var(--tg-safe-left)) !important;
+    padding-right: calc(8px + var(--tg-safe-right)) !important;
   }
   .logo { font-size: 7px !important; flex-shrink: 0; }
-  .epoch-info { gap: 4px; min-width: 0; }
+  .epoch-info { gap: 4px; min-width: 0; overflow: hidden; }
   .epoch-name { font-size: 10px !important; white-space: nowrap; }
   .hstats { gap: 4px; margin-left: auto !important; flex-wrap: nowrap !important; }
   .hstat { font-size: 9px !important; white-space: nowrap; }
   .evo-btn { font-size: 7px !important; padding: 4px 6px !important; flex-shrink: 0; }
   #lb-btn { font-size: 8px !important; padding: 4px 6px !important; flex-shrink: 0; }
 
-  /* === SCORE BAR — прихований на мобільному (не критично) === */
   .score-bar { display: none !important; }
 
-  /* === MAIN AREA — займає весь простір між header і nav === */
+  /* === MAIN AREA === */
   .main {
     display: block !important;
     flex: 1;
+    min-height: 0;
     overflow: hidden;
     position: relative;
   }
 
-  /* === МОБІЛЬНІ ПАНЕЛІ — кожна на весь екран, переключаються через nav === */
+  /* === ПАНЕЛІ — кожна абсолютна, переключаються через nav === */
   .left-panel,
   .center-area,
   .right-panel {
@@ -556,26 +579,38 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     width: 100% !important;
     height: 100% !important;
     max-height: none !important;
+    /* iOS: -webkit-overflow-scrolling для плавного скролу */
     overflow-y: auto;
     overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
     display: none !important;
     border: none !important;
-    -webkit-overflow-scrolling: touch;
+    /* iOS: pointer-events явно включаємо */
+    pointer-events: auto;
   }
   .left-panel.mob-active,
   .center-area.mob-active,
   .right-panel.mob-active {
     display: flex !important;
     flex-direction: column;
+    pointer-events: auto !important;
+    /* zIndex більший за tooltip але менший за modal */
+    z-index: 10;
   }
 
-  /* === LEFT PANEL (ресурси + вкладки) === */
-  .left-panel { padding-bottom: calc(var(--nav-h) + 8px); }
+  /* === LEFT PANEL === */
+  .left-panel {
+    padding-bottom: calc(var(--nav-h) + var(--tg-safe-bottom) + 8px);
+    padding-left: var(--tg-safe-left);
+    padding-right: var(--tg-safe-right);
+  }
   .panel-tabs {
     flex-shrink: 0;
     overflow-x: auto;
     scrollbar-width: none;
     border-bottom: 1px solid var(--border);
+    /* iOS: важливо для скролу горизонтального */
+    -webkit-overflow-scrolling: touch;
   }
   .panel-tabs::-webkit-scrollbar { display: none; }
   .ptab {
@@ -583,17 +618,22 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     padding: 9px 10px !important;
     white-space: nowrap;
     flex-shrink: 0;
+    /* iOS: кліки на кнопки */
+    -webkit-tap-highlight-color: rgba(232,184,75,0.2);
+    touch-action: manipulation;
   }
   .panel-content { flex: 1; overflow-y: auto; padding: 8px; }
 
-  /* Ресурси — список на мобільному */
   .res-grid { flex-direction: column !important; gap: 2px !important; }
   .res-card { padding: 5px 8px !important; }
 
-  /* === CENTER AREA (карта + клікер) === */
-  .center-area { padding-bottom: calc(var(--nav-h) + 8px); }
+  /* === CENTER AREA === */
+  .center-area {
+    padding-bottom: calc(var(--nav-h) + var(--tg-safe-bottom) + 8px);
+    padding-left: var(--tg-safe-left);
+    padding-right: var(--tg-safe-right);
+  }
 
-  /* Клікер — великі кнопки вгорі */
   .clicker-strip {
     flex-shrink: 0;
     flex-wrap: wrap !important;
@@ -610,46 +650,55 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     padding: 8px 10px !important;
     align-items: center !important;
     justify-content: center !important;
+    /* iOS тач */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   .click-btn .cb-emoji { font-size: 24px !important; }
   .click-btn .cb-amt { position: static !important; font-size: 9px !important; }
   .click-btn .cb-ac { position: static !important; font-size: 8px !important; }
 
-  /* Карта — займає весь простір */
+  /* Карта */
   .center-area.mob-active {
     padding: 0 !important;
-    padding-bottom: calc(var(--nav-h)) !important;
+    padding-bottom: calc(var(--nav-h) + var(--tg-safe-bottom)) !important;
+    padding-left: var(--tg-safe-left) !important;
+    padding-right: var(--tg-safe-right) !important;
   }
-  /* Ховаємо клікер і epoch-bar щоб карта була більшою */
   .center-area.mob-active:not(.mob-clicker-mode) .clicker-strip { display: none !important; }
   .center-area.mob-active .epoch-res-bar { display: none !important; }
   .center-area.mob-active:not(.mob-clicker-mode) .build-selector { display: none !important; }
   .map-area {
     flex: 1 !important;
     width: 100% !important;
-    height: 100% !important;
     min-height: 0 !important;
+    /* НЕ height:100% — це ламає flex на iOS */
+    position: relative;
   }
   #isoCanvas {
     width: 100% !important;
     height: 100% !important;
+    display: block !important;
+    /* iOS: touch-action:none для canvas щоб перехопити тач-події */
     touch-action: none;
   }
-  /* Тач-підтримка для карти */
   .map-controls-hint {
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
+    position: absolute; bottom: 10px; left: 50%;
     transform: translateX(-50%);
-    font-size: 9px;
-    color: var(--dim);
+    font-size: 9px; color: rgba(90,104,128,0.6);
+    /* iOS: pointer-events:none щоб не блокувати тачі */
     pointer-events: none;
-    white-space: nowrap;
+    white-space: nowrap; background:rgba(7,10,15,0.7); padding:2px 10px;
+    z-index: 5;
   }
 
-  /* === RIGHT PANEL (авто/квести/оборона) === */
-  .right-panel { padding-bottom: calc(var(--nav-h) + 8px); }
-  .rpanel-tabs { overflow-x: auto; scrollbar-width: none; }
+  /* === RIGHT PANEL === */
+  .right-panel {
+    padding-bottom: calc(var(--nav-h) + var(--tg-safe-bottom) + 8px);
+    padding-left: var(--tg-safe-left);
+    padding-right: var(--tg-safe-right);
+  }
+  .rpanel-tabs { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   .rpanel-tabs::-webkit-scrollbar { display: none; }
 
   /* === КЛІКЕР режим === */
@@ -661,30 +710,48 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     flex: 1; flex-wrap: wrap !important; gap: 10px !important;
     padding: 16px 10px !important; justify-content: center; align-content: flex-start;
     overflow-y: auto; overflow-x: hidden;
-    padding-bottom: calc(var(--nav-h) + 16px) !important;
+    padding-bottom: calc(var(--nav-h) + var(--tg-safe-bottom) + 16px) !important;
   }
-  .click-btn { min-width: 80px !important; min-height: 72px !important; flex-direction: column !important; gap: 3px !important; font-size: 10px !important; padding: 10px !important; align-items: center !important; justify-content: center !important; }
+  .click-btn {
+    min-width: 80px !important; min-height: 72px !important;
+    flex-direction: column !important; gap: 3px !important;
+    font-size: 10px !important; padding: 10px !important;
+    align-items: center !important; justify-content: center !important;
+  }
   .click-btn .cb-emoji { font-size: 28px !important; }
   .center-area.mob-clicker-mode { overflow: hidden !important; padding: 0 !important; }
-  .center-area.mob-map-mode { padding: 0 !important; padding-bottom: calc(var(--nav-h)) !important; }
+
+  /* === MAP режим === */
+  .center-area.mob-map-mode {
+    padding: 0 !important;
+    padding-bottom: calc(var(--nav-h) + var(--tg-safe-bottom)) !important;
+    padding-left: var(--tg-safe-left) !important;
+    padding-right: var(--tg-safe-right) !important;
+  }
   .center-area.mob-map-mode .clicker-strip,
   .center-area.mob-map-mode .epoch-res-bar,
   .center-area.mob-map-mode .build-selector { display: none !important; }
-  .map-area { flex: 1 !important; width: 100% !important; height: 100% !important; min-height: 0 !important; }
-  #isoCanvas { display: block !important; width: 100% !important; height: 100% !important; touch-action: none; }
-  .map-controls-hint { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 9px; color: rgba(90,104,128,0.6); pointer-events: none; white-space: nowrap; background:rgba(7,10,15,0.7);padding:2px 10px; }
 
-    /* === BOTTOM NAV === */
+  /* === BOTTOM NAV ===
+     iOS: треба враховувати safe-area-inset-bottom (home indicator)
+     z-index:200 — вище панелей (z:10) але нижче модалів (z:9990+) */
   #mob-nav {
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    height: var(--nav-h);
+    /* iOS: padding-bottom для home indicator */
     padding-bottom: var(--tg-safe-bottom);
+    /* landscape: враховуємо safe areas зліва/справа */
+    padding-left: var(--tg-safe-left);
+    padding-right: var(--tg-safe-right);
+    height: calc(var(--nav-h) + var(--tg-safe-bottom));
     background: var(--panel);
     border-top: 1px solid var(--border);
     display: flex;
-    z-index: 1000;
+    /* Важливо: z-index достатній щоб бути поверх панелей */
+    z-index: 200;
     flex-shrink: 0;
+    /* iOS: pointer-events явно */
+    pointer-events: auto;
   }
   .mob-nav-btn {
     flex: 1;
@@ -703,8 +770,16 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     cursor: pointer;
     transition: all .15s;
     padding: 6px 2px 4px;
+    /* iOS: вимикаємо підсвітку при тапі */
     -webkit-tap-highlight-color: transparent;
+    /* iOS: manipulation щоб не затримувати 300ms */
+    touch-action: manipulation;
     min-width: 0;
+    /* iOS: pointer-events */
+    pointer-events: auto;
+    /* iOS: щоб кнопки були клікабельні */
+    -webkit-appearance: none;
+    appearance: none;
   }
   .mob-nav-btn .nav-icon {
     font-size: 18px;
@@ -712,6 +787,8 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     display: block;
     filter: grayscale(0.4);
     transition: all .15s;
+    /* iOS: не блокувати події дочірніх елементів */
+    pointer-events: none;
   }
   .mob-nav-btn .nav-label {
     display: block;
@@ -720,6 +797,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     white-space: nowrap;
     max-width: 100%;
     padding: 0 2px;
+    pointer-events: none;
   }
   .mob-nav-btn.active {
     color: var(--gold);
@@ -730,13 +808,44 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     filter: none;
     transform: scale(1.15);
   }
+
+  /* === iOS LANDSCAPE FIX ===
+     При повороті екрану на iPhone — перераховуємо висоту */
+  @media (orientation: landscape) {
+    .app {
+      /* Landscape: header менший, більше місця для контенту */
+      padding-top: 0;
+    }
+    header {
+      padding: 3px calc(8px + var(--tg-safe-left)) !important;
+      padding-right: calc(8px + var(--tg-safe-right)) !important;
+    }
+    #mob-nav {
+      /* Landscape: nav менший */
+      height: calc(44px + var(--tg-safe-bottom));
+    }
+    :root { --nav-h: 44px; }
+    .mob-nav-btn .nav-label { display: none; }
+    .mob-nav-btn .nav-icon { font-size: 22px !important; }
+  }
+
+  /* iOS: всі інтерактивні елементи мають touch-action:manipulation */
+  button, [onclick] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(232,184,75,0.15);
+  }
 }
 /* Cloud save status */
 #cloud-status {
   position: fixed; bottom: calc(12px + var(--tg-safe-bottom)); right: 12px;
   background: #0d1219; border: 1px solid var(--border); border-radius: 4px;
-  padding: 5px 10px; font-size: 10px; color: var(--dim); z-index: 9998;
+  padding: 5px 10px; font-size: 10px; color: var(--dim);
+  /* iOS: низький z-index щоб не перекривати інтерактивні елементи */
+  z-index: 50;
   transition: all .3s; pointer-events: none; opacity: 0;
+  /* iOS: явно кажемо що це не інтерактивне */
+  -webkit-user-select: none;
+  user-select: none;
 }
 #cloud-status.visible { opacity: 1; }
 #cloud-status.saving { border-color: var(--gold); color: var(--gold); }
@@ -5120,14 +5229,12 @@ const _origProcessBuildings = typeof processBuildings === 'function' ? processBu
 // ============================================================
 // MOBILE NAV — переключення панелей
 // ============================================================
-function isMobile() { return window.innerWidth <= 700; }
-
-// Підпанелі для мобільного:
-// 0 = РЕСУРСИ (left-panel, sub=resources)
-// 1 = КЛІКЕР  (center-area, ховаємо карту, показуємо клікер)
-// 2 = МІСТО   (center-area, показуємо карту)
-// 3 = СПОРУДИ (right-panel, без логу)
-// 4 = УПРАВЛ. (left-panel, sub=tech/quests/defense)
+function isMobile() {
+  // iOS: window.innerWidth може бути 0 при першому запуску
+  // Використовуємо screen.width як fallback
+  const w = window.innerWidth || screen.width || 0;
+  return w <= 700;
+}
 
 function mobNav(idx) {
   if (!isMobile()) return;
@@ -5136,45 +5243,48 @@ function mobNav(idx) {
   const centerArea  = document.querySelector('.center-area');
   const rightPanel  = document.querySelector('.right-panel');
 
-  // Скидаємо все
-  [leftPanel, centerArea, rightPanel].forEach(p => p && p.classList.remove('mob-active'));
+  // Скидаємо все — явно виставляємо pointer-events
+  [leftPanel, centerArea, rightPanel].forEach(p => {
+    if (!p) return;
+    p.classList.remove('mob-active');
+    // iOS fix: прибираємо стилі що могли залишитись
+    p.style.pointerEvents = '';
+  });
 
   document.querySelectorAll('.mob-nav-btn').forEach((b, i) => {
     b.classList.toggle('active', i === idx);
   });
 
+  function activatePanel(panel, extraClasses) {
+    if (!panel) return;
+    panel.classList.add('mob-active');
+    if (extraClasses) extraClasses.forEach(c => panel.classList.add(c));
+    // iOS fix: явно включаємо pointer-events
+    panel.style.pointerEvents = 'auto';
+  }
+
+  // Скидаємо режими center
+  centerArea && centerArea.classList.remove('mob-clicker-mode', 'mob-map-mode');
+
   if (idx === 0) {
-    // КЛІКЕР — center без карти
-    centerArea && centerArea.classList.add('mob-active');
-    centerArea && centerArea.classList.add('mob-clicker-mode');
-    centerArea && centerArea.classList.remove('mob-map-mode');
-
+    activatePanel(centerArea, ['mob-clicker-mode']);
   } else if (idx === 1) {
-    // СПОРУДИ — права панель
-    rightPanel && rightPanel.classList.add('mob-active');
-
+    activatePanel(rightPanel);
   } else if (idx === 2) {
-    // МІСТО — center з картою на весь екран
-    centerArea && centerArea.classList.add('mob-active');
-    centerArea && centerArea.classList.add('mob-map-mode');
-    centerArea && centerArea.classList.remove('mob-clicker-mode');
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      resizeCanvas(); drawMap();
-    }));
-
+    activatePanel(centerArea, ['mob-map-mode']);
+    // iOS: затримка перед resize щоб layout встиг оновитись
+    setTimeout(() => {
+      resizeCanvas();
+      drawMap();
+    }, 100);
   } else if (idx === 3) {
-    // ЗАХИСТ — ліва панель, вкладка defense
-    leftPanel && leftPanel.classList.add('mob-active');
+    activatePanel(leftPanel);
     switchTab('defense');
-
   } else if (idx === 4) {
-    // ТЕХНО — ліва панель, вкладка tech
-    leftPanel && leftPanel.classList.add('mob-active');
+    activatePanel(leftPanel);
     switchTab('tech');
-
   } else if (idx === 5) {
-    // РЕСУРСИ — ліва панель, вкладка resources
-    leftPanel && leftPanel.classList.add('mob-active');
+    activatePanel(leftPanel);
     switchTab('resources');
   }
 }
@@ -5182,7 +5292,11 @@ function mobNav(idx) {
 // Ініціалізуємо мобільну навігацію після завантаження
 function initMobNav() {
   if (!isMobile()) return;
-  mobNav(0);
+  // iOS: при першому запуску запускаємо через requestAnimationFrame
+  // бо window.innerWidth може ще не бути коректним
+  requestAnimationFrame(() => {
+    mobNav(0);
+  });
 }
 
 
@@ -5345,12 +5459,25 @@ async function doResetGame(){
 
 window.addEventListener('resize', () => {
   if (!isMobile()) {
-    // Скидаємо мобільні класи на десктопі
     document.querySelectorAll('.left-panel,.center-area,.right-panel')
-      .forEach(p => p.classList.remove('mob-active'));
+      .forEach(p => { p.classList.remove('mob-active'); p.style.pointerEvents = ''; });
   } else {
-    initMobNav();
+    // iOS orientation change: невелика затримка бо viewport оновлюється асинхронно
+    setTimeout(() => initMobNav(), 50);
   }
+  // Перемальовуємо карту при будь-якій зміні розміру
+  if (typeof resizeCanvas === 'function') {
+    resizeCanvas();
+    drawMap();
+  }
+});
+
+// iOS: orienationchange — окремо бо resize може не спрацювати
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => {
+    if (isMobile()) initMobNav();
+    if (typeof resizeCanvas === 'function') { resizeCanvas(); drawMap(); }
+  }, 150);
 });
 
 // ============================================================
