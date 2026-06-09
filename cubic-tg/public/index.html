@@ -4502,6 +4502,7 @@ if (TG) {
 const API_BASE = ''; // порожньо = той самий хост
 let _saveTimer = null;
 let _lastSaveHash = '';
+let _gameReady = false; // блокує збереження поки не завантажено
 // Cloud enabled якщо є TG_USER (навіть без initData — fallback через tg_user_id в body)
 let _cloudEnabled = !!(TG_USER?.id);
 
@@ -4677,6 +4678,7 @@ function deserializeGameState(s) {
 
 /** Зберігаємо на сервер */
 async function cloudSave() {
+  if (!_gameReady) return; // не зберігати поки не завантажено
   const state = serializeGameState();
   const hash = JSON.stringify([state.epoch, state.buildCount, Math.floor(SCORES.total || 0)]);
   if (hash === _lastSaveHash) return;
@@ -4789,12 +4791,12 @@ setInterval(() => cloudSave(), 30000);
 
 // Зберігаємо при закритті/переключенні вкладки
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) cloudSave();
+  if (document.hidden && _gameReady) cloudSave();
 });
-window.addEventListener('beforeunload', () => cloudSave());
+window.addEventListener('beforeunload', () => { if (_gameReady) cloudSave(); });
 if (TG) {
   TG.onEvent('viewportChanged', () => {
-    if (!TG.isExpanded) cloudSave();
+    if (!TG.isExpanded && _gameReady) cloudSave();
   });
 }
 
@@ -4865,6 +4867,7 @@ async function openLeaderboard() {
 
   // Завантажуємо збереження
   await cloudLoad();
+  _gameReady = true; // тепер дозволяємо збереження
 
   // Після завантаження оновлюємо UI
   document.getElementById('map-epoch').textContent = epoch;
