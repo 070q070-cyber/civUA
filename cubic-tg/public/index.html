@@ -23,7 +23,7 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;overflow:hidden;}
 body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:15px;}
-/* УВАГА: body::after з z-index:9999 блокує кліки на iOS WebView — прибрано */
+/* body::after removed — causes black screen on iOS Safari/WebView */
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:#080a0e;}
 ::-webkit-scrollbar-thumb{background:var(--border);}
@@ -235,46 +235,8 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .toast.show{transform:translateX(-50%) translateY(0);}
 
 /* ============================================================
-   BUILDING RICH TOOLTIP
+   QUESTS & ACHIEVEMENTS
    ============================================================ */
-#bld-tooltip{
-  position:fixed;z-index:300;
-  background:#0d1219ee;border:1px solid var(--gold);
-  padding:10px 13px;max-width:260px;min-width:180px;
-  pointer-events:none;display:none;
-  box-shadow:0 4px 24px rgba(0,0,0,.7),0 0 12px rgba(232,184,75,.15);
-  animation:ttfadein .12s ease-out;
-  /* iOS: явно вимикаємо взаємодію */
-  -webkit-user-select:none; user-select:none;
-}
-@keyframes ttfadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
-#bld-tooltip .tt-name{font-size:13px;color:var(--gold);margin-bottom:5px;font-family:var(--font);}
-#bld-tooltip .tt-epoch{font-size:10px;color:var(--dim);margin-bottom:6px;}
-#bld-tooltip .tt-desc{font-size:11px;color:var(--text);margin-bottom:7px;line-height:1.5;border-left:2px solid var(--border);padding-left:7px;}
-#bld-tooltip .tt-section{font-size:10px;color:var(--dim);letter-spacing:.5px;margin:5px 0 3px;}
-#bld-tooltip .tt-row{display:flex;align-items:center;gap:5px;font-size:11px;margin:2px 0;}
-#bld-tooltip .tt-in{color:var(--red);}
-#bld-tooltip .tt-out{color:var(--green);}
-#bld-tooltip .tt-cost-row{color:var(--orange);font-size:11px;margin:2px 0;}
-#bld-tooltip .tt-tip{font-size:10px;color:var(--teal);margin-top:7px;border-top:1px solid var(--border);padding-top:5px;}
-#bld-tooltip .tt-count{display:inline-block;background:var(--panel2);border:1px solid var(--border);font-size:10px;padding:1px 6px;color:var(--text);margin-left:4px;}
-#bld-tooltip .tt-upgrade-hint{font-size:10px;color:var(--purple);margin-top:5px;}
-
-/* BASE building tooltip */
-#base-bld-tooltip{
-  position:fixed;z-index:300;
-  background:#0d1219ee;border:1px solid var(--teal);
-  padding:10px 13px;max-width:240px;
-  pointer-events:none;display:none;
-  box-shadow:0 4px 24px rgba(0,0,0,.7);
-  animation:ttfadein .12s ease-out;
-  -webkit-user-select:none; user-select:none;
-}
-#base-bld-tooltip .tt-name{font-size:12px;color:var(--teal);margin-bottom:4px;}
-#base-bld-tooltip .tt-desc{font-size:11px;color:var(--dim);margin-bottom:5px;line-height:1.4;}
-#base-bld-tooltip .tt-prod{font-size:12px;color:var(--green);margin:3px 0;}
-#base-bld-tooltip .tt-cost{font-size:11px;color:var(--orange);}
-#base-bld-tooltip .tt-tip{font-size:10px;color:var(--dim);margin-top:5px;border-top:1px solid var(--border);padding-top:4px;}
 /* Quest cards */
 .quest-card{background:var(--panel2);border:1px solid var(--border);padding:9px;margin-bottom:6px;position:relative;overflow:hidden;transition:border-color .2s;}
 .quest-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--border);}
@@ -368,7 +330,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .def-struct-btn:disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;}
 
 /* Wave incoming alert */
-.wave-alert{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#1a0808ee;border:2px solid var(--red);color:var(--red);font-family:var(--font2);font-size:9px;padding:10px 20px;z-index:150;display:none;animation:wavealert 0.4s ease-in-out infinite alternate;text-align:center;pointer-events:none;}
+.wave-alert{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#1a0808ee;border:2px solid var(--red);color:var(--red);font-family:var(--font2);font-size:9px;padding:10px 20px;z-index:9998;display:none;animation:wavealert 0.4s ease-in-out infinite alternate;text-align:center;}
 @keyframes wavealert{from{box-shadow:0 0 8px var(--red);}to{box-shadow:0 0 20px var(--red),0 0 40px #ff000066;}}
 .wave-next-timer{font-size:11px;color:var(--dim);text-align:center;padding:4px;}
 .wave-next-timer span{color:var(--orange);}
@@ -509,34 +471,22 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 }
 
 @media (max-width: 700px) {
-  /* iOS: використовуємо -webkit-fill-available як fallback для dvh */
-  html {
-    height: -webkit-fill-available;
-    height: 100dvh;
-  }
+  /* iOS: -webkit-fill-available не рахує address bar */
   html, body {
     overflow: hidden !important;
-    /* НЕ ставимо height: 100% бо iOS Safari рахує це з адресним рядком */
-    min-height: -webkit-fill-available;
-  }
-  body {
-    height: 100dvh;
-    height: -webkit-fill-available;
+    height: 100% !important;
+    height: -webkit-fill-available !important;
   }
 
   /* === APP SHELL === */
   .app {
     display: flex !important;
     flex-direction: column !important;
-    /* iOS: -webkit-fill-available щоб не залізало під address bar */
-    height: 100dvh !important;
+    height: 100% !important;
     height: -webkit-fill-available !important;
+    /* iOS: padding замість margin для safe area */
     padding-top: var(--tg-safe-top);
-    /* НЕ overflow:hidden — це блокує scroll на iOS */
     overflow: hidden;
-    /* iOS fix: ensure app is above everything */
-    position: relative;
-    z-index: 0;
   }
 
   /* === HEADER === */
@@ -545,11 +495,11 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     flex-wrap: nowrap !important;
     height: auto !important;
     padding: 5px 8px !important;
-    gap: 4px !important;
-    overflow: hidden;
-    /* iOS: fix для landscape — враховуємо safe areas зліва/справа */
+    /* iOS landscape: відступи від notch/Dynamic Island */
     padding-left: calc(8px + var(--tg-safe-left)) !important;
     padding-right: calc(8px + var(--tg-safe-right)) !important;
+    gap: 4px !important;
+    overflow: hidden;
   }
   .logo { font-size: 7px !important; flex-shrink: 0; }
   .epoch-info { gap: 4px; min-width: 0; overflow: hidden; }
@@ -570,7 +520,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     position: relative;
   }
 
-  /* === ПАНЕЛІ — кожна абсолютна, переключаються через nav === */
+  /* === ПАНЕЛІ === */
   .left-panel,
   .center-area,
   .right-panel {
@@ -579,14 +529,13 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     width: 100% !important;
     height: 100% !important;
     max-height: none !important;
-    /* iOS: -webkit-overflow-scrolling для плавного скролу */
     overflow-y: auto;
     overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
     display: none !important;
     border: none !important;
-    /* iOS: pointer-events явно включаємо */
-    pointer-events: auto;
+    -webkit-overflow-scrolling: touch;
+    /* iOS: явний pointer-events */
+    pointer-events: none;
   }
   .left-panel.mob-active,
   .center-area.mob-active,
@@ -594,8 +543,6 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     display: flex !important;
     flex-direction: column;
     pointer-events: auto !important;
-    /* zIndex більший за tooltip але менший за modal */
-    z-index: 10;
   }
 
   /* === LEFT PANEL === */
@@ -609,7 +556,6 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     overflow-x: auto;
     scrollbar-width: none;
     border-bottom: 1px solid var(--border);
-    /* iOS: важливо для скролу горизонтального */
     -webkit-overflow-scrolling: touch;
   }
   .panel-tabs::-webkit-scrollbar { display: none; }
@@ -618,9 +564,8 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     padding: 9px 10px !important;
     white-space: nowrap;
     flex-shrink: 0;
-    /* iOS: кліки на кнопки */
-    -webkit-tap-highlight-color: rgba(232,184,75,0.2);
     touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(232,184,75,0.2);
   }
   .panel-content { flex: 1; overflow-y: auto; padding: 8px; }
 
@@ -650,7 +595,6 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     padding: 8px 10px !important;
     align-items: center !important;
     justify-content: center !important;
-    /* iOS тач */
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
@@ -658,7 +602,6 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   .click-btn .cb-amt { position: static !important; font-size: 9px !important; }
   .click-btn .cb-ac { position: static !important; font-size: 8px !important; }
 
-  /* Карта */
   .center-area.mob-active {
     padding: 0 !important;
     padding-bottom: calc(var(--nav-h) + var(--tg-safe-bottom)) !important;
@@ -672,24 +615,19 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     flex: 1 !important;
     width: 100% !important;
     min-height: 0 !important;
-    /* НЕ height:100% — це ламає flex на iOS */
-    position: relative;
   }
   #isoCanvas {
     width: 100% !important;
     height: 100% !important;
-    display: block !important;
-    /* iOS: touch-action:none для canvas щоб перехопити тач-події */
     touch-action: none;
+    display: block !important;
   }
   .map-controls-hint {
     position: absolute; bottom: 10px; left: 50%;
     transform: translateX(-50%);
     font-size: 9px; color: rgba(90,104,128,0.6);
-    /* iOS: pointer-events:none щоб не блокувати тачі */
-    pointer-events: none;
-    white-space: nowrap; background:rgba(7,10,15,0.7); padding:2px 10px;
-    z-index: 5;
+    pointer-events: none; white-space: nowrap;
+    background:rgba(7,10,15,0.7); padding:2px 10px;
   }
 
   /* === RIGHT PANEL === */
@@ -712,12 +650,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     overflow-y: auto; overflow-x: hidden;
     padding-bottom: calc(var(--nav-h) + var(--tg-safe-bottom) + 16px) !important;
   }
-  .click-btn {
-    min-width: 80px !important; min-height: 72px !important;
-    flex-direction: column !important; gap: 3px !important;
-    font-size: 10px !important; padding: 10px !important;
-    align-items: center !important; justify-content: center !important;
-  }
+  .click-btn { min-width: 80px !important; min-height: 72px !important; flex-direction: column !important; gap: 3px !important; font-size: 10px !important; padding: 10px !important; align-items: center !important; justify-content: center !important; }
   .click-btn .cb-emoji { font-size: 28px !important; }
   .center-area.mob-clicker-mode { overflow: hidden !important; padding: 0 !important; }
 
@@ -733,24 +666,21 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   .center-area.mob-map-mode .build-selector { display: none !important; }
 
   /* === BOTTOM NAV ===
-     iOS: треба враховувати safe-area-inset-bottom (home indicator)
-     z-index:200 — вище панелей (z:10) але нижче модалів (z:9990+) */
+     iOS: z-index 200 — вище панелей (auto) але нижче модалів (9999+)
+     height враховує home indicator (safe-area-inset-bottom) */
   #mob-nav {
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    /* iOS: padding-bottom для home indicator */
+    height: calc(var(--nav-h) + var(--tg-safe-bottom));
     padding-bottom: var(--tg-safe-bottom);
-    /* landscape: враховуємо safe areas зліва/справа */
     padding-left: var(--tg-safe-left);
     padding-right: var(--tg-safe-right);
-    height: calc(var(--nav-h) + var(--tg-safe-bottom));
     background: var(--panel);
     border-top: 1px solid var(--border);
     display: flex;
-    /* Важливо: z-index достатній щоб бути поверх панелей */
+    /* iOS: достатньо щоб бути над панелями */
     z-index: 200;
     flex-shrink: 0;
-    /* iOS: pointer-events явно */
     pointer-events: auto;
   }
   .mob-nav-btn {
@@ -770,16 +700,12 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     cursor: pointer;
     transition: all .15s;
     padding: 6px 2px 4px;
-    /* iOS: вимикаємо підсвітку при тапі */
     -webkit-tap-highlight-color: transparent;
-    /* iOS: manipulation щоб не затримувати 300ms */
+    /* iOS: без затримки 300ms */
     touch-action: manipulation;
-    min-width: 0;
-    /* iOS: pointer-events */
-    pointer-events: auto;
-    /* iOS: щоб кнопки були клікабельні */
     -webkit-appearance: none;
-    appearance: none;
+    min-width: 0;
+    pointer-events: auto;
   }
   .mob-nav-btn .nav-icon {
     font-size: 18px;
@@ -787,7 +713,6 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     display: block;
     filter: grayscale(0.4);
     transition: all .15s;
-    /* iOS: не блокувати події дочірніх елементів */
     pointer-events: none;
   }
   .mob-nav-btn .nav-label {
@@ -809,43 +734,28 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     transform: scale(1.15);
   }
 
-  /* === iOS LANDSCAPE FIX ===
-     При повороті екрану на iPhone — перераховуємо висоту */
+  /* iOS landscape — менший nav, більше місця */
   @media (orientation: landscape) {
-    .app {
-      /* Landscape: header менший, більше місця для контенту */
-      padding-top: 0;
-    }
-    header {
-      padding: 3px calc(8px + var(--tg-safe-left)) !important;
-      padding-right: calc(8px + var(--tg-safe-right)) !important;
-    }
-    #mob-nav {
-      /* Landscape: nav менший */
-      height: calc(44px + var(--tg-safe-bottom));
-    }
     :root { --nav-h: 44px; }
+    header {
+      padding-top: 3px !important;
+      padding-bottom: 3px !important;
+    }
     .mob-nav-btn .nav-label { display: none; }
     .mob-nav-btn .nav-icon { font-size: 22px !important; }
   }
 
-  /* iOS: всі інтерактивні елементи мають touch-action:manipulation */
+  /* iOS: всі кнопки — без затримки тапу */
   button, [onclick] {
     touch-action: manipulation;
-    -webkit-tap-highlight-color: rgba(232,184,75,0.15);
   }
 }
 /* Cloud save status */
 #cloud-status {
   position: fixed; bottom: calc(12px + var(--tg-safe-bottom)); right: 12px;
   background: #0d1219; border: 1px solid var(--border); border-radius: 4px;
-  padding: 5px 10px; font-size: 10px; color: var(--dim);
-  /* iOS: низький z-index щоб не перекривати інтерактивні елементи */
-  z-index: 50;
+  padding: 5px 10px; font-size: 10px; color: var(--dim); z-index: 9998;
   transition: all .3s; pointer-events: none; opacity: 0;
-  /* iOS: явно кажемо що це не інтерактивне */
-  -webkit-user-select: none;
-  user-select: none;
 }
 #cloud-status.visible { opacity: 1; }
 #cloud-status.saving { border-color: var(--gold); color: var(--gold); }
@@ -1019,8 +929,6 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<div id="bld-tooltip"></div>
-<div id="base-bld-tooltip"></div>
 
 <div id="tut-banner" style="display:none;position:fixed;bottom:70px;left:8px;right:8px;z-index:9000;background:#0d1219;border:2px solid var(--gold);padding:12px 14px;box-shadow:0 0 20px rgba(232,184,75,0.25);">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
@@ -3749,7 +3657,7 @@ function renderBuildings(){
     let costStr=Object.keys(cost).map(k=>`${RES[k]?.e||''}${fmt(cost[k])} ${RES[k]?.n}`).join(' + ');
     let res=RES[b.res];
     let tipText=`${b.name}\nВидобуває: ${res?.n||b.res} (${res?.e||''})\nВиробництво: +${prod}/с (рів.×${b.prodBase})\nВартість: ${costStr}\nЕпоха: ${b.ep_req}`;
-    baseHtml+=`<div class="base-b-card ${b.lvl>0?'active-bld':''}" data-base-id="${id}">`;
+    baseHtml+=`<div class="base-b-card ${b.lvl>0?'active-bld':''}" title="${tipText}">
       <div class="base-b-head">
         <div class="base-b-name">${b.name}</div>
         ${b.lvl>0?`<div class="base-b-lvl">рів.${b.lvl}</div>`:''}
@@ -3852,7 +3760,7 @@ function renderBuildings(){
     let costDesc=Object.keys(b.cost).map(r=>`${b.cost[r]} ${RES[r]?.n}`).join(', ');
     let cardTip=`${b.name}\nЕпоха: ${b.epoch} | Збудовано: ${count}\nВхід: ${inDesc}\nВихід: ${outDesc}\nВартість: ${costDesc}`;
 
-    html+=`<div class="b-card ${count>0?'on-map':''}" data-bld-id="${id}">`
+    html+=`<div class="b-card ${count>0?'on-map':''}" title="${cardTip}">
       <div class="b-header">
         <div>
           <div class="b-title">${b.name}</div>
@@ -4724,11 +4632,6 @@ function serializeGameState() {
 /** Відновлюємо стан гри із збереження */
 function deserializeGameState(s) {
   if (!s) return;
-  // Якщо це маркер скидання — ігноруємо, не відновлюємо нічого
-  if (s._reset === true) {
-    addLog('🆕 Хмара: збереження скинуто. Починаємо заново!', true);
-    return;
-  }
   try {
     // Якщо версія збереження відрізняється — робимо м'яку міграцію:
     // зберігаємо рекорди і прогрес гравця, але пропускаємо несумісні структури
@@ -5229,12 +5132,14 @@ const _origProcessBuildings = typeof processBuildings === 'function' ? processBu
 // ============================================================
 // MOBILE NAV — переключення панелей
 // ============================================================
-function isMobile() {
-  // iOS: window.innerWidth може бути 0 при першому запуску
-  // Використовуємо screen.width як fallback
-  const w = window.innerWidth || screen.width || 0;
-  return w <= 700;
-}
+function isMobile() { return window.innerWidth <= 700; }
+
+// Підпанелі для мобільного:
+// 0 = РЕСУРСИ (left-panel, sub=resources)
+// 1 = КЛІКЕР  (center-area, ховаємо карту, показуємо клікер)
+// 2 = МІСТО   (center-area, показуємо карту)
+// 3 = СПОРУДИ (right-panel, без логу)
+// 4 = УПРАВЛ. (left-panel, sub=tech/quests/defense)
 
 function mobNav(idx) {
   if (!isMobile()) return;
@@ -5243,48 +5148,45 @@ function mobNav(idx) {
   const centerArea  = document.querySelector('.center-area');
   const rightPanel  = document.querySelector('.right-panel');
 
-  // Скидаємо все — явно виставляємо pointer-events
-  [leftPanel, centerArea, rightPanel].forEach(p => {
-    if (!p) return;
-    p.classList.remove('mob-active');
-    // iOS fix: прибираємо стилі що могли залишитись
-    p.style.pointerEvents = '';
-  });
+  // Скидаємо все
+  [leftPanel, centerArea, rightPanel].forEach(p => p && p.classList.remove('mob-active'));
 
   document.querySelectorAll('.mob-nav-btn').forEach((b, i) => {
     b.classList.toggle('active', i === idx);
   });
 
-  function activatePanel(panel, extraClasses) {
-    if (!panel) return;
-    panel.classList.add('mob-active');
-    if (extraClasses) extraClasses.forEach(c => panel.classList.add(c));
-    // iOS fix: явно включаємо pointer-events
-    panel.style.pointerEvents = 'auto';
-  }
-
-  // Скидаємо режими center
-  centerArea && centerArea.classList.remove('mob-clicker-mode', 'mob-map-mode');
-
   if (idx === 0) {
-    activatePanel(centerArea, ['mob-clicker-mode']);
+    // КЛІКЕР — center без карти
+    centerArea && centerArea.classList.add('mob-active');
+    centerArea && centerArea.classList.add('mob-clicker-mode');
+    centerArea && centerArea.classList.remove('mob-map-mode');
+
   } else if (idx === 1) {
-    activatePanel(rightPanel);
+    // СПОРУДИ — права панель
+    rightPanel && rightPanel.classList.add('mob-active');
+
   } else if (idx === 2) {
-    activatePanel(centerArea, ['mob-map-mode']);
-    // iOS: затримка перед resize щоб layout встиг оновитись
-    setTimeout(() => {
-      resizeCanvas();
-      drawMap();
-    }, 100);
+    // МІСТО — center з картою на весь екран
+    centerArea && centerArea.classList.add('mob-active');
+    centerArea && centerArea.classList.add('mob-map-mode');
+    centerArea && centerArea.classList.remove('mob-clicker-mode');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      resizeCanvas(); drawMap();
+    }));
+
   } else if (idx === 3) {
-    activatePanel(leftPanel);
+    // ЗАХИСТ — ліва панель, вкладка defense
+    leftPanel && leftPanel.classList.add('mob-active');
     switchTab('defense');
+
   } else if (idx === 4) {
-    activatePanel(leftPanel);
+    // ТЕХНО — ліва панель, вкладка tech
+    leftPanel && leftPanel.classList.add('mob-active');
     switchTab('tech');
+
   } else if (idx === 5) {
-    activatePanel(leftPanel);
+    // РЕСУРСИ — ліва панель, вкладка resources
+    leftPanel && leftPanel.classList.add('mob-active');
     switchTab('resources');
   }
 }
@@ -5292,392 +5194,56 @@ function mobNav(idx) {
 // Ініціалізуємо мобільну навігацію після завантаження
 function initMobNav() {
   if (!isMobile()) return;
-  // iOS: при першому запуску запускаємо через requestAnimationFrame
-  // бо window.innerWidth може ще не бути коректним
-  requestAnimationFrame(() => {
-    mobNav(0);
-  });
+  mobNav(0);
 }
 
 
 // ============================================================
-// RESET GAME — iOS-сумісний варіант
+// RESET GAME
 // ============================================================
 function confirmResetGame(){
   let overlay = document.createElement('div');
-  overlay.id = 'reset-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;';
   overlay.innerHTML = `
     <div style="background:#0d1219;border:2px solid var(--red);max-width:300px;width:90vw;padding:20px;text-align:center;">
       <div style="font-family:var(--font2);font-size:11px;color:var(--red);margin-bottom:12px;">⚠️ СКИНУТИ ГРУ?</div>
       <div style="font-size:12px;color:var(--dim);margin-bottom:16px;line-height:1.6;">Весь прогрес буде видалено назавжди. Ресурси, споруди, технології — все зникне.</div>
       <div style="display:flex;gap:8px;">
-        <button onclick="document.getElementById('reset-overlay').remove()"
-          style="flex:1;font-family:var(--font);font-size:12px;padding:10px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;">
-          ❌ СКАСУВАТИ
-        </button>
-        <button onclick="doResetGame()"
-          style="flex:1;font-family:var(--font);font-size:12px;padding:10px;border:1px solid var(--red);background:rgba(180,40,40,0.15);color:var(--red);cursor:pointer;font-weight:bold;">
-          🔄 ТАК, СКИНУТИ
-        </button>
+        <button onclick="this.closest('div[style]').remove()" style="flex:1;font-family:var(--font);font-size:12px;padding:10px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;">❌ СКАСУВАТИ</button>
+        <button onclick="doResetGame()" style="flex:1;font-family:var(--font);font-size:12px;padding:10px;border:1px solid var(--red);background:rgba(180,40,40,0.15);color:var(--red);cursor:pointer;font-weight:bold;">🔄 ТАК, СКИНУТИ</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
 }
 
-function _hardResetState() {
-  // Скидаємо усі змінні стану гри у пам'яті
-  epoch = 1; tech = 0; buildCount = 0; totalClicks = 0;
-  clickMult = 1; prodMult = 1; acMult = 1; bacMult = 1;
-  baseResMultiplier = 1; techCostDiscount = 1; exchangeLevel = 0;
-  _gameReady = false;
-
-  // Зберігання
-  Object.keys(storage).forEach(k => { storage[k] = 0; });
-  Object.keys(psCounters).forEach(k => { psCounters[k] = 0; });
-  if(typeof resLifetimeTotal !== 'undefined')
-    Object.keys(resLifetimeTotal).forEach(k => { resLifetimeTotal[k] = 0; });
-  Object.keys(SCORES).forEach(k => { SCORES[k] = 0; });
-  logLines.splice(0, logLines.length);
-
-  // AC
-  Object.values(AC_NODES).forEach(n => { n.unlocked = false; n.lvl = 0; });
-  recalcACRate();
-
-  // Tech + Research
-  TECH_NODES.forEach(n => { n.unlocked = false; });
-  if(typeof RESEARCH_DEFS !== 'undefined') RESEARCH_DEFS.forEach(r => { r.lvl = 0; });
-
-  // Binds + Base buildings
-  BINDS.forEach(b => { b.lvl = 0; });
-  Object.values(BASE_RES_BUILDINGS).forEach(b => { b.lvl = 0; });
-
-  // Production buildings
-  Object.values(buildings).forEach(b => { b.instances = []; b.mapTile = null; });
-
-  // Defense
-  Object.entries(DEFENSE_STRUCTS).forEach(([,s]) => {
-    s.count = 0; s.hp = s.hpMax;
-  });
-  recalcDefenseStats();
-
-  // Goblin wave
-  Object.assign(goblinWave, {
-    waveNum:0, active:false, goblins:[], nextWaveIn:90,
-    totalDefeated:0, totalWaves:0,
-    cityHp:1000, cityHpMax:1000, alertShown:false
-  });
-
-  // Quests + Achievements
-  QUESTS.forEach(q => { q.done = false; q.claimed = false; q._maxSeen = 0; });
-  ACHIEVEMENTS.forEach(a => { a.unlocked = false; });
-  if(typeof achActiveFilter !== 'undefined') achActiveFilter = 'all';
-
-  // Map — regenerate fresh
-  generateMap();
-
-  // Filters
-  if(typeof activeFilter !== 'undefined') activeFilter = 'all';
-  if(typeof buildStatusFilter !== 'undefined') buildStatusFilter = 'all';
-  if(typeof activeEpochFilter !== 'undefined') activeEpochFilter = 0;
-}
-
-async function doResetGame(){
-  // Закриваємо overlay
-  const ov = document.getElementById('reset-overlay');
-  if(ov) ov.remove();
-
-  // Показуємо індикатор
-  const indicator = document.createElement('div');
-  indicator.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;';
-  indicator.innerHTML = `
-    <div style="font-family:var(--font2);font-size:12px;color:var(--red);">🔄 СКИДАЄМО ГРУ...</div>
-    <div style="font-size:11px;color:var(--dim);">Очищення збережень...</div>`;
-  document.body.appendChild(indicator);
-
-  // 1. Зупиняємо автозбереження
-  _gameReady = false;
-
-  // 2. Очищаємо localStorage
-  ['cubic_save','cubic_save_backup','cubic_save_ts','cubic_last_online'].forEach(k => {
-    try { localStorage.removeItem(k); } catch(e) {}
-  });
-  try { sessionStorage.removeItem('tut_done'); } catch(e) {}
-
-  // 3. Надсилаємо reset на сервер (не чекаємо відповіді)
-  if(typeof IS_TG !== 'undefined' && IS_TG && typeof TG_USER !== 'undefined' && TG_USER){
-    try {
-      fetch(API_BASE+'/api/save',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','x-telegram-init-data':TG?.initData||''},
-        body:JSON.stringify({
-          state:{_reset:true,epoch:1,storage:{},scores:{total:0},saveVersion:SAVE_VERSION},
-          epoch:1,score:0
-        })
-      }).catch(()=>{});
-    } catch(e){}
+function doResetGame(){
+  // Clear sessionStorage so tutorial shows again
+  sessionStorage.removeItem('tut_done');
+  // Clear localStorage saves
+  localStorage.removeItem('cubic_save');
+  localStorage.removeItem('cubic_save_backup');
+  localStorage.removeItem('cubic_save_ts');
+  // Clear server save
+  if(IS_TG && TG_USER){
+    fetch(API_BASE+'/api/save',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-telegram-init-data':TG?.initData||''},
+      body:JSON.stringify({state:{_reset:true,epoch:1,storage:{},scores:{total:0}},epoch:1,score:0})
+    }).catch(()=>{});
   }
-
-  // 4. Скидаємо стан у пам'яті
-  _hardResetState();
-
-  // 5. iOS не завжди перезавантажує сторінку через WebView — тому спочатку
-  //    пробуємо повний reinit без reload, і тільки потім reload як fallback
-  try {
-    indicator.querySelector('div:last-child').textContent = 'Перезапуск гри...';
-
-    // Перериваємо всі таймери через глобальний флаг
-    if(typeof _resetFlag !== 'undefined') _resetFlag = Date.now();
-
-    // Reinit map canvas
-    resizeCanvas();
-    drawMap();
-
-    // Reinit UI
-    markDirty('full');
-    recalcACRate();
-    recalcDefenseStats();
-
-    // Дозволяємо гру
-    _gameReady = true;
-
-    // Закриваємо індикатор
-    setTimeout(()=>{ indicator.remove(); }, 600);
-
-    addLog('🆕 Нова гра розпочата!', true);
-    addLog('⛺ Клікай — здобувай — будуй!', true);
-
-    // Показуємо tutorial заново
-    if(typeof initTutorial === 'function') setTimeout(()=>initTutorial(), 800);
-
-  } catch(reinitErr) {
-    console.warn('Reinit failed, falling back to reload:', reinitErr);
-    // Fallback: reload (спрацює на Android/Desktop)
-    setTimeout(()=>{ location.reload(); }, 300);
-  }
+  // Reload page — full reset
+  setTimeout(()=>location.reload(), 300);
 }
 
 window.addEventListener('resize', () => {
   if (!isMobile()) {
+    // Скидаємо мобільні класи на десктопі
     document.querySelectorAll('.left-panel,.center-area,.right-panel')
-      .forEach(p => { p.classList.remove('mob-active'); p.style.pointerEvents = ''; });
+      .forEach(p => p.classList.remove('mob-active'));
   } else {
-    // iOS orientation change: невелика затримка бо viewport оновлюється асинхронно
-    setTimeout(() => initMobNav(), 50);
-  }
-  // Перемальовуємо карту при будь-якій зміні розміру
-  if (typeof resizeCanvas === 'function') {
-    resizeCanvas();
-    drawMap();
+    initMobNav();
   }
 });
-
-// iOS: orienationchange — окремо бо resize може не спрацювати
-window.addEventListener('orientationchange', () => {
-  setTimeout(() => {
-    if (isMobile()) initMobNav();
-    if (typeof resizeCanvas === 'function') { resizeCanvas(); drawMap(); }
-  }, 150);
-});
-
-// ============================================================
-// BUILDING RICH TOOLTIP SYSTEM
-// ============================================================
-(function(){
-  const TT  = document.getElementById('bld-tooltip');
-  const TTB = document.getElementById('base-bld-tooltip');
-  let _ttTimer = null;
-  let _ttVisible = false;
-
-  function positionTooltip(el, ttEl){
-    const rect = el.getBoundingClientRect();
-    const tw = ttEl.offsetWidth || 260;
-    const th = ttEl.offsetHeight || 200;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    // Prefer left side of element; fall back to right
-    let x = rect.left - tw - 8;
-    if(x < 4) x = rect.right + 8;
-    if(x + tw > vw - 4) x = Math.max(4, vw - tw - 8);
-    let y = rect.top;
-    if(y + th > vh - 8) y = Math.max(4, vh - th - 8);
-    ttEl.style.left = x + 'px';
-    ttEl.style.top  = y + 'px';
-  }
-
-  // ── PRODUCTION BUILDING tooltip ────────────────────────────
-  function buildTooltipHtml(id){
-    const b = buildings[id];
-    if(!b) return '';
-    const count = b.instances.length;
-    const totalLvl = b.instances.reduce((s,i)=>s+i.lvl,0);
-
-    // Per-second output for all instances combined
-    let psLines = '';
-    if(count > 0){
-      let combined = {};
-      b.instances.forEach(inst=>{
-        let m = inst.lvl * prodMult * (inst.autoClicker ? getBuildingACMult() : 1);
-        Object.keys(b.outputs).forEach(k=>{
-          combined[k] = (combined[k]||0) + b.outputs[k] * m * 0.5;
-        });
-      });
-      psLines = Object.entries(combined).map(([k,v])=>
-        `<div class="tt-row tt-out">${RES[k]?.e||'📦'} <b>+${v.toFixed(1)}/с</b> <span style="color:var(--dim)">${RES[k]?.n||k}</span></div>`
-      ).join('');
-    }
-
-    const inRows  = Object.entries(b.inputs).map(([k,v])=>
-      `<div class="tt-row tt-in">⬇ ${v} ${RES[k]?.e||''} ${RES[k]?.n||k}</div>`).join('');
-    const outRows = Object.entries(b.outputs).map(([k,v])=>
-      `<div class="tt-row tt-out">⬆ +${v} ${RES[k]?.e||''} ${RES[k]?.n||k} <span style="color:var(--dim);font-size:9px;">за рів./с</span></div>`).join('');
-    const costRows = Object.entries(b.cost).map(([k,v])=>{
-      const have = storage[k]||0;
-      const ok = have >= v;
-      return `<div class="tt-cost-row" style="color:${ok?'var(--green)':'var(--orange)'};">${RES[k]?.e||''} ${v} ${RES[k]?.n||k} <span style="font-size:9px;color:var(--dim)">(є: ${fmt(have)})</span></div>`;
-    }).join('');
-
-    const brDesc = {
-      'Лісозаготівля':'Заготівля деревини та природних матеріалів',
-      'Каменярство':'Видобуток каменю та мінералів',
-      'Рільництво':'Вирощування сільськогосподарських культур',
-      'Металургія':'Плавка та обробка металів',
-      'Виробництво':'Переробка матеріалів у готові вироби',
-      'Торгівля':'Обмін та переробка товарів',
-      'Текстиль':'Виготовлення тканин та одягу',
-      'Хімія':'Хімічна переробка та синтез',
-      'Енергетика':'Виробництво та розподіл енергії',
-      'Електроніка':'Виготовлення мікросхем та пристроїв',
-      'Автоматика':'Роботизоване виробництво',
-      'Космос':'Виробництво для освоєння космосу',
-    };
-    const brTip = brDesc[b.branch] || b.branch;
-
-    let upgradeHint = '';
-    if(count > 0 && totalLvl < count * 999){
-      upgradeHint = `<div class="tt-upgrade-hint">⬆ Можна покращити у списку нижче</div>`;
-    }
-
-    return `
-      <div class="tt-name">${b.name} <span class="tt-count">${count} шт</span></div>
-      <div class="tt-epoch">Епоха ${b.epoch} · ${b.branch}</div>
-      <div class="tt-desc">${brTip}</div>
-      ${count>0?`<div class="tt-section">📊 ПОТОЧНЕ ВИРОБНИЦТВО</div>${psLines}`:''}
-      <div class="tt-section">⚙️ МЕХАНІКА (за 1 рів.)</div>
-      ${inRows}
-      ${outRows}
-      <div class="tt-section">💰 ВАРТІСТЬ БУДІВНИЦТВА</div>
-      ${costRows}
-      ${upgradeHint}
-      <div class="tt-tip">💡 Кожен рівень = ×1 до виробництва. AC множить додатково.</div>`;
-  }
-
-  // ── BASE BUILDING tooltip ────────────────────────────────
-  function baseTooltipHtml(id){
-    const b = BASE_RES_BUILDINGS[id];
-    if(!b) return '';
-    const scale = Math.pow(b.costMult, b.lvl);
-    const cost  = {};
-    Object.keys(b.costBase).forEach(k => cost[k] = Math.floor(b.costBase[k]*scale));
-    const prod  = (b.prodBase * Math.max(1,b.lvl) * baseResMultiplier).toFixed(2);
-    const res   = RES[b.res];
-    const costStr = Object.entries(cost).map(([k,v])=>{
-      const have = storage[k]||0;
-      const ok = have >= v;
-      return `<span style="color:${ok?'var(--green)':'var(--orange)'}">${RES[k]?.e||''}${fmt(v)}</span>`;
-    }).join(' + ');
-
-    const descs = {
-      'Лісозаготівня':'Автоматично рубає дерева. Кожен рівень додає +базова_швидкість/с.',
-      'Каменоломня':'Видобуває камінь із кар\'єру. Не потребує вхідних ресурсів.',
-      'Колодязь':'Качає воду з підземних джерел. Основа для сільського господарства.',
-      'Глинище':'Добуває глину з берегів річок. Потрібна для цегли та кераміки.',
-      'Розплідник':'Вирощує рослинність. Потрібна для текстилю та їжі.',
-      'Рудна яма':'Видобуває сиру руду. Основа металургії.',
-      'Лісопилка':'Переробляє деревину на колоди.',
-      'Вугільня':'Виробляє деревне вугілля для плавки.',
-    };
-    const tipDesc = descs[b.name] || `Автоматично видобуває ${res?.n||b.res}. Не потребує вхідних ресурсів.`;
-
-    return `
-      <div class="tt-name">${b.name}</div>
-      <div class="tt-desc">${tipDesc}</div>
-      <div class="tt-prod">${res?.e||''} +${prod} ${res?.n||b.res}/с</div>
-      ${b.lvl > 0 ? `<div style="font-size:10px;color:var(--dim)">Рів.${b.lvl} · Базова ×${b.prodBase}/рів.</div>` : ''}
-      <div class="tt-cost">💰 Наступний рів.: ${costStr}</div>
-      <div class="tt-tip">💡 Базові споруди не споживають ресурси — тільки виробляють!</div>`;
-  }
-
-  // ── EVENT DELEGATION ────────────────────────────────────
-  function showTT(el, html, isBld){
-    const ttEl = isBld ? TT : TTB;
-    const other = isBld ? TTB : TT;
-    other.style.display = 'none';
-    ttEl.innerHTML = html;
-    ttEl.style.display = 'block';
-    _ttVisible = true;
-    // Wait one frame for size, then position
-    requestAnimationFrame(()=> positionTooltip(el, ttEl));
-  }
-
-  function hideTT(){
-    TT.style.display = 'none';
-    TTB.style.display = 'none';
-    _ttVisible = false;
-  }
-
-  // Use event delegation on the buildings list
-  const bldList = document.getElementById('ui-buildings');
-  if(bldList){
-    bldList.addEventListener('mouseenter', e=>{
-      const card = e.target.closest('[data-bld-id]');
-      const base = e.target.closest('[data-base-id]');
-      if(card){
-        clearTimeout(_ttTimer);
-        _ttTimer = setTimeout(()=> showTT(card, buildTooltipHtml(card.dataset.bldId), true), 350);
-      } else if(base){
-        clearTimeout(_ttTimer);
-        _ttTimer = setTimeout(()=> showTT(base, baseTooltipHtml(base.dataset.baseId), false), 350);
-      }
-    }, true);
-
-    bldList.addEventListener('mouseleave', e=>{
-      clearTimeout(_ttTimer);
-      _ttTimer = setTimeout(hideTT, 200);
-    }, true);
-
-    // Mobile: tap to toggle tooltip
-    bldList.addEventListener('click', e=>{
-      const card = e.target.closest('[data-bld-id]');
-      const base = e.target.closest('[data-base-id]');
-      if(!card && !base){ hideTT(); return; }
-      // Don't show tooltip if tapping a button
-      if(e.target.tagName === 'BUTTON'){ hideTT(); return; }
-      if(card){
-        if(_ttVisible && TT.style.display==='block'){
-          hideTT();
-        } else {
-          showTT(card, buildTooltipHtml(card.dataset.bldId), true);
-        }
-      } else if(base){
-        if(_ttVisible && TTB.style.display==='block'){
-          hideTT();
-        } else {
-          showTT(base, baseTooltipHtml(base.dataset.baseId), false);
-        }
-      }
-    });
-  }
-
-  // Hide on outside click
-  document.addEventListener('click', e=>{
-    if(!e.target.closest('[data-bld-id]')&&!e.target.closest('[data-base-id]')&&
-       !e.target.closest('#bld-tooltip')&&!e.target.closest('#base-bld-tooltip')){
-      hideTT();
-    }
-  });
-  document.addEventListener('scroll', hideTT, true);
-})();
 
 initMobNav();
 initTutorial();
