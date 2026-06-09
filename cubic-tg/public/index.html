@@ -5165,6 +5165,10 @@ function confirmResetGame(){
 function doResetGame(){
   // Clear sessionStorage so tutorial shows again
   sessionStorage.removeItem('tut_done');
+  // Clear localStorage saves
+  localStorage.removeItem('cubic_save');
+  localStorage.removeItem('cubic_save_backup');
+  localStorage.removeItem('cubic_save_ts');
   // Clear server save
   if(IS_TG && TG_USER){
     fetch(API_BASE+'/api/save',{
