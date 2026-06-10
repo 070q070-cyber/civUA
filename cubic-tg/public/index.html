@@ -388,6 +388,11 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .base-b-card{background:var(--panel2);border:1px solid var(--border);padding:5px 7px;transition:border-color .2s;}
 .base-b-card.active-bld{border-color:var(--green);}
 .base-b-card.active-bld::before{content:'';display:block;height:2px;background:linear-gradient(90deg,var(--green),var(--teal));margin:-5px -7px 4px;}
+/* Cap selector */
+.cap-row{display:flex;gap:2px;margin-top:4px;}
+.cap-btn{flex:1;font-family:var(--font);font-size:8px;padding:3px 2px;background:transparent;border:1px solid var(--border);color:var(--dim);cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:all .12s;text-align:center;line-height:1.2;}
+.cap-btn.active{background:#1a1400;border-color:var(--gold);color:var(--gold);}
+.cap-btn:hover:not(.active){border-color:var(--teal);color:var(--teal);}
 .base-b-head{display:flex;justify-content:space-between;align-items:center;}
 .base-b-name{font-size:10px;color:var(--text);}
 .base-b-lvl{font-size:9px;color:var(--gold);}
@@ -2956,11 +2961,17 @@ setInterval(()=>{
     });
   });
 
-  // Base resource buildings production
   Object.keys(BASE_RES_BUILDINGS).forEach(id=>{
     let b=BASE_RES_BUILDINGS[id];
     if(!b.lvl||epoch<b.ep_req) return;
     let gain=b.prodBase*b.lvl*baseResMultiplier;
+    // Обмеження накопичення: cap = 'all' | 'half' | 'keep20'
+    if(b.cap && b.cap!=='all'){
+      let cur=storage[b.res]||0;
+      let max=b.prodBase*b.lvl*baseResMultiplier*200; // "розумна" стеля = 200с виробництва
+      if(b.cap==='half'  && cur>=max*0.5){ gain=0; }
+      if(b.cap==='keep20'){ let keep=max*0.2; if(cur>=keep) gain=Math.min(gain, Math.max(0,keep-cur+gain)); }
+    }
     storage[b.res]=(storage[b.res]||0)+gain;
     psCounters[b.res]=(psCounters[b.res]||0)+gain;
     addPoints(Math.ceil(gain*0.05), 'resources');
