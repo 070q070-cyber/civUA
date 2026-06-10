@@ -21,16 +21,8 @@
   --font2:'Press Start 2P',monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-html{
-  height: 100%;
-  height: -webkit-fill-available;
-}
-body{
-  font-family:var(--font);background:var(--bg);color:var(--text);font-size:15px;
-  height: 100%;
-  height: -webkit-fill-available;
-  overflow:hidden;
-}
+html,body{height:100%;overflow:hidden;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:15px;}
 /* body::after removed — causes black screen on iOS Safari/WebView */
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:#080a0e;}
@@ -38,14 +30,7 @@ body{
 ::-webkit-scrollbar-thumb:hover{background:var(--gold);}
 
 /* LAYOUT */
-.app{display:grid;grid-template-rows:52px 1fr;
-  /* iOS Safari: 100vh включає address bar і ламає layout.
-     Порядок важливий: останнє підтримуване значення виграє */
-  height: 100vh;         /* fallback для старих браузерів */
-  height: 100dvh;        /* dynamic viewport height — iOS 15.4+ */
-  height: -webkit-fill-available; /* iOS Safari fallback */
-  max-height: -webkit-fill-available;
-}
+.app{display:grid;grid-template-rows:52px 1fr;height:100vh;}
 .main{display:grid;grid-template-columns:270px 1fr 310px;overflow:hidden;}
 
 /* HEADER */
@@ -140,64 +125,19 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .small-btn:disabled{cursor:not-allowed;opacity:.4;}
 
 /* EXCHANGE PANEL */
-.exchange-panel{display:flex;flex-direction:column;gap:3px;}
-.exchange-title{font-size:12px;color:var(--synth);margin-bottom:5px;text-shadow:0 0 8px var(--synth);}
-.exchange-synth-bal{font-size:14px;color:var(--synth);background:#07091a;border:1px solid #1a1a3a;padding:6px 10px;margin-bottom:3px;}
-.exchange-locked{text-align:center;padding:12px;color:var(--dim);font-size:11px;border:1px solid var(--border);}
-.exchange-upgrade{display:flex;gap:8px;align-items:center;margin-top:8px;padding:8px;background:#080f08;border:1px solid #1a3020;}
-.exchange-lvl-info{flex:1;font-size:11px;line-height:1.6;}
-
-/* Resource picker — кнопки замість <select> для iOS */
-.exch-res-picker{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px;max-height:138px;overflow-y:auto;padding:2px;-webkit-overflow-scrolling:touch;}
-.exch-res-btn{
-  display:flex;flex-direction:column;align-items:center;gap:1px;
-  background:var(--panel2);border:1px solid var(--border);
-  padding:5px 5px;min-width:54px;cursor:pointer;
-  font-family:var(--font);transition:all .12s;
-  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
-  -webkit-appearance:none; line-height:1.2;
-}
-.exch-res-btn:active{opacity:.7;}
-.exch-res-btn.selected{border-color:var(--gold);background:#1a1400;box-shadow:0 0 6px rgba(232,184,75,.2);}
-.exch-active-res{display:flex;gap:10px;align-items:center;background:#080c10;border:1px solid var(--border);padding:7px 10px;margin-bottom:5px;}
-.exch-amount-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:3px;}
-.exch-quick-btn{
-  flex:1;min-width:38px;font-family:var(--font);font-size:11px;padding:8px 3px;
-  background:transparent;border:1px solid var(--border);color:var(--dim);
-  cursor:pointer;transition:all .12s;
-  touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-appearance:none;
-}
-.exch-quick-btn:active{opacity:.7;}
-.exch-quick-half{border-color:var(--teal)!important;color:var(--teal)!important;}
-.exch-quick-all{border-color:var(--orange)!important;color:var(--orange)!important;}
-.exch-btn{font-family:var(--font);background:transparent;border:1px solid var(--synth);color:var(--synth);font-size:11px;padding:6px 12px;cursor:pointer;transition:all .15s;touch-action:manipulation;-webkit-appearance:none;}
-.exch-btn:active{opacity:.7;}
+.exchange-panel{background:linear-gradient(135deg,#08101a,#0a0c14);border:1px solid var(--synth);padding:8px;margin-bottom:5px;}
+.exchange-title{font-size:11px;color:var(--synth);margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+.exchange-synth-bal{font-size:14px;color:var(--synth);text-shadow:0 0 10px var(--synth);margin-bottom:6px;}
+.exchange-row{display:flex;gap:5px;margin-bottom:4px;align-items:center;}
+.exch-select{flex:1;background:#0a1020;border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:11px;padding:3px 5px;}
+.exch-input{width:70px;background:#0a1020;border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:11px;padding:3px 5px;}
+.exch-btn{font-family:var(--font);font-size:10px;padding:4px 10px;border:1px solid var(--synth);background:transparent;color:var(--synth);cursor:pointer;transition:all .15s;white-space:nowrap;}
 .exch-btn:hover:not(:disabled){background:var(--synth);color:#000;}
 .exch-btn:disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;}
-
-/* ============================================================
-   BUILDING TOOLTIPS
-   ============================================================ */
-#bld-tooltip,#base-bld-tooltip{
-  position:fixed;z-index:300;
-  background:#0d1219f2;border:1px solid var(--gold);
-  padding:10px 13px;max-width:260px;min-width:180px;
-  pointer-events:none;display:none;
-  box-shadow:0 4px 24px rgba(0,0,0,.8);
-  -webkit-user-select:none;user-select:none;
-  font-family:var(--font);font-size:11px;line-height:1.5;
-}
-#base-bld-tooltip{border-color:var(--teal);}
-.tt-head{font-size:13px;color:var(--gold);margin-bottom:3px;}
-.tt-sub{font-size:10px;color:var(--dim);margin-bottom:5px;}
-.tt-desc{font-size:11px;color:var(--text);margin-bottom:5px;line-height:1.5;border-left:2px solid var(--border);padding-left:6px;}
-.tt-sec{font-size:10px;color:var(--dim);letter-spacing:.4px;margin:4px 0 2px;}
-.tt-row{display:flex;align-items:center;gap:4px;font-size:11px;margin:1px 0;}
-.tt-in{color:var(--red);}
-.tt-out{color:var(--green);}
-.tt-cost{color:var(--orange);font-size:11px;margin:1px 0;}
-.tt-ok{color:var(--green);}
-.tt-hint{font-size:10px;color:var(--teal);margin-top:5px;border-top:1px solid var(--border);padding-top:4px;}
+.exch-rate{font-size:10px;color:var(--dim);margin:2px 0;}
+.exchange-locked{text-align:center;padding:12px;color:var(--dim);font-size:11px;}
+.exchange-upgrade{display:flex;justify-content:space-between;align-items:center;margin-top:5px;padding-top:5px;border-top:1px solid var(--border);}
+.exchange-lvl-info{font-size:10px;color:var(--teal);}
 
 /* CENTER */
 .center-area{display:flex;flex-direction:column;overflow:hidden;}
@@ -206,9 +146,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .click-btn{background:var(--panel2);border:2px solid var(--border);color:var(--text);font-family:var(--font);font-size:12px;padding:7px 12px;cursor:pointer;transition:all .1s;display:flex;align-items:center;gap:5px;position:relative;overflow:hidden;}
 .click-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.03),transparent);pointer-events:none;}
 .click-btn:hover{border-color:var(--gold);color:var(--gold);background:#1a1a10;}
-/* iOS FIX: transform:scale на click-btn ламає position:fixed у дітей.
-   Використовуємо opacity замість transform для feedback */
-.click-btn:active{opacity:0.75;}
+.click-btn:active{transform:scale(.96);}
 .click-btn.cur-epoch{border-color:var(--teal);background:linear-gradient(135deg,var(--panel2),#0a1a18);}
 .click-btn .cb-emoji{font-size:18px;}
 .click-btn .cb-amt{font-size:9px;color:var(--green);position:absolute;top:2px;right:3px;}
@@ -288,13 +226,13 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .log-line.synth-log{color:var(--synth);border-left-color:var(--synth);}
 
 /* FLOAT TEXT */
-.float-text{position:fixed;pointer-events:none;font-family:var(--font);font-size:17px;color:var(--gold);text-shadow:0 0 10px var(--gold);animation:floatup .9s ease-out forwards;z-index:100;}
+.float-text{position:fixed;pointer-events:none;font-family:var(--font);font-size:17px;color:var(--gold);text-shadow:0 0 10px var(--gold);animation:floatup .9s ease-out forwards;z-index:9998;}
 .float-text.synth{color:var(--synth);text-shadow:0 0 10px var(--synth);}
 @keyframes floatup{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(-55px);}}
 
 /* TOAST */
-.toast{position:fixed;bottom:80px;left:50%;margin-left:-100px;width:200px;text-align:center;background:var(--gold);color:#000;font-family:var(--font2);font-size:8px;padding:10px 20px;z-index:500;transition:opacity .35s,bottom .35s;box-shadow:0 0 20px var(--gold);opacity:0;pointer-events:none;}
-.toast.show{opacity:1;bottom:90px;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gold);color:#000;font-family:var(--font2);font-size:8px;padding:10px 20px;z-index:9997;transition:transform .35s;box-shadow:0 0 20px var(--gold);}
+.toast.show{transform:translateX(-50%) translateY(0);}
 
 /* ============================================================
    QUESTS & ACHIEVEMENTS
@@ -392,7 +330,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .def-struct-btn:disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;}
 
 /* Wave incoming alert */
-.wave-alert{position:fixed;top:60px;left:0;right:0;text-align:center;background:#1a0808ee;border-top:2px solid var(--red);border-bottom:2px solid var(--red);color:var(--red);font-family:var(--font2);font-size:9px;padding:10px 20px;z-index:150;display:none;animation:wavealert 0.4s ease-in-out infinite alternate;pointer-events:none;}
+.wave-alert{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#1a0808ee;border:2px solid var(--red);color:var(--red);font-family:var(--font2);font-size:9px;padding:10px 20px;z-index:9998;display:none;animation:wavealert 0.4s ease-in-out infinite alternate;text-align:center;}
 @keyframes wavealert{from{box-shadow:0 0 8px var(--red);}to{box-shadow:0 0 20px var(--red),0 0 40px #ff000066;}}
 .wave-next-timer{font-size:11px;color:var(--dim);text-align:center;padding:4px;}
 .wave-next-timer span{color:var(--orange);}
@@ -533,17 +471,20 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 }
 
 @media (max-width: 700px) {
-  /* iOS: overflow:hidden щоб не скролило сторінку */
+  /* iOS: -webkit-fill-available не рахує address bar */
   html, body {
     overflow: hidden !important;
+    height: 100% !important;
+    height: -webkit-fill-available !important;
   }
 
   /* === APP SHELL === */
   .app {
     display: flex !important;
     flex-direction: column !important;
-    /* iOS: -webkit-fill-available вже встановлено глобально */
     height: 100% !important;
+    height: -webkit-fill-available !important;
+    /* iOS: padding замість margin для safe area */
     padding-top: var(--tg-safe-top);
     overflow: hidden;
   }
@@ -593,14 +534,15 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     display: none !important;
     border: none !important;
     -webkit-overflow-scrolling: touch;
-    /* iOS FIX: НЕ ставимо pointer-events:none — WebKit баг коли
-       hidden елементи з pointer-events:none блокують тачі на nav */
+    /* iOS: явний pointer-events */
+    pointer-events: none;
   }
   .left-panel.mob-active,
   .center-area.mob-active,
   .right-panel.mob-active {
     display: flex !important;
     flex-direction: column;
+    pointer-events: auto !important;
   }
 
   /* === LEFT PANEL === */
@@ -792,26 +734,27 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     transform: scale(1.15);
   }
 
+  /* iOS landscape — менший nav, більше місця */
+  @media (orientation: landscape) {
+    :root { --nav-h: 44px; }
+    header {
+      padding-top: 3px !important;
+      padding-bottom: 3px !important;
+    }
+    .mob-nav-btn .nav-label { display: none; }
+    .mob-nav-btn .nav-icon { font-size: 22px !important; }
+  }
+
   /* iOS: всі кнопки — без затримки тапу */
   button, [onclick] {
     touch-action: manipulation;
   }
 }
-/* Landscape на мобільному — окремий блок (iOS Safari вимагає) */
-@media (max-width: 700px) and (orientation: landscape) {
-  :root { --nav-h: 44px; }
-  header { padding-top: 3px !important; padding-bottom: 3px !important; }
-  .mob-nav-btn .nav-label { display: none !important; }
-  .mob-nav-btn .nav-icon { font-size: 22px !important; }
-}
-
 /* Cloud save status */
 #cloud-status {
-  position: fixed; bottom: calc(68px + var(--tg-safe-bottom)); right: 12px;
+  position: fixed; bottom: calc(12px + var(--tg-safe-bottom)); right: 12px;
   background: #0d1219; border: 1px solid var(--border); border-radius: 4px;
-  padding: 5px 10px; font-size: 10px; color: var(--dim);
-  /* iOS: низький z-index щоб не перекривати і не блокувати кліки */
-  z-index: 50;
+  padding: 5px 10px; font-size: 10px; color: var(--dim); z-index: 9998;
   transition: all .3s; pointer-events: none; opacity: 0;
 }
 #cloud-status.visible { opacity: 1; }
@@ -986,8 +929,6 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<div id="bld-tooltip"></div>
-<div id="base-bld-tooltip"></div>
 
 <div id="tut-banner" style="display:none;position:fixed;bottom:70px;left:8px;right:8px;z-index:9000;background:#0d1219;border:2px solid var(--gold);padding:12px 14px;box-shadow:0 0 20px rgba(232,184,75,0.25);">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
@@ -3630,197 +3571,71 @@ function renderBaseBuildings(){
 }
 
 
-// Ціна ресурсу залежить від рідкісності (епохи) — чим вища епоха, тим дорожче
-function getResRarityMultiplier(resKey) {
-  const ep = RES[resKey]?.ep || 1;
-  // Ep1=1x, Ep2=1.5x, Ep3=2x, ..., Ep12=6.5x
-  return 1 + (ep - 1) * 0.5;
-}
-
-function getSellPrice(resKey, baseRate) {
-  // Скільки Синтезу дає 1 одиниця ресурсу
-  return parseFloat((baseRate * getResRarityMultiplier(resKey)).toFixed(3));
-}
-
-function getBuyPrice(resKey, baseRate) {
-  // Скільки Синтезу коштує 1 одиниця ресурсу (дорожче ніж продаж)
-  const rarityMult = getResRarityMultiplier(resKey);
-  const buyMarkup = 1.5; // купити завжди дорожче на 50%
-  return parseFloat((rarityMult / baseRate * buyMarkup).toFixed(3));
-}
-
-// Поточно вибраний ресурс на біржі
-let exchSellRes = null;
-let exchBuyRes  = null;
-
 function renderExchange(){
-  let eDiv = document.getElementById('ui-exchange');
-  if (!eDiv) return;
-
-  if (exchangeLevel === 0) {
-    let techNode = TECH_NODES.find(n => n.id === 'ep2_t5');
-    let nodeIdx  = techNode ? TECH_NODES.indexOf(techNode) : -1;
-    let prereqOk = !techNode?.prereq || (TECH_NODES.find(n => n.id === techNode?.prereq)?.unlocked);
-    let epOk     = techNode && epoch >= techNode.ep_req;
-    let disc     = techCostDiscount;
-    let canBuy   = techNode && !techNode.unlocked && epOk && prereqOk &&
-                   (techNode.costs||[]).every(c => (storage[c.res]||0) >= Math.floor(c.amt*disc));
-    let costStr  = techNode ? (techNode.costs||[]).map(c =>
-      `${RES[c.res]?.e}${fmt(Math.floor(c.amt*disc))}`).join(' ') : '';
-    eDiv.innerHTML = `<div class="exchange-panel">
+  let eDiv=document.getElementById('ui-exchange');
+  if(exchangeLevel===0){
+    let techNode=TECH_NODES.find(n=>n.id==='ep2_t5');
+    let nodeIdx=techNode?TECH_NODES.indexOf(techNode):-1;
+    let prereqOk=!techNode?.prereq||(TECH_NODES.find(n=>n.id===techNode?.prereq)?.unlocked);
+    let epOk=techNode&&epoch>=techNode.ep_req;
+    let disc=techCostDiscount;
+    let canBuy=techNode&&!techNode.unlocked&&epOk&&prereqOk&&(techNode.costs||[]).every(c=>(storage[c.res]||0)>=Math.floor(c.amt*disc));
+    let costStr=techNode?(techNode.costs||[]).map(c=>`${RES[c.res]?.e}${fmt(Math.floor(c.amt*disc))}`).join(' '):'';
+    eDiv.innerHTML=`<div class="exchange-panel">
       <div class="exchange-title">⚗️ БІРЖА СИНТЕЗУ</div>
       <div class="exchange-locked">🔒 Потрібна технологія «Торгівля» (Еп.2)<br>
-        <div style="font-size:11px;color:var(--orange);margin:6px 0;">💰 ${costStr}</div>
+        <div style="font-size:10px;color:var(--orange);margin:6px 0;">💰 ${costStr}</div>
         <button class="exch-btn" onclick="unlockTech(${nodeIdx})" ${!canBuy?'disabled':''}>🔬 ДОСЛІДИТИ</button>
-      </div></div>`;
+      </div>
+    </div>`;
     return;
   }
 
-  const lvl  = exchangeLevel;
-  const rate = EXCHANGE_RATES[lvl];
-  const sv   = storage.synth_energy || 0;
-  const sps  = psCounters.synth_energy || 0;
+  let lvl=exchangeLevel;
+  let rate=EXCHANGE_RATES[lvl];
+  let sv=storage.synth_energy||0;
+  let sps=psCounters.synth_energy||0;
 
-  // Upgrade info
-  const nextTechIds = {1:"t_exch2", 2:"t_exch3", 3:"t_exch4"};
-  const nextTechId  = nextTechIds[lvl];
-  const nextTech    = nextTechId ? TECH_NODES.find(n => n.id === nextTechId) : null;
-  const canUpgrade  = nextTech && !nextTech.unlocked && epoch >= nextTech.ep_req &&
-                      (storage[nextTech.costRes]||0) >= nextTech.costAmt;
-  const nextIdx     = nextTech ? TECH_NODES.indexOf(nextTech) : -1;
+  // Next upgrade tech
+  let nextTechIds={1:"t_exch2",2:"t_exch3",3:"t_exch4"};
+  let nextTechId=nextTechIds[lvl];
+  let nextTech=nextTechId?TECH_NODES.find(n=>n.id===nextTechId):null;
+  let canUpgrade=nextTech&&!nextTech.unlocked&&epoch>=nextTech.ep_req&&(storage[nextTech.costRes]||0)>=nextTech.costAmt;
+  let nextIdx=nextTech?TECH_NODES.indexOf(nextTech):-1;
 
-  // Доступні ресурси
-  const availRes = Object.keys(RES).filter(k => !RES[k].synth && RES[k].ep <= epoch);
+  // Tradeable resources
+  let tradeRes=Object.keys(RES).filter(k=>!RES[k].synth&&RES[k].ep<=epoch&&storage[k]>0);
 
-  // Вибраний ресурс для продажу/купівлі
-  if (!exchSellRes || !RES[exchSellRes]) exchSellRes = availRes[0] || 'wood';
-  if (!exchBuyRes  || !RES[exchBuyRes])  exchBuyRes  = availRes[0] || 'wood';
-
-  const sellPrice = getSellPrice(exchSellRes, rate);
-  const buyPrice  = getBuyPrice(exchBuyRes, rate);
-  const sellHave  = storage[exchSellRes] || 0;
-  const buyHave   = storage.synth_energy || 0;
-
-  // Будуємо список ресурсів як кнопки (не select) — краще на iOS
-  function resButtons(selectedKey, callbackName) {
-    return `<div class="exch-res-picker" id="picker-${callbackName}">` +
-      availRes.map(k => {
-        const rarityMult = getResRarityMultiplier(k);
-        const isSelected = k === selectedKey;
-        const haveAmt = storage[k] || 0;
-        const epColor = k === selectedKey ? 'var(--gold)' : (haveAmt > 0 ? 'var(--text)' : 'var(--dim)');
-        const rarityColor = rarityMult >= 4 ? 'var(--purple)' : rarityMult >= 2.5 ? 'var(--teal)' : 'var(--dim)';
-        return `<button
-          class="exch-res-btn ${isSelected ? 'selected' : ''}"
-          onclick="${callbackName}('${k}')"
-          title="${RES[k].n} · Рідкісність ×${rarityMult.toFixed(1)} · Маєш: ${fmt(haveAmt)}">
-          <span style="font-size:18px">${RES[k].e}</span>
-          <span style="font-size:9px;color:${epColor}">${RES[k].n.slice(0,8)}</span>
-          <span style="font-size:8px;color:${rarityColor}">×${rarityMult.toFixed(1)}</span>
-          <span style="font-size:9px;color:var(--dim)">${haveAmt > 0 ? fmt(haveAmt) : '—'}</span>
-        </button>`;
-      }).join('') +
-    `</div>`;
-  }
-
-  eDiv.innerHTML = `<div class="exchange-panel">
+  eDiv.innerHTML=`<div class="exchange-panel">
     <div class="exchange-title">⚗️ БІРЖА СИНТЕЗУ <span style="color:var(--dim);font-size:9px;">РІВ.${lvl}</span></div>
-    <div class="exchange-synth-bal">🌀 ${fmt(sv)} Синтез${sps > 0 ? ` <span style="font-size:11px;color:var(--green)">+${sps.toFixed(1)}/с</span>` : ''}</div>
-    <div style="font-size:10px;color:var(--dim);margin-bottom:6px;">Базовий курс: ×${rate}. Ціна залежить від рідкісності ресурсу.</div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:4px;">Курс обміну: ×${rate} (продаж) / ×${(1/rate).toFixed(2)} (купівля)</div>
+    <div class="exchange-synth-bal">🌀 ${fmt(sv)} Синтез${sps>0?` <span style="font-size:11px;color:var(--green)">+${sps.toFixed(1)}/с</span>`:''}</div>
 
-    <!-- ПРОДАТИ -->
-    <div class="sh" style="margin-bottom:5px;">📤 ПРОДАТИ → Синтез</div>
-    ${resButtons(exchSellRes, 'setExchSellRes')}
-    <div class="exch-active-res">
-      <span style="font-size:16px">${RES[exchSellRes]?.e}</span>
-      <div>
-        <div style="font-size:12px;color:var(--text)">${RES[exchSellRes]?.n}</div>
-        <div style="font-size:11px;color:var(--green)">1 ресурс = <b>${sellPrice}</b> 🌀</div>
-        <div style="font-size:10px;color:var(--dim)">Маєш: ${fmt(sellHave)}</div>
-      </div>
+    <div class="sh" style="margin-bottom:6px;">📤 ПРОДАТИ → Синтез</div>
+    <div class="exchange-row">
+      <select class="exch-select" id="exch-sell-res">
+        ${Object.keys(RES).filter(k=>!RES[k].synth&&RES[k].ep<=epoch).map(k=>`<option value="${k}">${RES[k].e} ${RES[k].n} (${fmt(storage[k]||0)})</option>`).join('')}
+      </select>
+      <input class="exch-input" type="number" id="exch-sell-amt" placeholder="к-сть" min="1" value="10">
+      <button class="exch-btn" onclick="sellToSynth()">→ 🌀</button>
     </div>
-    <div class="exch-amount-row">
-      <button class="exch-quick-btn" onclick="doSell(1)">×1</button>
-      <button class="exch-quick-btn" onclick="doSell(10)">×10</button>
-      <button class="exch-quick-btn" onclick="doSell(100)">×100</button>
-      <button class="exch-quick-btn exch-quick-half" onclick="doSell(Math.floor((storage['${exchSellRes}']||0)/2))">×½</button>
-      <button class="exch-quick-btn exch-quick-all" onclick="doSell(storage['${exchSellRes}']||0)">ВСЕ</button>
-    </div>
+    <div class="exch-rate">1 ресурс = ${rate} 🌀 (втрата ${Math.round((1-rate)*100)}%)</div>
 
-    <!-- КУПИТИ -->
-    <div class="sh" style="margin:10px 0 5px;">📥 КУПИТИ ← Синтез</div>
-    ${resButtons(exchBuyRes, 'setExchBuyRes')}
-    <div class="exch-active-res">
-      <span style="font-size:16px">${RES[exchBuyRes]?.e}</span>
-      <div>
-        <div style="font-size:12px;color:var(--text)">${RES[exchBuyRes]?.n}</div>
-        <div style="font-size:11px;color:var(--orange)">1 ресурс = <b>${buyPrice}</b> 🌀</div>
-        <div style="font-size:10px;color:var(--dim)">Синтез: ${fmt(buyHave)}</div>
-      </div>
+    <div class="sh" style="margin:8px 0 6px;">📥 КУПИТИ ← Синтез</div>
+    <div class="exchange-row">
+      <select class="exch-select" id="exch-buy-res">
+        ${Object.keys(RES).filter(k=>!RES[k].synth&&RES[k].ep<=epoch).map(k=>`<option value="${k}">${RES[k].e} ${RES[k].n}</option>`).join('')}
+      </select>
+      <input class="exch-input" type="number" id="exch-buy-amt" placeholder="к-сть" min="1" value="10">
+      <button class="exch-btn" onclick="buyFromSynth()">🌀 →</button>
     </div>
-    <div class="exch-amount-row">
-      <button class="exch-quick-btn" onclick="doBuy(1)">×1</button>
-      <button class="exch-quick-btn" onclick="doBuy(10)">×10</button>
-      <button class="exch-quick-btn" onclick="doBuy(100)">×100</button>
-      <button class="exch-quick-btn exch-quick-half" onclick="doBuy(Math.floor((storage.synth_energy||0)/${buyPrice}/2))">×½🌀</button>
-      <button class="exch-quick-btn exch-quick-all" onclick="doBuy(Math.floor((storage.synth_energy||0)/${buyPrice}))">МАХ🌀</button>
-    </div>
+    <div class="exch-rate">1 🌀 = ${rate.toFixed(2)} ресурсу (ефективно)</div>
 
-    ${nextTech ? `<div class="exchange-upgrade">
-      <div class="exchange-lvl-info">⬆ ${nextTech.name}<br>
-        <span style="color:var(--dim)">${nextTech.effectDesc}</span><br>
-        <span style="color:var(--orange)">💰 ${nextTech.costAmt} ${RES[nextTech.costRes]?.n} · Еп.${nextTech.ep_req}</span>
-      </div>
+    ${nextTech?`<div class="exchange-upgrade">
+      <div class="exchange-lvl-info">⬆ ${nextTech.name}<br><span style="color:var(--dim)">${nextTech.effectDesc}</span><br><span style="color:var(--orange)">💰 ${nextTech.costAmt} ${RES[nextTech.costRes]?.n} · Еп.${nextTech.ep_req}</span></div>
       <button class="exch-btn" onclick="unlockTech(${nextIdx})" ${!canUpgrade?'disabled':''}>⬆ ОНОВИТИ</button>
-    </div>` : '<div style="font-size:10px;color:var(--synth);margin-top:8px;text-align:center;">✅ Максимальний рівень</div>'}
+    </div>`:'<div style="font-size:10px;color:var(--synth);margin-top:6px;text-align:center;">✅ Максимальний рівень</div>'}
   </div>`;
-}
-
-function setExchSellRes(k) { exchSellRes = k; renderExchange(); }
-function setExchBuyRes(k)  { exchBuyRes = k;  renderExchange(); }
-
-function doSell(amt) {
-  amt = Math.floor(amt);
-  if (!amt || amt <= 0) return;
-  const res  = exchSellRes;
-  const rate = EXCHANGE_RATES[exchangeLevel];
-  const have = storage[res] || 0;
-  amt = Math.min(amt, have);
-  if (amt <= 0) { showToast('⚠️ Немає ресурсу!'); return; }
-  const gained = parseFloat((amt * getSellPrice(res, rate)).toFixed(2));
-  storage[res] -= amt;
-  storage.synth_energy = (storage.synth_energy || 0) + gained;
-  addLog(`📤 Продано ${amt} ${RES[res]?.e}${RES[res]?.n} → +${gained} 🌀`);
-  markDirty('full');
-}
-
-function doBuy(amt) {
-  amt = Math.floor(amt);
-  if (!amt || amt <= 0) return;
-  const res   = exchBuyRes;
-  const rate  = EXCHANGE_RATES[exchangeLevel];
-  const price = getBuyPrice(res, rate);
-  const have  = storage.synth_energy || 0;
-  const maxCanBuy = Math.floor(have / price);
-  amt = Math.min(amt, maxCanBuy);
-  if (amt <= 0) { showToast('⚠️ Замало Синтезу!'); return; }
-  const cost = parseFloat((amt * price).toFixed(2));
-  storage.synth_energy -= cost;
-  storage[res] = (storage[res] || 0) + amt;
-  addLog(`📥 Куплено ${amt} ${RES[res]?.e}${RES[res]?.n} за ${cost} 🌀`);
-  markDirty('full');
-}
-
-// Замінюємо старі sellToSynth/buyFromSynth щоб не ламати збережений код
-function sellToSynth() {
-  const res = document.getElementById('exch-sell-res')?.value || exchSellRes;
-  const amt = parseInt(document.getElementById('exch-sell-amt')?.value) || 10;
-  exchSellRes = res; doSell(amt);
-}
-function buyFromSynth() {
-  const res = document.getElementById('exch-buy-res')?.value || exchBuyRes;
-  const amt = parseInt(document.getElementById('exch-buy-amt')?.value) || 10;
-  exchBuyRes = res; doBuy(amt);
 }
 
 function renderBuildings(){
@@ -3842,7 +3657,7 @@ function renderBuildings(){
     let costStr=Object.keys(cost).map(k=>`${RES[k]?.e||''}${fmt(cost[k])} ${RES[k]?.n}`).join(' + ');
     let res=RES[b.res];
     let tipText=`${b.name}\nВидобуває: ${res?.n||b.res} (${res?.e||''})\nВиробництво: +${prod}/с (рів.×${b.prodBase})\nВартість: ${costStr}\nЕпоха: ${b.ep_req}`;
-    baseHtml+=`<div class="base-b-card ${b.lvl>0?'active-bld':''}" data-base-id="${id}">
+    baseHtml+=`<div class="base-b-card ${b.lvl>0?'active-bld':''}" title="${tipText}">
       <div class="base-b-head">
         <div class="base-b-name">${b.name}</div>
         ${b.lvl>0?`<div class="base-b-lvl">рів.${b.lvl}</div>`:''}
@@ -3945,7 +3760,7 @@ function renderBuildings(){
     let costDesc=Object.keys(b.cost).map(r=>`${b.cost[r]} ${RES[r]?.n}`).join(', ');
     let cardTip=`${b.name}\nЕпоха: ${b.epoch} | Збудовано: ${count}\nВхід: ${inDesc}\nВихід: ${outDesc}\nВартість: ${costDesc}`;
 
-    html+=`<div class="b-card ${count>0?'on-map':''}" data-bld-id="${id}">
+    html+=`<div class="b-card ${count>0?'on-map':''}" title="${cardTip}">
       <div class="b-header">
         <div>
           <div class="b-title">${b.name}</div>
@@ -5429,55 +5244,6 @@ window.addEventListener('resize', () => {
     initMobNav();
   }
 });
-
-// ============================================================
-// BUILDING TOOLTIPS — hover/tap показує опис будівлі
-// ============================================================
-(function(){
-  const TT  = document.getElementById("bld-tooltip");
-  const TTB = document.getElementById("base-bld-tooltip");
-  if (!TT || !TTB) return;
-  let _timer = null, _visible = false;
-  function pos(el,ttEl){
-    ttEl.style.display="block";
-    const r=el.getBoundingClientRect(),tw=ttEl.offsetWidth||240,th=ttEl.offsetHeight||180,vw=window.innerWidth,vh=window.innerHeight;
-    let x=r.left-tw-8; if(x<4)x=r.right+8; if(x+tw>vw-4)x=Math.max(4,vw-tw-8);
-    let y=r.top; if(y+th>vh-8)y=Math.max(4,vh-th-8);
-    ttEl.style.left=x+"px"; ttEl.style.top=y+"px";
-  }
-  function hideTT(){TT.style.display="none";TTB.style.display="none";_visible=false;}
-  function showBld(el,id){
-    const b=buildings[id]; if(!b)return;
-    const count=b.instances.length;
-    let ps={};
-    b.instances.forEach(inst=>{let m=inst.lvl*prodMult;Object.keys(b.outputs).forEach(k=>{ps[k]=(ps[k]||0)+b.outputs[k]*m*0.5;});});
-    const psH=count>0?Object.entries(ps).map(([k,v])=>`<div class="tt-row tt-out">${RES[k]?.e||""} <b>+${v.toFixed(1)}/с</b> <span style="color:var(--dim)">${RES[k]?.n||k}</span></div>`).join(""):"";
-    const inH=Object.entries(b.inputs).map(([k,v])=>`<div class="tt-row tt-in">▼ ${v} ${RES[k]?.e||""} ${RES[k]?.n||k}</div>`).join("");
-    const outH=Object.entries(b.outputs).map(([k,v])=>`<div class="tt-row tt-out">▲ +${v} ${RES[k]?.e||""} ${RES[k]?.n||k}/рів.</div>`).join("");
-    const costH=Object.entries(b.cost).map(([k,v])=>{const ok=(storage[k]||0)>=v;return`<div class="tt-cost ${ok?"tt-ok":""}">${RES[k]?.e||""} ${v} ${RES[k]?.n||k} ${ok?"✓":"✗"}</div>`;}).join("");
-    TT.innerHTML=`<div class="tt-head">${b.name} <span style="font-size:10px;color:var(--blue)">${count>0?count+"шт":""}</span></div><div class="tt-sub">Еп.${b.epoch} · ${b.branch}</div>${count>0?`<div class="tt-sec">📊 Виробництво</div>${psH}`:""}<div class="tt-sec">⚙️ Механіка</div>${inH}${outH}<div class="tt-sec">💰 Вартість</div>${costH}<div class="tt-hint">💡 Рів. = ×1 до виробництва</div>`;
-    TTB.style.display="none"; _visible=true; requestAnimationFrame(()=>pos(el,TT));
-  }
-  function showBase(el,id){
-    const b=BASE_RES_BUILDINGS[id]; if(!b)return;
-    const res=RES[b.res],scale=Math.pow(b.costMult,b.lvl),cost={};
-    Object.keys(b.costBase).forEach(k=>cost[k]=Math.floor(b.costBase[k]*scale));
-    const prod=(b.prodBase*Math.max(1,b.lvl)*baseResMultiplier).toFixed(2);
-    const costH=Object.entries(cost).map(([k,v])=>{const ok=(storage[k]||0)>=v;return`<div class="tt-cost ${ok?"tt-ok":""}">${RES[k]?.e||""} ${v} ${RES[k]?.n||k} ${ok?"✓":"✗"}</div>`;}).join("");
-    TTB.innerHTML=`<div class="tt-head" style="color:var(--teal)">${b.name}</div><div class="tt-desc">Автоматично видобуває ${res?.n||b.res}. Не споживає ресурсів.</div><div class="tt-row tt-out">${res?.e||""} +${prod} ${res?.n||b.res}/с</div>${b.lvl>0?`<div style="font-size:10px;color:var(--dim)">Рів.${b.lvl} · ×${b.prodBase}/рів.</div>`:""}<div class="tt-sec">💰 Наступний рів.</div>${costH}<div class="tt-hint">💡 Базові споруди безкоштовні у виробництві!</div>`;
-    TT.style.display="none"; _visible=true; requestAnimationFrame(()=>pos(el,TTB));
-  }
-  function bind(container){
-    if(!container)return;
-    container.addEventListener("mouseenter",e=>{const c=e.target.closest("[data-bld-id]"),b=e.target.closest("[data-base-id]");if(!cinitMobNav();initMobNav();!b)return;clearTimeout(_timer);_timer=setTimeout(()=>{if(c)showBld(c,c.dataset.bldId);else showBase(b,b.dataset.baseId);},300);},true);
-    container.addEventListener("mouseleave",e=>{clearTimeout(_timer);_timer=setTimeout(hideTT,200);},true);
-    container.addEventListener("click",e=>{const c=e.target.closest("[data-bld-id]"),b=e.target.closest("[data-base-id]");if(!cinitMobNav();initMobNav();!b){hideTT();return;}if(e.target.tagName==="BUTTON"){hideTT();return;}clearTimeout(_timer);if(_visibleinitMobNav();initMobNav();(TT.style.display==="block"||TTB.style.display==="block")){hideTT();}else{if(c)showBld(c,c.dataset.bldId);else showBase(b,b.dataset.baseId);}});
-  }
-  bind(document.getElementById("ui-buildings"));
-  bind(document.querySelector(".right-panel"));
-  document.addEventListener("click",e=>{if(!e.target.closest("[data-bld-id]")initMobNav();initMobNav();!e.target.closest("[data-base-id]")initMobNav();initMobNav();!e.target.closest("#bld-tooltip")initMobNav();initMobNav();!e.target.closest("#base-bld-tooltip"))hideTT();});
-  document.addEventListener("scroll",hideTT,true);
-})();
 
 initMobNav();
 initTutorial();
