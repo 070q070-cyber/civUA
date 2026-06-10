@@ -21,8 +21,16 @@
   --font2:'Press Start 2P',monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;overflow:hidden;}
-body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:15px;}
+html{
+  height: 100%;
+  height: -webkit-fill-available;
+}
+body{
+  font-family:var(--font);background:var(--bg);color:var(--text);font-size:15px;
+  height: 100%;
+  height: -webkit-fill-available;
+  overflow:hidden;
+}
 /* body::after removed — causes black screen on iOS Safari/WebView */
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:#080a0e;}
@@ -30,7 +38,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:15
 ::-webkit-scrollbar-thumb:hover{background:var(--gold);}
 
 /* LAYOUT */
-.app{display:grid;grid-template-rows:52px 1fr;height:100vh;}
+.app{display:grid;grid-template-rows:52px 1fr;
+  /* iOS Safari: 100vh включає address bar і ламає layout.
+     Порядок важливий: останнє підтримуване значення виграє */
+  height: 100vh;         /* fallback для старих браузерів */
+  height: 100dvh;        /* dynamic viewport height — iOS 15.4+ */
+  height: -webkit-fill-available; /* iOS Safari fallback */
+  max-height: -webkit-fill-available;
+}
 .main{display:grid;grid-template-columns:270px 1fr 310px;overflow:hidden;}
 
 /* HEADER */
@@ -191,7 +206,9 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .click-btn{background:var(--panel2);border:2px solid var(--border);color:var(--text);font-family:var(--font);font-size:12px;padding:7px 12px;cursor:pointer;transition:all .1s;display:flex;align-items:center;gap:5px;position:relative;overflow:hidden;}
 .click-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.03),transparent);pointer-events:none;}
 .click-btn:hover{border-color:var(--gold);color:var(--gold);background:#1a1a10;}
-.click-btn:active{transform:scale(.96);}
+/* iOS FIX: transform:scale на click-btn ламає position:fixed у дітей.
+   Використовуємо opacity замість transform для feedback */
+.click-btn:active{opacity:0.75;}
 .click-btn.cur-epoch{border-color:var(--teal);background:linear-gradient(135deg,var(--panel2),#0a1a18);}
 .click-btn .cb-emoji{font-size:18px;}
 .click-btn .cb-amt{font-size:9px;color:var(--green);position:absolute;top:2px;right:3px;}
@@ -271,13 +288,13 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .log-line.synth-log{color:var(--synth);border-left-color:var(--synth);}
 
 /* FLOAT TEXT */
-.float-text{position:fixed;pointer-events:none;font-family:var(--font);font-size:17px;color:var(--gold);text-shadow:0 0 10px var(--gold);animation:floatup .9s ease-out forwards;z-index:9998;}
+.float-text{position:fixed;pointer-events:none;font-family:var(--font);font-size:17px;color:var(--gold);text-shadow:0 0 10px var(--gold);animation:floatup .9s ease-out forwards;z-index:100;}
 .float-text.synth{color:var(--synth);text-shadow:0 0 10px var(--synth);}
 @keyframes floatup{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(-55px);}}
 
 /* TOAST */
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--gold);color:#000;font-family:var(--font2);font-size:8px;padding:10px 20px;z-index:9997;transition:transform .35s;box-shadow:0 0 20px var(--gold);}
-.toast.show{transform:translateX(-50%) translateY(0);}
+.toast{position:fixed;bottom:80px;left:50%;margin-left:-100px;width:200px;text-align:center;background:var(--gold);color:#000;font-family:var(--font2);font-size:8px;padding:10px 20px;z-index:500;transition:opacity .35s,bottom .35s;box-shadow:0 0 20px var(--gold);opacity:0;pointer-events:none;}
+.toast.show{opacity:1;bottom:90px;}
 
 /* ============================================================
    QUESTS & ACHIEVEMENTS
@@ -375,7 +392,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .def-struct-btn:disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;}
 
 /* Wave incoming alert */
-.wave-alert{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#1a0808ee;border:2px solid var(--red);color:var(--red);font-family:var(--font2);font-size:9px;padding:10px 20px;z-index:9998;display:none;animation:wavealert 0.4s ease-in-out infinite alternate;text-align:center;}
+.wave-alert{position:fixed;top:60px;left:0;right:0;text-align:center;background:#1a0808ee;border-top:2px solid var(--red);border-bottom:2px solid var(--red);color:var(--red);font-family:var(--font2);font-size:9px;padding:10px 20px;z-index:150;display:none;animation:wavealert 0.4s ease-in-out infinite alternate;pointer-events:none;}
 @keyframes wavealert{from{box-shadow:0 0 8px var(--red);}to{box-shadow:0 0 20px var(--red),0 0 40px #ff000066;}}
 .wave-next-timer{font-size:11px;color:var(--dim);text-align:center;padding:4px;}
 .wave-next-timer span{color:var(--orange);}
@@ -516,20 +533,17 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 }
 
 @media (max-width: 700px) {
-  /* iOS: -webkit-fill-available не рахує address bar */
+  /* iOS: overflow:hidden щоб не скролило сторінку */
   html, body {
     overflow: hidden !important;
-    height: 100% !important;
-    height: -webkit-fill-available !important;
   }
 
   /* === APP SHELL === */
   .app {
     display: flex !important;
     flex-direction: column !important;
+    /* iOS: -webkit-fill-available вже встановлено глобально */
     height: 100% !important;
-    height: -webkit-fill-available !important;
-    /* iOS: padding замість margin для safe area */
     padding-top: var(--tg-safe-top);
     overflow: hidden;
   }
@@ -579,15 +593,14 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     display: none !important;
     border: none !important;
     -webkit-overflow-scrolling: touch;
-    /* iOS: явний pointer-events */
-    pointer-events: none;
+    /* iOS FIX: НЕ ставимо pointer-events:none — WebKit баг коли
+       hidden елементи з pointer-events:none блокують тачі на nav */
   }
   .left-panel.mob-active,
   .center-area.mob-active,
   .right-panel.mob-active {
     display: flex !important;
     flex-direction: column;
-    pointer-events: auto !important;
   }
 
   /* === LEFT PANEL === */
@@ -779,27 +792,26 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     transform: scale(1.15);
   }
 
-  /* iOS landscape — менший nav, більше місця */
-  @media (orientation: landscape) {
-    :root { --nav-h: 44px; }
-    header {
-      padding-top: 3px !important;
-      padding-bottom: 3px !important;
-    }
-    .mob-nav-btn .nav-label { display: none; }
-    .mob-nav-btn .nav-icon { font-size: 22px !important; }
-  }
-
   /* iOS: всі кнопки — без затримки тапу */
   button, [onclick] {
     touch-action: manipulation;
   }
 }
+/* Landscape на мобільному — окремий блок (iOS Safari вимагає) */
+@media (max-width: 700px) and (orientation: landscape) {
+  :root { --nav-h: 44px; }
+  header { padding-top: 3px !important; padding-bottom: 3px !important; }
+  .mob-nav-btn .nav-label { display: none !important; }
+  .mob-nav-btn .nav-icon { font-size: 22px !important; }
+}
+
 /* Cloud save status */
 #cloud-status {
-  position: fixed; bottom: calc(12px + var(--tg-safe-bottom)); right: 12px;
+  position: fixed; bottom: calc(68px + var(--tg-safe-bottom)); right: 12px;
   background: #0d1219; border: 1px solid var(--border); border-radius: 4px;
-  padding: 5px 10px; font-size: 10px; color: var(--dim); z-index: 9998;
+  padding: 5px 10px; font-size: 10px; color: var(--dim);
+  /* iOS: низький z-index щоб не перекривати і не блокувати кліки */
+  z-index: 50;
   transition: all .3s; pointer-events: none; opacity: 0;
 }
 #cloud-status.visible { opacity: 1; }
