@@ -23,7 +23,7 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;overflow:hidden;}
 body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:15px;}
-/* body::after removed — causes black screen on iOS Safari/WebView */
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.05) 3px,rgba(0,0,0,.05) 4px);pointer-events:none;z-index:9999;}
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:#080a0e;}
 ::-webkit-scrollbar-thumb{background:var(--border);}
@@ -465,62 +465,54 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 :root {
   --tg-safe-top: env(safe-area-inset-top, 0px);
   --tg-safe-bottom: env(safe-area-inset-bottom, 0px);
-  --tg-safe-left: env(safe-area-inset-left, 0px);
-  --tg-safe-right: env(safe-area-inset-right, 0px);
   --nav-h: 56px;
 }
 
 @media (max-width: 700px) {
-  /* iOS: -webkit-fill-available не рахує address bar */
   html, body {
     overflow: hidden !important;
     height: 100% !important;
-    height: -webkit-fill-available !important;
+    height: 100dvh !important;
   }
 
   /* === APP SHELL === */
   .app {
     display: flex !important;
     flex-direction: column !important;
-    height: 100% !important;
-    height: -webkit-fill-available !important;
-    /* iOS: padding замість margin для safe area */
+    height: 100dvh !important;
     padding-top: var(--tg-safe-top);
     overflow: hidden;
   }
 
-  /* === HEADER === */
+  /* === HEADER — компактний === */
   header {
     flex-shrink: 0;
     flex-wrap: nowrap !important;
     height: auto !important;
     padding: 5px 8px !important;
-    /* iOS landscape: відступи від notch/Dynamic Island */
-    padding-left: calc(8px + var(--tg-safe-left)) !important;
-    padding-right: calc(8px + var(--tg-safe-right)) !important;
     gap: 4px !important;
     overflow: hidden;
   }
   .logo { font-size: 7px !important; flex-shrink: 0; }
-  .epoch-info { gap: 4px; min-width: 0; overflow: hidden; }
+  .epoch-info { gap: 4px; min-width: 0; }
   .epoch-name { font-size: 10px !important; white-space: nowrap; }
   .hstats { gap: 4px; margin-left: auto !important; flex-wrap: nowrap !important; }
   .hstat { font-size: 9px !important; white-space: nowrap; }
   .evo-btn { font-size: 7px !important; padding: 4px 6px !important; flex-shrink: 0; }
   #lb-btn { font-size: 8px !important; padding: 4px 6px !important; flex-shrink: 0; }
 
+  /* === SCORE BAR — прихований на мобільному (не критично) === */
   .score-bar { display: none !important; }
 
-  /* === MAIN AREA === */
+  /* === MAIN AREA — займає весь простір між header і nav === */
   .main {
     display: block !important;
     flex: 1;
-    min-height: 0;
     overflow: hidden;
     position: relative;
   }
 
-  /* === ПАНЕЛІ === */
+  /* === МОБІЛЬНІ ПАНЕЛІ — кожна на весь екран, переключаються через nav === */
   .left-panel,
   .center-area,
   .right-panel {
@@ -534,29 +526,21 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     display: none !important;
     border: none !important;
     -webkit-overflow-scrolling: touch;
-    /* iOS: явний pointer-events */
-    pointer-events: none;
   }
   .left-panel.mob-active,
   .center-area.mob-active,
   .right-panel.mob-active {
     display: flex !important;
     flex-direction: column;
-    pointer-events: auto !important;
   }
 
-  /* === LEFT PANEL === */
-  .left-panel {
-    padding-bottom: calc(var(--nav-h) + var(--tg-safe-bottom) + 8px);
-    padding-left: var(--tg-safe-left);
-    padding-right: var(--tg-safe-right);
-  }
+  /* === LEFT PANEL (ресурси + вкладки) === */
+  .left-panel { padding-bottom: calc(var(--nav-h) + 8px); }
   .panel-tabs {
     flex-shrink: 0;
     overflow-x: auto;
     scrollbar-width: none;
     border-bottom: 1px solid var(--border);
-    -webkit-overflow-scrolling: touch;
   }
   .panel-tabs::-webkit-scrollbar { display: none; }
   .ptab {
@@ -564,21 +548,17 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     padding: 9px 10px !important;
     white-space: nowrap;
     flex-shrink: 0;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: rgba(232,184,75,0.2);
   }
   .panel-content { flex: 1; overflow-y: auto; padding: 8px; }
 
+  /* Ресурси — список на мобільному */
   .res-grid { flex-direction: column !important; gap: 2px !important; }
   .res-card { padding: 5px 8px !important; }
 
-  /* === CENTER AREA === */
-  .center-area {
-    padding-bottom: calc(var(--nav-h) + var(--tg-safe-bottom) + 8px);
-    padding-left: var(--tg-safe-left);
-    padding-right: var(--tg-safe-right);
-  }
+  /* === CENTER AREA (карта + клікер) === */
+  .center-area { padding-bottom: calc(var(--nav-h) + 8px); }
 
+  /* Клікер — великі кнопки вгорі */
   .clicker-strip {
     flex-shrink: 0;
     flex-wrap: wrap !important;
@@ -595,48 +575,46 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     padding: 8px 10px !important;
     align-items: center !important;
     justify-content: center !important;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
   }
   .click-btn .cb-emoji { font-size: 24px !important; }
   .click-btn .cb-amt { position: static !important; font-size: 9px !important; }
   .click-btn .cb-ac { position: static !important; font-size: 8px !important; }
 
+  /* Карта — займає весь простір */
   .center-area.mob-active {
     padding: 0 !important;
-    padding-bottom: calc(var(--nav-h) + var(--tg-safe-bottom)) !important;
-    padding-left: var(--tg-safe-left) !important;
-    padding-right: var(--tg-safe-right) !important;
+    padding-bottom: calc(var(--nav-h)) !important;
   }
+  /* Ховаємо клікер і epoch-bar щоб карта була більшою */
   .center-area.mob-active:not(.mob-clicker-mode) .clicker-strip { display: none !important; }
   .center-area.mob-active .epoch-res-bar { display: none !important; }
   .center-area.mob-active:not(.mob-clicker-mode) .build-selector { display: none !important; }
   .map-area {
     flex: 1 !important;
     width: 100% !important;
+    height: 100% !important;
     min-height: 0 !important;
   }
   #isoCanvas {
     width: 100% !important;
     height: 100% !important;
     touch-action: none;
-    display: block !important;
   }
+  /* Тач-підтримка для карти */
   .map-controls-hint {
-    position: absolute; bottom: 10px; left: 50%;
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
     transform: translateX(-50%);
-    font-size: 9px; color: rgba(90,104,128,0.6);
-    pointer-events: none; white-space: nowrap;
-    background:rgba(7,10,15,0.7); padding:2px 10px;
+    font-size: 9px;
+    color: var(--dim);
+    pointer-events: none;
+    white-space: nowrap;
   }
 
-  /* === RIGHT PANEL === */
-  .right-panel {
-    padding-bottom: calc(var(--nav-h) + var(--tg-safe-bottom) + 8px);
-    padding-left: var(--tg-safe-left);
-    padding-right: var(--tg-safe-right);
-  }
-  .rpanel-tabs { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  /* === RIGHT PANEL (авто/квести/оборона) === */
+  .right-panel { padding-bottom: calc(var(--nav-h) + 8px); }
+  .rpanel-tabs { overflow-x: auto; scrollbar-width: none; }
   .rpanel-tabs::-webkit-scrollbar { display: none; }
 
   /* === КЛІКЕР режим === */
@@ -648,40 +626,30 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     flex: 1; flex-wrap: wrap !important; gap: 10px !important;
     padding: 16px 10px !important; justify-content: center; align-content: flex-start;
     overflow-y: auto; overflow-x: hidden;
-    padding-bottom: calc(var(--nav-h) + var(--tg-safe-bottom) + 16px) !important;
+    padding-bottom: calc(var(--nav-h) + 16px) !important;
   }
   .click-btn { min-width: 80px !important; min-height: 72px !important; flex-direction: column !important; gap: 3px !important; font-size: 10px !important; padding: 10px !important; align-items: center !important; justify-content: center !important; }
   .click-btn .cb-emoji { font-size: 28px !important; }
   .center-area.mob-clicker-mode { overflow: hidden !important; padding: 0 !important; }
-
-  /* === MAP режим === */
-  .center-area.mob-map-mode {
-    padding: 0 !important;
-    padding-bottom: calc(var(--nav-h) + var(--tg-safe-bottom)) !important;
-    padding-left: var(--tg-safe-left) !important;
-    padding-right: var(--tg-safe-right) !important;
-  }
+  .center-area.mob-map-mode { padding: 0 !important; padding-bottom: calc(var(--nav-h)) !important; }
   .center-area.mob-map-mode .clicker-strip,
   .center-area.mob-map-mode .epoch-res-bar,
   .center-area.mob-map-mode .build-selector { display: none !important; }
+  .map-area { flex: 1 !important; width: 100% !important; height: 100% !important; min-height: 0 !important; }
+  #isoCanvas { display: block !important; width: 100% !important; height: 100% !important; touch-action: none; }
+  .map-controls-hint { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 9px; color: rgba(90,104,128,0.6); pointer-events: none; white-space: nowrap; background:rgba(7,10,15,0.7);padding:2px 10px; }
 
-  /* === BOTTOM NAV ===
-     iOS: z-index 200 — вище панелей (auto) але нижче модалів (9999+)
-     height враховує home indicator (safe-area-inset-bottom) */
+    /* === BOTTOM NAV === */
   #mob-nav {
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    height: calc(var(--nav-h) + var(--tg-safe-bottom));
+    height: var(--nav-h);
     padding-bottom: var(--tg-safe-bottom);
-    padding-left: var(--tg-safe-left);
-    padding-right: var(--tg-safe-right);
     background: var(--panel);
     border-top: 1px solid var(--border);
     display: flex;
-    /* iOS: достатньо щоб бути над панелями */
-    z-index: 200;
+    z-index: 1000;
     flex-shrink: 0;
-    pointer-events: auto;
   }
   .mob-nav-btn {
     flex: 1;
@@ -701,11 +669,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     transition: all .15s;
     padding: 6px 2px 4px;
     -webkit-tap-highlight-color: transparent;
-    /* iOS: без затримки 300ms */
-    touch-action: manipulation;
-    -webkit-appearance: none;
     min-width: 0;
-    pointer-events: auto;
   }
   .mob-nav-btn .nav-icon {
     font-size: 18px;
@@ -713,7 +677,6 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     display: block;
     filter: grayscale(0.4);
     transition: all .15s;
-    pointer-events: none;
   }
   .mob-nav-btn .nav-label {
     display: block;
@@ -722,7 +685,6 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     white-space: nowrap;
     max-width: 100%;
     padding: 0 2px;
-    pointer-events: none;
   }
   .mob-nav-btn.active {
     color: var(--gold);
@@ -732,22 +694,6 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   .mob-nav-btn.active .nav-icon {
     filter: none;
     transform: scale(1.15);
-  }
-
-  /* iOS landscape — менший nav, більше місця */
-  @media (orientation: landscape) {
-    :root { --nav-h: 44px; }
-    header {
-      padding-top: 3px !important;
-      padding-bottom: 3px !important;
-    }
-    .mob-nav-btn .nav-label { display: none; }
-    .mob-nav-btn .nav-icon { font-size: 22px !important; }
-  }
-
-  /* iOS: всі кнопки — без затримки тапу */
-  button, [onclick] {
-    touch-action: manipulation;
   }
 }
 /* Cloud save status */
@@ -1685,7 +1631,7 @@ const BINDS = [
 // EXCHANGE SYSTEM
 // ============================================================
 let exchangeLevel = 0; // 0 = locked
-const EXCHANGE_RATES = {0:0,1:0.9,2:0.7,3:0.5,4:0.3}; // loss factor when selling
+const EXCHANGE_RATES = {0:0,1:0.9,2:0.7,3:0.5,4:0.3};
 // synthAutoRate: per-second passive synth gain from assigned buildings
 let synthAutoRate = 0;
 
@@ -2894,13 +2840,15 @@ function setBuildStatusFilter(f){
 function switchTab(t){
   document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.ptab').forEach(el=>el.classList.remove('active'));
-  document.getElementById('tab-'+t).classList.add('active');
+  let tabEl=document.getElementById('tab-'+t);
+  if(tabEl){ tabEl.classList.add('active'); tabEl.dataset.needsRender='1'; }
   let tabs=['resources','tech','exchange','binds','defense','quests','achievements'];
   let idx=tabs.indexOf(t);
   document.querySelectorAll('.ptab')[idx]?.classList.add('active');
   if(t==='defense') renderDefenseTab();
   if(t==='quests') renderQuestsTab();
   if(t==='achievements') renderAchievementsTab();
+  if(t==='exchange') renderExchange();
 }
 
 // ============================================================
@@ -3198,8 +3146,16 @@ function renderUI(){
   // Tech Tree — grouped by category (AC is now embedded in tech tab)
   renderTechTree();
 
-  // Exchange
-  renderExchange();
+  // Exchange — оновлюємо тільки якщо вкладка активна І тільки баланс, а не весь HTML
+  let exchTab=document.getElementById('tab-exchange');
+  if(exchTab&&exchTab.classList.contains('active')){
+    // Оновлюємо тільки баланс Синтезу без перерисовки всього вікна
+    let balEl=document.getElementById('_exch-bal');
+    let sv=storage.synth_energy||0, sps=psCounters.synth_energy||0;
+    if(balEl) balEl.innerHTML=`🌀 ${fmt(sv)} Синтез${sps>0?` <span style="font-size:11px;color:var(--green)">+${sps.toFixed(1)}/с</span>`:''}`;
+    // Повна перерисовка тільки якщо вкладку щойно відкрили
+    if(exchTab.dataset.needsRender==='1'){ exchTab.dataset.needsRender='0'; renderExchange(); }
+  } else if(exchTab){ exchTab.dataset.needsRender='1'; }
 
   // Binds
   let bDiv=document.getElementById('ui-binds');
@@ -3378,6 +3334,30 @@ function renderACTree(){
   tDiv.innerHTML=html;
 }
 
+// Детальний опис ефекту технології
+function _techEffectExplain(node){
+  const e=node.effect||'';
+  const m=node.effectDesc||'';
+  // click multipliers
+  if(e.startsWith('click_mult_')){ let x=parseInt(e.split('_').pop()); return `⚡ Кожен клік дає у ${x}× більше ресурсів. Поточний множник кліків: ×${clickMult.toFixed(1)}`; }
+  // prod multipliers
+  if(e.startsWith('prod_mult_')){ let x=parseInt(e.split('_').pop()); return `🏭 Все виробництво споруд ×${x}. Це множиться на поточний prodMult=${prodMult.toFixed(1)}`; }
+  // AC multipliers
+  if(e.startsWith('ac_mult_')){ let x=parseInt(e.split('_').pop()); return `🤖 Автоклікер видобуває у ${x}× швидше. Поточна швидкість AC: ${fmt(acTotalRate)}/с`; }
+  // Building AC
+  if(e.startsWith('bac_mult_')){ let x=parseInt(e.split('_').pop()); return `🏗 Споруди з автоклікером виробляють у ${x}× більше`; }
+  // specific bonuses
+  if(e==='double_click') return '⚡ Кліки дають ×2 ресурсів — базовий множник';
+  if(e==='triple_click') return '⚡ Кліки дають ×3 ресурсів — стек з іншими множниками';
+  if(e.includes('bonus')){ let res=e.replace('_bonus',''); return `📦 +80% до виробництва ${RES[res]?.n||res} з усіх споруд`; }
+  if(e.startsWith('tech_disc')){ return `💰 Знижка на дослідження. Поточна знижка: ${Math.round((1-techCostDiscount)*100)}%`; }
+  if(e.startsWith('exch')){ return `⚗️ Покращує курс Біржі Синтезу. Краща ціна обміну ресурсів`; }
+  if(e.includes('log')||e.includes('unlock_log')) return '🪵 Розблоковує виробництво колод з деревини';
+  if(e.includes('coal')||e.includes('charcoal')) return '🔥 Розблоковує виготовлення вугілля для плавки металів';
+  // Fallback
+  return `ℹ️ ${m}`;
+}
+
 function renderTechTree(){
   let tDiv=document.getElementById('ui-tech-tree');
   if(!tDiv) return;
@@ -3503,6 +3483,7 @@ function renderTechTree(){
         </div>
         ${prereqNode&&!node.unlocked?`<div class="tt-prereq-tag">↳ ${prereqNode.name}</div>`:''}
         <div style="font-size:9px;color:var(--dim);margin:2px 0;">${node.desc}</div>
+        <div style="font-size:9px;color:${catColor};background:rgba(0,0,0,0.3);padding:2px 5px;margin:2px 0;border-left:2px solid ${catColor};">${_techEffectExplain(node)}</div>
         ${!node.unlocked?`<div class="tt-cost">${costHtml}${disc<1?` <span style="font-size:8px;color:var(--teal)">-${Math.round((1-disc)*100)}%</span>`:''}</div>
           <button class="tt-buy-btn" onclick="unlockTech(${nodeIdx})" ${!canBuy?'disabled':''}>${canBuy?'🔬 ДОСЛІДИТИ':!epOk?`🔒 Еп.${ep}`:!prereqOk?'⬆ Потрібна':`💰 Не вистачає`}</button>`
         :`<div class="tt-done-badge">✅ Досліджено · ${node.effectDesc}</div>`}
@@ -3571,6 +3552,12 @@ function renderBaseBuildings(){
 }
 
 
+// Рідкісність ресурсу = множник ціни (чим вища епоха — тим дорожче)
+function getResRarity(k){ return 1 + ((RES[k]?.ep||1) - 1) * 0.5; }
+
+let _exchSellRes = null;
+let _exchBuyRes  = null;
+
 function renderExchange(){
   let eDiv=document.getElementById('ui-exchange');
   if(exchangeLevel===0){
@@ -3596,46 +3583,123 @@ function renderExchange(){
   let sv=storage.synth_energy||0;
   let sps=psCounters.synth_energy||0;
 
-  // Next upgrade tech
   let nextTechIds={1:"t_exch2",2:"t_exch3",3:"t_exch4"};
   let nextTechId=nextTechIds[lvl];
   let nextTech=nextTechId?TECH_NODES.find(n=>n.id===nextTechId):null;
   let canUpgrade=nextTech&&!nextTech.unlocked&&epoch>=nextTech.ep_req&&(storage[nextTech.costRes]||0)>=nextTech.costAmt;
   let nextIdx=nextTech?TECH_NODES.indexOf(nextTech):-1;
 
-  // Tradeable resources
-  let tradeRes=Object.keys(RES).filter(k=>!RES[k].synth&&RES[k].ep<=epoch&&storage[k]>0);
+  let allRes=Object.keys(RES).filter(k=>!RES[k].synth&&RES[k].ep<=epoch);
+  if(!_exchSellRes||!RES[_exchSellRes]) _exchSellRes=allRes[0]||'wood';
+  if(!_exchBuyRes||!RES[_exchBuyRes])   _exchBuyRes=allRes[0]||'wood';
+
+  let sellPrice=parseFloat((rate*getResRarity(_exchSellRes)).toFixed(3));
+  let buyPrice=parseFloat((getResRarity(_exchBuyRes)/rate*1.5).toFixed(3));
+
+  // Кнопки-плитки для вибору ресурсу (замість <select> — погано працює на iOS)
+  function resBtns(sel, cbName){
+    return '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;max-height:120px;overflow-y:auto;padding:2px;">'+
+      allRes.map(k=>{
+        let r=getResRarity(k);
+        let have=storage[k]||0;
+        let isSel=k===sel;
+        return `<button onclick="${cbName}('${k}')" style="display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 5px;min-width:50px;background:${isSel?'#1a1400':'var(--panel2)'};border:1px solid ${isSel?'var(--gold)':'var(--border)'};cursor:pointer;font-family:var(--font);touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-appearance:none;">
+          <span style="font-size:18px">${RES[k].e}</span>
+          <span style="font-size:8px;color:${isSel?'var(--gold)':'var(--dim)'}">${RES[k].n.slice(0,7)}</span>
+          <span style="font-size:8px;color:var(--teal)">×${r.toFixed(1)}</span>
+          <span style="font-size:8px;color:var(--dim)">${have>0?fmt(have):'—'}</span>
+        </button>`;
+      }).join('')+
+    '</div>';
+  }
 
   eDiv.innerHTML=`<div class="exchange-panel">
     <div class="exchange-title">⚗️ БІРЖА СИНТЕЗУ <span style="color:var(--dim);font-size:9px;">РІВ.${lvl}</span></div>
-    <div style="font-size:11px;color:var(--dim);margin-bottom:4px;">Курс обміну: ×${rate} (продаж) / ×${(1/rate).toFixed(2)} (купівля)</div>
-    <div class="exchange-synth-bal">🌀 ${fmt(sv)} Синтез${sps>0?` <span style="font-size:11px;color:var(--green)">+${sps.toFixed(1)}/с</span>`:''}</div>
+    <div id="_exch-bal" class="exchange-synth-bal">🌀 ${fmt(sv)} Синтез${sps>0?` <span style="font-size:11px;color:var(--green)">+${sps.toFixed(1)}/с</span>`:''}</div>
+    <div style="font-size:10px;color:var(--dim);margin-bottom:5px;">Ціна залежить від рідкісності (×Еп). Купівля дорожча за продаж.</div>
 
-    <div class="sh" style="margin-bottom:6px;">📤 ПРОДАТИ → Синтез</div>
-    <div class="exchange-row">
-      <select class="exch-select" id="exch-sell-res">
-        ${Object.keys(RES).filter(k=>!RES[k].synth&&RES[k].ep<=epoch).map(k=>`<option value="${k}">${RES[k].e} ${RES[k].n} (${fmt(storage[k]||0)})</option>`).join('')}
-      </select>
-      <input class="exch-input" type="number" id="exch-sell-amt" placeholder="к-сть" min="1" value="10">
-      <button class="exch-btn" onclick="sellToSynth()">→ 🌀</button>
+    <div class="sh" style="margin-bottom:5px;">📤 ПРОДАТИ → Синтез</div>
+    ${resBtns(_exchSellRes,'_setSell')}
+    <div style="display:flex;align-items:center;gap:8px;background:#080c10;border:1px solid var(--border);padding:6px 10px;margin-bottom:5px;">
+      <span style="font-size:20px">${RES[_exchSellRes]?.e}</span>
+      <div>
+        <div style="font-size:12px;color:var(--text)">${RES[_exchSellRes]?.n}</div>
+        <div style="font-size:11px;color:var(--green)">1 → <b>${sellPrice}</b> 🌀 · Маєш: ${fmt(storage[_exchSellRes]||0)}</div>
+      </div>
     </div>
-    <div class="exch-rate">1 ресурс = ${rate} 🌀 (втрата ${Math.round((1-rate)*100)}%)</div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;">
+      <button class="exch-btn" onclick="_doSell(1)">×1</button>
+      <button class="exch-btn" onclick="_doSell(10)">×10</button>
+      <button class="exch-btn" onclick="_doSell(100)">×100</button>
+      <button class="exch-btn" style="border-color:var(--teal);color:var(--teal)" onclick="_doSell(Math.floor((storage['${_exchSellRes}']||0)/2))">½</button>
+      <button class="exch-btn" style="border-color:var(--orange);color:var(--orange)" onclick="_doSell(storage['${_exchSellRes}']||0)">ВСЕ</button>
+    </div>
 
-    <div class="sh" style="margin:8px 0 6px;">📥 КУПИТИ ← Синтез</div>
-    <div class="exchange-row">
-      <select class="exch-select" id="exch-buy-res">
-        ${Object.keys(RES).filter(k=>!RES[k].synth&&RES[k].ep<=epoch).map(k=>`<option value="${k}">${RES[k].e} ${RES[k].n}</option>`).join('')}
-      </select>
-      <input class="exch-input" type="number" id="exch-buy-amt" placeholder="к-сть" min="1" value="10">
-      <button class="exch-btn" onclick="buyFromSynth()">🌀 →</button>
+    <div class="sh" style="margin-bottom:5px;">📥 КУПИТИ ← Синтез</div>
+    ${resBtns(_exchBuyRes,'_setBuy')}
+    <div style="display:flex;align-items:center;gap:8px;background:#080c10;border:1px solid var(--border);padding:6px 10px;margin-bottom:5px;">
+      <span style="font-size:20px">${RES[_exchBuyRes]?.e}</span>
+      <div>
+        <div style="font-size:12px;color:var(--text)">${RES[_exchBuyRes]?.n}</div>
+        <div style="font-size:11px;color:var(--orange)">1 → <b>${buyPrice}</b> 🌀 · Синтез: ${fmt(sv)}</div>
+      </div>
     </div>
-    <div class="exch-rate">1 🌀 = ${rate.toFixed(2)} ресурсу (ефективно)</div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;">
+      <button class="exch-btn" onclick="_doBuy(1)">×1</button>
+      <button class="exch-btn" onclick="_doBuy(10)">×10</button>
+      <button class="exch-btn" onclick="_doBuy(100)">×100</button>
+      <button class="exch-btn" style="border-color:var(--teal);color:var(--teal)" onclick="_doBuy(Math.floor((storage.synth_energy||0)/${buyPrice}/2))">½🌀</button>
+      <button class="exch-btn" style="border-color:var(--orange);color:var(--orange)" onclick="_doBuy(Math.floor((storage.synth_energy||0)/${buyPrice}))">МАХ🌀</button>
+    </div>
 
     ${nextTech?`<div class="exchange-upgrade">
       <div class="exchange-lvl-info">⬆ ${nextTech.name}<br><span style="color:var(--dim)">${nextTech.effectDesc}</span><br><span style="color:var(--orange)">💰 ${nextTech.costAmt} ${RES[nextTech.costRes]?.n} · Еп.${nextTech.ep_req}</span></div>
       <button class="exch-btn" onclick="unlockTech(${nextIdx})" ${!canUpgrade?'disabled':''}>⬆ ОНОВИТИ</button>
     </div>`:'<div style="font-size:10px;color:var(--synth);margin-top:6px;text-align:center;">✅ Максимальний рівень</div>'}
   </div>`;
+}
+
+function _setSell(k){ _exchSellRes=k; renderExchange(); }
+function _setBuy(k){  _exchBuyRes=k;  renderExchange(); }
+
+function _doSell(amt){
+  amt=Math.floor(amt); if(!amt||amt<=0) return;
+  let rate=EXCHANGE_RATES[exchangeLevel];
+  amt=Math.min(amt, storage[_exchSellRes]||0);
+  if(amt<=0){ showToast('⚠️ Немає ресурсу!'); return; }
+  let gained=parseFloat((amt*rate*getResRarity(_exchSellRes)).toFixed(2));
+  storage[_exchSellRes]-=amt;
+  storage.synth_energy=(storage.synth_energy||0)+gained;
+  exchTradesTotal++;
+  addLog(`📤 Продано ${amt}${RES[_exchSellRes]?.e} → +${gained}🌀`);
+  markDirty('full');
+}
+
+function _doBuy(amt){
+  amt=Math.floor(amt); if(!amt||amt<=0) return;
+  let rate=EXCHANGE_RATES[exchangeLevel];
+  let price=parseFloat((getResRarity(_exchBuyRes)/rate*1.5).toFixed(3));
+  let maxBuy=Math.floor((storage.synth_energy||0)/price);
+  amt=Math.min(amt, maxBuy);
+  if(amt<=0){ showToast('⚠️ Замало Синтезу!'); return; }
+  let cost=parseFloat((amt*price).toFixed(2));
+  storage.synth_energy-=cost;
+  storage[_exchBuyRes]=(storage[_exchBuyRes]||0)+amt;
+  exchTradesTotal++;
+  addLog(`📥 Куплено ${amt}${RES[_exchBuyRes]?.e} за ${cost}🌀`);
+  markDirty('full');
+}
+
+// Зворотня сумісність зі старим кодом
+function sellToSynth(){
+  let res=document.getElementById('exch-sell-res')?.value||_exchSellRes;
+  let amt=parseInt(document.getElementById('exch-sell-amt')?.value)||10;
+  _exchSellRes=res; _doSell(amt);
+}
+function buyFromSynth(){
+  let res=document.getElementById('exch-buy-res')?.value||_exchBuyRes;
+  let amt=parseInt(document.getElementById('exch-buy-amt')?.value)||10;
+  _exchBuyRes=res; _doBuy(amt);
 }
 
 function renderBuildings(){
@@ -4013,54 +4077,201 @@ function renderQuestsTab(){
 // ACHIEVEMENTS SYSTEM
 // ============================================================
 const ACHIEVEMENTS = [
-  // Clicks
-  {id:'ach_click1',   cat:'Кліки',   icon:'👆', name:'Перший удар',      desc:'Зробити 1 клік',          type:'clicks',   target:1,       unlocked:false, bonus:'Декоративна'},
-  {id:'ach_click2',   cat:'Кліки',   icon:'✊', name:'Клікер-початківець',desc:'100 кліків',              type:'clicks',   target:100,     unlocked:false, bonus:'+5% до кліків'},
-  {id:'ach_click3',   cat:'Кліки',   icon:'💪', name:'Невтомні руки',     desc:'1000 кліків',             type:'clicks',   target:1000,    unlocked:false, bonus:'+10% до кліків', effect:{clickMult:0.1}},
-  {id:'ach_click4',   cat:'Кліки',   icon:'🦾', name:'Кіберрука',         desc:'10 000 кліків',           type:'clicks',   target:10000,   unlocked:false, bonus:'+20% до кліків', effect:{clickMult:0.2}},
-  {id:'ach_click5',   cat:'Кліки',   icon:'⚡', name:'Блискавичний',      desc:'100 000 кліків',          type:'clicks',   target:100000,  unlocked:false, bonus:'+50% до кліків', effect:{clickMult:0.5}},
+  // ── КЛІКИ ──────────────────────────────────────────────────
+  {id:'ach_click1',  cat:'Кліки', icon:'👆', name:'Перший удар',
+   desc:'Зробити 1 клік по ресурсу. Початок великого шляху.',
+   type:'clicks', target:1, unlocked:false, bonus:'🎖 Декоративна ачівка'},
+  {id:'ach_click2',  cat:'Кліки', icon:'✊', name:'Клікер-початківець',
+   desc:'100 кліків. Пальці ще не болять, але вже чесуються.',
+   type:'clicks', target:100, unlocked:false, bonus:'+5% до кліків', effect:{clickMult:0.05}},
+  {id:'ach_click3',  cat:'Кліки', icon:'💪', name:'Невтомні руки',
+   desc:'1 000 кліків. Сусіди починають скаржитись на стукіт.',
+   type:'clicks', target:1000, unlocked:false, bonus:'+10% до кліків', effect:{clickMult:0.1}},
+  {id:'ach_click4',  cat:'Кліки', icon:'🦾', name:'Кіберрука',
+   desc:'10 000 кліків. Ти більше не людина — ти клікаючий механізм.',
+   type:'clicks', target:10000, unlocked:false, bonus:'+20% до кліків', effect:{clickMult:0.2}},
+  {id:'ach_click5',  cat:'Кліки', icon:'⚡', name:'Блискавичний',
+   desc:'100 000 кліків. Миші вже немає — тільки ямка у столі.',
+   type:'clicks', target:100000, unlocked:false, bonus:'+50% до кліків', effect:{clickMult:0.5}},
+  {id:'ach_click6',  cat:'Кліки', icon:'🌪', name:'Торнадо кліків',
+   desc:'500 000 кліків. Легенди говорять про тебе шепотом.',
+   type:'clicks', target:500000, unlocked:false, bonus:'+100% до кліків', effect:{clickMult:1.0}},
+  {id:'ach_click7',  cat:'Кліки', icon:'🌌', name:'Клікова сингулярність',
+   desc:'1 000 000 кліків. Ти клікаєш у снах.',
+   type:'clicks', target:1000000, unlocked:false, bonus:'+200% до кліків', effect:{clickMult:2.0}},
 
-  // Buildings
-  {id:'ach_bld1',     cat:'Будівлі', icon:'🏚', name:'Перша хатинка',     desc:'Побудувати 1 споруду',    type:'builds',   target:1,       unlocked:false, bonus:'Декоративна'},
-  {id:'ach_bld2',     cat:'Будівлі', icon:'🏠', name:'Маленьке поселення',desc:'5 споруд',                type:'builds',   target:5,       unlocked:false, bonus:'+10% виробництво', effect:{prodMult:0.1}},
-  {id:'ach_bld3',     cat:'Будівлі', icon:'🏘', name:'Селище',            desc:'20 споруд',               type:'builds',   target:20,      unlocked:false, bonus:'+20% виробництво', effect:{prodMult:0.2}},
-  {id:'ach_bld4',     cat:'Будівлі', icon:'🏙', name:'Місто',             desc:'50 споруд',               type:'builds',   target:50,      unlocked:false, bonus:'+30% виробництво', effect:{prodMult:0.3}},
-  {id:'ach_bld5',     cat:'Будівлі', icon:'🌆', name:'Мегаполіс',         desc:'100 споруд',              type:'builds',   target:100,     unlocked:false, bonus:'+50% виробництво', effect:{prodMult:0.5}},
-  {id:'ach_bld6',     cat:'Будівлі', icon:'🌇', name:'Цивілізація',       desc:'200 споруд',              type:'builds',   target:200,     unlocked:false, bonus:'+100% виробництво', effect:{prodMult:1.0}},
+  // ── БУДІВЛІ ─────────────────────────────────────────────────
+  {id:'ach_bld1',  cat:'Будівлі', icon:'🏚', name:'Перша хатинка',
+   desc:'Побудувати 1 споруду. Кожна цивілізація починається з каменю.',
+   type:'builds', target:1, unlocked:false, bonus:'🎖 Декоративна'},
+  {id:'ach_bld2',  cat:'Будівлі', icon:'🏠', name:'Маленьке поселення',
+   desc:'5 споруд. Вже схоже на щось живе.',
+   type:'builds', target:5, unlocked:false, bonus:'+10% виробництво', effect:{prodMult:0.1}},
+  {id:'ach_bld3',  cat:'Будівлі', icon:'🏘', name:'Селище',
+   desc:'20 споруд. Перші жителі заселяються.',
+   type:'builds', target:20, unlocked:false, bonus:'+20% виробництво', effect:{prodMult:0.2}},
+  {id:'ach_bld4',  cat:'Будівлі', icon:'🏙', name:'Місто',
+   desc:'50 споруд. Потрібна міська рада та дорожні пробки.',
+   type:'builds', target:50, unlocked:false, bonus:'+30% виробництво', effect:{prodMult:0.3}},
+  {id:'ach_bld5',  cat:'Будівлі', icon:'🌆', name:'Мегаполіс',
+   desc:'100 споруд. Видно з космосу.',
+   type:'builds', target:100, unlocked:false, bonus:'+50% виробництво', effect:{prodMult:0.5}},
+  {id:'ach_bld6',  cat:'Будівлі', icon:'🌇', name:'Цивілізація',
+   desc:'200 споруд. Ти побудував більше ніж деякі реальні держави.',
+   type:'builds', target:200, unlocked:false, bonus:'+100% виробництво', effect:{prodMult:1.0}},
+  {id:'ach_bld7',  cat:'Будівлі', icon:'🏗', name:'Архітектор богів',
+   desc:'500 споруд. Навіщо? Бо можна.',
+   type:'builds', target:500, unlocked:false, bonus:'+200% виробництво', effect:{prodMult:2.0}},
 
-  // Epochs
-  {id:'ach_ep2',      cat:'Епохи',   icon:'🌾', name:'Осілий',            desc:'Досягти Епохи 2',         type:'epoch',    target:2,       unlocked:false, bonus:'Декоративна'},
-  {id:'ach_ep4',      cat:'Епохи',   icon:'🛡️', name:'Бронзовий вік',     desc:'Досягти Епохи 4',         type:'epoch',    target:4,       unlocked:false, bonus:'+15% виробництво', effect:{prodMult:0.15}},
-  {id:'ach_ep6',      cat:'Епохи',   icon:'🍷', name:'Середньовіччя',     desc:'Досягти Епохи 6',         type:'epoch',    target:6,       unlocked:false, bonus:'+25% виробництво', effect:{prodMult:0.25}},
-  {id:'ach_ep8',      cat:'Епохи',   icon:'🏭', name:'Промислова епоха',  desc:'Досягти Епохи 8',         type:'epoch',    target:8,       unlocked:false, bonus:'+40% виробництво', effect:{prodMult:0.4}},
-  {id:'ach_ep10',     cat:'Епохи',   icon:'⚡', name:'Електрифікація',    desc:'Досягти Епохи 10',        type:'epoch',    target:10,      unlocked:false, bonus:'+60% виробництво', effect:{prodMult:0.6}},
-  {id:'ach_ep12',     cat:'Епохи',   icon:'🤖', name:'Сингулярність',     desc:'Досягти Епохи 12',        type:'epoch',    target:12,      unlocked:false, bonus:'+100% виробництво', effect:{prodMult:1.0}},
+  // ── ЕПОХИ ───────────────────────────────────────────────────
+  {id:'ach_ep2',  cat:'Епохи', icon:'🌾', name:'Осілий',
+   desc:'Епоха 2: Осілість. Люди перестали бігати за мамонтами.',
+   type:'epoch', target:2, unlocked:false, bonus:'🎖 Декоративна'},
+  {id:'ach_ep3',  cat:'Епохи', icon:'⚒️', name:'Ремісник',
+   desc:'Епоха 3: Ремесла. Перша майстерня — перша гордість.',
+   type:'epoch', target:3, unlocked:false, bonus:'+10% виробництво', effect:{prodMult:0.1}},
+  {id:'ach_ep4',  cat:'Епохи', icon:'🛡️', name:'Бронзовий вік',
+   desc:'Епоха 4: Бронза. Металургія відкрила нові можливості для воєн.',
+   type:'epoch', target:4, unlocked:false, bonus:'+15% виробництво', effect:{prodMult:0.15}},
+  {id:'ach_ep5',  cat:'Епохи', icon:'⚔️', name:'Залізний вік',
+   desc:'Епоха 5: Залізо. Міцніше, дешевше, смертоносніше.',
+   type:'epoch', target:5, unlocked:false, bonus:'+20% виробництво', effect:{prodMult:0.2}},
+  {id:'ach_ep6',  cat:'Епохи', icon:'🍷', name:'Середньовіччя',
+   desc:'Епоха 6: Середні віки. Феодали, чума і чудові собори.',
+   type:'epoch', target:6, unlocked:false, bonus:'+25% виробництво', effect:{prodMult:0.25}},
+  {id:'ach_ep7',  cat:'Епохи', icon:'🧵', name:'Мануфактура',
+   desc:'Епоха 7: Виробництво. Перші фабрики, перші страйки.',
+   type:'epoch', target:7, unlocked:false, bonus:'+30% виробництво', effect:{prodMult:0.3}},
+  {id:'ach_ep8',  cat:'Епохи', icon:'🏭', name:'Промислова революція',
+   desc:'Епоха 8: Промисловість. Пара, вугілля і смог над містом.',
+   type:'epoch', target:8, unlocked:false, bonus:'+40% виробництво', effect:{prodMult:0.4}},
+  {id:'ach_ep9',  cat:'Епохи', icon:'⚗️', name:'Хімічна ера',
+   desc:'Епоха 9: Хімія. Таблиця Менделєєва і нові матеріали.',
+   type:'epoch', target:9, unlocked:false, bonus:'+50% виробництво', effect:{prodMult:0.5}},
+  {id:'ach_ep10', cat:'Епохи', icon:'⚡', name:'Електрифікація',
+   desc:'Епоха 10: Електрика. Нарешті вимкнули свічки.',
+   type:'epoch', target:10, unlocked:false, bonus:'+60% виробництво', effect:{prodMult:0.6}},
+  {id:'ach_ep11', cat:'Епохи', icon:'💾', name:'Цифрова революція',
+   desc:'Епоха 11: Електроніка. Перший комп\'ютер займав кімнату.',
+   type:'epoch', target:11, unlocked:false, bonus:'+80% виробництво', effect:{prodMult:0.8}},
+  {id:'ach_ep12', cat:'Епохи', icon:'🤖', name:'Сингулярність',
+   desc:'Епоха 12: Автоматизація. Роботи працюють, люди... теж натискають кнопки.',
+   type:'epoch', target:12, unlocked:false, bonus:'+100% виробництво', effect:{prodMult:1.0}},
 
-  // Tech
-  {id:'ach_tech1',    cat:'Технології',icon:'🔬',name:'Перший вчений',    desc:'Відкрити 1 технологію',   type:'tech',     target:1,       unlocked:false, bonus:'Декоративна'},
-  {id:'ach_tech3',    cat:'Технології',icon:'📚',name:'Бібліотека',       desc:'Відкрити 5 технологій',   type:'tech',     target:5,       unlocked:false, bonus:'+10% до кліків', effect:{clickMult:0.1}},
-  {id:'ach_tech5',    cat:'Технології',icon:'🎓',name:'Академія',         desc:'Відкрити 15 технологій',  type:'tech',     target:15,      unlocked:false, bonus:'+15% виробництво', effect:{prodMult:0.15}},
-  {id:'ach_tech7',    cat:'Технології',icon:'🏛️',name:'Університет',      desc:'Відкрити 30 технологій',  type:'tech',     target:30,      unlocked:false, bonus:'+25% виробництво', effect:{prodMult:0.25}},
+  // ── ТЕХНОЛОГІЇ ──────────────────────────────────────────────
+  {id:'ach_tech1', cat:'Технології', icon:'🔬', name:'Перший вчений',
+   desc:'Відкрити 1 технологію. Наука починається з одного відкриття.',
+   type:'tech', target:1, unlocked:false, bonus:'🎖 Декоративна'},
+  {id:'ach_tech2', cat:'Технології', icon:'📚', name:'Бібліотека',
+   desc:'5 технологій. Достатньо для невеликої бібліотеки.',
+   type:'tech', target:5, unlocked:false, bonus:'+10% до кліків', effect:{clickMult:0.1}},
+  {id:'ach_tech3', cat:'Технології', icon:'🎓', name:'Академія',
+   desc:'15 технологій. Відкритий університет і перші кафедри.',
+   type:'tech', target:15, unlocked:false, bonus:'+15% виробництво', effect:{prodMult:0.15}},
+  {id:'ach_tech4', cat:'Технології', icon:'🏛️', name:'Університет',
+   desc:'30 технологій. Наука стала основою розвитку.',
+   type:'tech', target:30, unlocked:false, bonus:'+25% виробництво', effect:{prodMult:0.25}},
+  {id:'ach_tech5', cat:'Технології', icon:'🔭', name:'Науковий інститут',
+   desc:'50 технологій. Лабораторії по всьому місту.',
+   type:'tech', target:50, unlocked:false, bonus:'+40% виробництво', effect:{prodMult:0.4}},
+  {id:'ach_tech6', cat:'Технології', icon:'🧬', name:'Технологічний рай',
+   desc:'70 технологій. Кожне покращення відкриває нові горизонти.',
+   type:'tech', target:70, unlocked:false, bonus:'+60% виробництво', effect:{prodMult:0.6}},
 
-  // Defense & Goblins
-  {id:'ach_def1',     cat:'Оборона', icon:'🛡', name:'Перша стіна',       desc:'Збудувати оборонну споруду',type:'defense', target:1,       unlocked:false, bonus:'Декоративна'},
-  {id:'ach_wave1',    cat:'Оборона', icon:'⚔️', name:'Перша битва',       desc:'Відбити 1 хвилю',         type:'waves',    target:1,       unlocked:false, bonus:'Декоративна'},
-  {id:'ach_wave5',    cat:'Оборона', icon:'⚔️', name:'Захисник',          desc:'Відбити 5 хвиль',         type:'waves',    target:5,       unlocked:false, bonus:'+10% виробництво', effect:{prodMult:0.1}},
-  {id:'ach_wave10',   cat:'Оборона', icon:'🗡️', name:'Лицар',             desc:'Відбити 10 хвиль',        type:'waves',    target:10,      unlocked:false, bonus:'+15% до кліків', effect:{clickMult:0.15}},
-  {id:'ach_wave25',   cat:'Оборона', icon:'⚔️', name:'Легіон',            desc:'Відбити 25 хвиль',        type:'waves',    target:25,      unlocked:false, bonus:'+20% виробництво', effect:{prodMult:0.2}},
-  {id:'ach_wave50',   cat:'Оборона', icon:'🏆', name:'Непереможний',      desc:'Відбити 50 хвиль',        type:'waves',    target:50,      unlocked:false, bonus:'+30% виробництво', effect:{prodMult:0.3}},
-  {id:'ach_gob100',   cat:'Оборона', icon:'💀', name:'Знищувач гоблінів', desc:'Знищити 100 гоблінів',    type:'goblins',  target:100,     unlocked:false, bonus:'+10% до кліків', effect:{clickMult:0.1}},
-  {id:'ach_gob500',   cat:'Оборона', icon:'☠️', name:'Гоблінозабивник',   desc:'Знищити 500 гоблінів',    type:'goblins',  target:500,     unlocked:false, bonus:'+20% виробництво', effect:{prodMult:0.2}},
+  // ── ОБОРОНА ─────────────────────────────────────────────────
+  {id:'ach_def1',   cat:'Оборона', icon:'🛡', name:'Перша стіна',
+   desc:'Збудувати 1 оборонну споруду. Гобліни незадоволені.',
+   type:'defense', target:1, unlocked:false, bonus:'🎖 Декоративна'},
+  {id:'ach_def5',   cat:'Оборона', icon:'🏰', name:'Укріплення',
+   desc:'5 оборонних споруд. Серйозна лінія оборони.',
+   type:'defense', target:5, unlocked:false, bonus:'+10% до кліків', effect:{clickMult:0.1}},
+  {id:'ach_def10',  cat:'Оборона', icon:'🗼', name:'Фортифікатор',
+   desc:'10 оборонних споруд. Місто — мов середньовічний замок.',
+   type:'defense', target:10, unlocked:false, bonus:'+20% виробництво', effect:{prodMult:0.2}},
+  {id:'ach_wave1',  cat:'Оборона', icon:'⚔️', name:'Перша битва',
+   desc:'Відбити 1 хвилю гоблінів. Бойове хрещення пройдено.',
+   type:'waves', target:1, unlocked:false, bonus:'🎖 Декоративна'},
+  {id:'ach_wave3',  cat:'Оборона', icon:'⚔️', name:'Ветеран',
+   desc:'3 хвилі. Гобліни вже знають твоє ім\'я і бояться.',
+   type:'waves', target:3, unlocked:false, bonus:'+5% виробництво', effect:{prodMult:0.05}},
+  {id:'ach_wave5',  cat:'Оборона', icon:'🗡️', name:'Захисник',
+   desc:'5 хвиль. Стіни тримаються, воїни не сплять.',
+   type:'waves', target:5, unlocked:false, bonus:'+10% виробництво', effect:{prodMult:0.1}},
+  {id:'ach_wave10', cat:'Оборона', icon:'🛡', name:'Лицар',
+   desc:'10 хвиль. Тебе оспівують у піснях.',
+   type:'waves', target:10, unlocked:false, bonus:'+15% до кліків', effect:{clickMult:0.15}},
+  {id:'ach_wave25', cat:'Оборона', icon:'⚔️', name:'Легіон',
+   desc:'25 хвиль. Гобліни вже присилають делегацію на переговори.',
+   type:'waves', target:25, unlocked:false, bonus:'+20% виробництво', effect:{prodMult:0.2}},
+  {id:'ach_wave50', cat:'Оборона', icon:'🏆', name:'Непереможний',
+   desc:'50 хвиль. Легенда серед захисників.',
+   type:'waves', target:50, unlocked:false, bonus:'+30% виробництво', effect:{prodMult:0.3}},
+  {id:'ach_wave100',cat:'Оборона', icon:'👑', name:'Гоблінський жах',
+   desc:'100 хвиль. Матері-гобліни лякають дітей твоїм ім\'ям.',
+   type:'waves', target:100, unlocked:false, bonus:'+50% виробництво', effect:{prodMult:0.5}},
+  {id:'ach_gob100', cat:'Оборона', icon:'💀', name:'Знищувач гоблінів',
+   desc:'100 гоблінів знищено. Кожен дав ресурси перед смертю.',
+   type:'goblins', target:100, unlocked:false, bonus:'+10% до кліків', effect:{clickMult:0.1}},
+  {id:'ach_gob500', cat:'Оборона', icon:'☠️', name:'Гоблінозабивник',
+   desc:'500 гоблінів. Рахунок ведеться на камені зарубками.',
+   type:'goblins', target:500, unlocked:false, bonus:'+20% виробництво', effect:{prodMult:0.2}},
+  {id:'ach_gob2000',cat:'Оборона', icon:'⚰️', name:'Армагедон гоблінів',
+   desc:'2 000 гоблінів. Поля навколо міста вкриті зеленими кістками.',
+   type:'goblins', target:2000, unlocked:false, bonus:'+40% виробництво', effect:{prodMult:0.4}},
 
-  // Resources
-  {id:'ach_res_wood', cat:'Ресурси', icon:'🌲', name:'Лісоруб',           desc:'Зібрати 10 000 деревини', type:'res_total',res:'wood',target:10000,   unlocked:false, bonus:'Декоративна'},
-  {id:'ach_res_iron', cat:'Ресурси', icon:'🔩', name:'Коваль',            desc:'Зібрати 1 000 заліза',    type:'res_total',res:'iron',target:1000,    unlocked:false, bonus:'+10% виробництво', effect:{prodMult:0.1}},
-  {id:'ach_res_chip', cat:'Ресурси', icon:'🎛️', name:'Технократ',         desc:'Зібрати 500 мікросхем',   type:'res_total',res:'chips',target:500,    unlocked:false, bonus:'+30% виробництво', effect:{prodMult:0.3}},
+  // ── РЕСУРСИ ─────────────────────────────────────────────────
+  {id:'ach_r_wood1', cat:'Ресурси', icon:'🌲', name:'Лісоруб',
+   desc:'10 000 деревини зібрано за всю гру. Ліс помітно порідшав.',
+   type:'res_total', res:'wood', target:10000, unlocked:false, bonus:'🎖 Декоративна'},
+  {id:'ach_r_wood2', cat:'Ресурси', icon:'🌳', name:'Лісний магнат',
+   desc:'100 000 деревини. Ти вирубав ліс розміром з невелику країну.',
+   type:'res_total', res:'wood', target:100000, unlocked:false, bonus:'+10% до кліків', effect:{clickMult:0.1}},
+  {id:'ach_r_stone', cat:'Ресурси', icon:'⛏️', name:'Каменяр',
+   desc:'50 000 каменю. Гори помітно нижчі.',
+   type:'res_total', res:'stone', target:50000, unlocked:false, bonus:'+10% виробництво', effect:{prodMult:0.1}},
+  {id:'ach_r_iron1', cat:'Ресурси', icon:'🔩', name:'Коваль',
+   desc:'1 000 заліза. Кузня ніколи не зупиняється.',
+   type:'res_total', res:'iron', target:1000, unlocked:false, bonus:'+10% виробництво', effect:{prodMult:0.1}},
+  {id:'ach_r_iron2', cat:'Ресурси', icon:'⚙️', name:'Металург',
+   desc:'50 000 заліза. Сталеві рукав від постійної роботи.',
+   type:'res_total', res:'iron', target:50000, unlocked:false, bonus:'+20% виробництво', effect:{prodMult:0.2}},
+  {id:'ach_r_chip1', cat:'Ресурси', icon:'🎛️', name:'Технократ',
+   desc:'500 мікросхем. Майбутнє у твоїх руках — буквально.',
+   type:'res_total', res:'chips', target:500, unlocked:false, bonus:'+30% виробництво', effect:{prodMult:0.3}},
+  {id:'ach_r_chip2', cat:'Ресурси', icon:'💻', name:'Кремнієва долина',
+   desc:'10 000 мікросхем. Власний технополіс.',
+   type:'res_total', res:'chips', target:10000, unlocked:false, bonus:'+50% виробництво', effect:{prodMult:0.5}},
+  {id:'ach_r_synth', cat:'Ресурси', icon:'🌀', name:'Алхімік',
+   desc:'1 000 Синтезу накопичено. Таємниця обміну розкрита.',
+   type:'synth', target:1000, unlocked:false, bonus:'+15% до кліків', effect:{clickMult:0.15}},
+  {id:'ach_r_synth2',cat:'Ресурси', icon:'✨', name:'Майстер синтезу',
+   desc:'50 000 Синтезу. Біржа — твій дім рідний.',
+   type:'synth', target:50000, unlocked:false, bonus:'+25% виробництво', effect:{prodMult:0.25}},
 
-  // AC
-  {id:'ach_ac1',      cat:'Авто-клікер',icon:'🤖',name:'Перший автомат', desc:'Розблокувати автоклікер',  type:'ac',       target:1,       unlocked:false, bonus:'+5/с до AC', effect:{acBonus:5}},
-  {id:'ach_ac2',      cat:'Авто-клікер',icon:'🦿',name:'Машина',         desc:'AC рівня 10',              type:'ac_lvl',   target:10,      unlocked:false, bonus:'+10/с до AC', effect:{acBonus:10}},
-  {id:'ach_ac3',      cat:'Авто-клікер',icon:'⚙️',name:'Завод',          desc:'AC рівня 50',              type:'ac_lvl',   target:50,      unlocked:false, bonus:'+25/с до AC', effect:{acBonus:25}},
+  // ── АВТОКЛІКЕР ──────────────────────────────────────────────
+  {id:'ach_ac1', cat:'Авто-клікер', icon:'🤖', name:'Перший автомат',
+   desc:'Розблокувати автоклікер. Руки нарешті можуть відпочити.',
+   type:'ac', target:1, unlocked:false, bonus:'+5/с до AC', effect:{acBonus:5}},
+  {id:'ach_ac2', cat:'Авто-клікер', icon:'🦿', name:'Машина',
+   desc:'AC рівня 10. Автоматизація набирає обертів.',
+   type:'ac_lvl', target:10, unlocked:false, bonus:'+10/с до AC', effect:{acBonus:10}},
+  {id:'ach_ac3', cat:'Авто-клікер', icon:'⚙️', name:'Завод',
+   desc:'AC рівня 50. Цілий завод роботів.',
+   type:'ac_lvl', target:50, unlocked:false, bonus:'+25/с до AC', effect:{acBonus:25}},
+  {id:'ach_ac4', cat:'Авто-клікер', icon:'🏭', name:'Мегафабрика',
+   desc:'AC рівня 200. Планета здригається від гулу машин.',
+   type:'ac_lvl', target:200, unlocked:false, bonus:'+100/с до AC', effect:{acBonus:100}},
+
+  // ── БІРЖА ───────────────────────────────────────────────────
+  {id:'ach_exch1', cat:'Біржа', icon:'⚗️', name:'Першій угода',
+   desc:'Здійснити першу операцію на Біржі Синтезу.',
+   type:'exch_trades', target:1, unlocked:false, bonus:'🎖 Декоративна'},
+  {id:'ach_exch2', cat:'Біржа', icon:'💹', name:'Трейдер',
+   desc:'100 торгових операцій. Ринок тебе знає.',
+   type:'exch_trades', target:100, unlocked:false, bonus:'+10% до кліків', effect:{clickMult:0.1}},
+  {id:'ach_exch3', cat:'Біржа', icon:'🏦', name:'Банкір',
+   desc:'1 000 операцій. Власний фінансовий центр.',
+   type:'exch_trades', target:1000, unlocked:false, bonus:'+20% виробництво', effect:{prodMult:0.2}},
 ];
 
 // Track total resources collected
@@ -4068,27 +4279,30 @@ let resLifetimeTotal = {};
 Object.keys(RES).forEach(k=>resLifetimeTotal[k]=0);
 let achActiveFilter = 'all';
 
+let exchTradesTotal = 0; // лічильник операцій на біржі
+
 function checkAchievements(){
   let anyNew = false;
   ACHIEVEMENTS.forEach(ach=>{
     if(ach.unlocked) return;
     let prog = 0;
     switch(ach.type){
-      case 'clicks':   prog = totalClicks; break;
-      case 'builds':   prog = buildCount; break;
-      case 'epoch':    prog = epoch; break;
-      case 'tech':     prog = TECH_NODES.filter(n=>n.unlocked).length; break;
-      case 'waves':    prog = goblinWave.totalWaves; break;
-      case 'defense':  prog = Object.values(DEFENSE_STRUCTS).reduce((s,d)=>s+d.count,0); break;
-      case 'goblins':  prog = goblinWave.totalDefeated; break;
-      case 'res_total':prog = resLifetimeTotal[ach.res]||0; break;
-      case 'ac':       prog = AC_NODES.root?.unlocked ? 1 : 0; break;
-      case 'ac_lvl':   prog = AC_NODES.root?.lvl||0; break;
+      case 'clicks':      prog = totalClicks; break;
+      case 'builds':      prog = buildCount; break;
+      case 'epoch':       prog = epoch; break;
+      case 'tech':        prog = TECH_NODES.filter(n=>n.unlocked).length; break;
+      case 'waves':       prog = goblinWave.totalWaves; break;
+      case 'defense':     prog = Object.values(DEFENSE_STRUCTS).reduce((s,d)=>s+d.count,0); break;
+      case 'goblins':     prog = goblinWave.totalDefeated; break;
+      case 'res_total':   prog = resLifetimeTotal[ach.res]||0; break;
+      case 'ac':          prog = AC_NODES.root?.unlocked ? 1 : 0; break;
+      case 'ac_lvl':      prog = AC_NODES.root?.lvl||0; break;
+      case 'synth':       prog = (storage.synth_energy||0)+(resLifetimeTotal.synth_energy||0); break;
+      case 'exch_trades': prog = exchTradesTotal; break;
     }
     if(prog >= ach.target){
       ach.unlocked = true;
       anyNew = true;
-      // Apply effect immediately
       if(ach.effect){
         if(ach.effect.clickMult) clickMult += ach.effect.clickMult;
         if(ach.effect.prodMult)  prodMult  += ach.effect.prodMult;
@@ -4096,7 +4310,6 @@ function checkAchievements(){
       }
       addPoints(1000, 'tech');
       addLog(`🏆 Ачівка: "${ach.name}" — ${ach.bonus}`, true);
-      // Flash badge
       let btn = document.getElementById('tab-btn-ach');
       if(btn) btn.innerHTML = '🏆 АЧІВКИ <span class="tab-badge">!</span>';
     }
