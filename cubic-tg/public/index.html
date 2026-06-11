@@ -920,6 +920,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     <button class="evo-btn" id="btn-evo" onclick="advanceEpoch()" title="Перейти до наступної епохи. Потрібний ресурс вказано в прогрес-барі.">🚀 ЕВОЛЮЦІЯ</button>
   </div>
   <button id="lb-btn" onclick="openLeaderboard()">🏆 ТОП</button>
+  <button onclick="showPrestigeModal()" style="font-family:var(--font2);font-size:7px;background:transparent;border:1px solid var(--purple);color:var(--purple);padding:6px 10px;cursor:pointer;touch-action:manipulation;" title="Переродження — постійний бонус">✨</button>
   <div class="hstats">
     <div class="hstat">🔬 <span id="hs-tech">0</span></div>
     <div class="hstat">🏗️ <span id="hs-bld">0</span></div>
@@ -946,11 +947,14 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   <div class="panel-tabs">
     <button class="ptab active" onclick="switchTab('resources')" id="tab-btn-resources">📦 РЕСУРСИ</button>
     <button class="ptab" onclick="switchTab('tech')">🔬 ТЕХНО</button>
+    <button class="ptab" onclick="switchTab('research')">🧬 НАУКА</button>
     <button class="ptab" onclick="switchTab('exchange')">⚗️ БІРЖА</button>
     <button class="ptab" onclick="switchTab('binds')">⚡ ІНСТР.</button>
-    <button class="ptab" onclick="switchTab('defense')" id="tab-btn-defense">🛡 ЗАХИСТ МІСТА</button>
+    <button class="ptab" onclick="switchTab('defense')" id="tab-btn-defense">🛡 ЗАХИСТ</button>
+    <button class="ptab" onclick="switchTab('hero')">⚔️ ГЕРОЙ</button>
     <button class="ptab" onclick="switchTab('quests')" id="tab-btn-quests">📜 КВЕСТИ</button>
     <button class="ptab" onclick="switchTab('achievements')" id="tab-btn-ach">🏆 АЧІВКИ</button>
+    <button class="ptab" onclick="switchTab('stats')">📊 СТАТ.</button>
   </div>
   <div class="tab-content active" id="tab-resources">
     <div class="sh">📦 РЕСУРСИ ЕПОХИ <span id="res-ep-label" class="sh-badge">1</span></div>
@@ -975,6 +979,15 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   </div>
   <div class="tab-content" id="tab-achievements">
     <div id="ui-achievements"></div>
+  </div>
+  <div class="tab-content" id="tab-research">
+    <div id="tab-research-content" style="padding:6px;"></div>
+  </div>
+  <div class="tab-content" id="tab-hero">
+    <div id="tab-hero-content" style="padding:6px;"></div>
+  </div>
+  <div class="tab-content" id="tab-stats">
+    <div id="tab-stats-content" style="padding:6px;"></div>
   </div>
 </div>
 
@@ -2887,13 +2900,16 @@ function switchTab(t){
   document.querySelectorAll('.ptab').forEach(el=>el.classList.remove('active'));
   let tabEl=document.getElementById('tab-'+t);
   if(tabEl){ tabEl.classList.add('active'); tabEl.dataset.needsRender='1'; }
-  let tabs=['resources','tech','exchange','binds','defense','quests','achievements'];
+  let tabs=['resources','tech','research','exchange','binds','defense','hero','quests','achievements','stats'];
   let idx=tabs.indexOf(t);
   document.querySelectorAll('.ptab')[idx]?.classList.add('active');
-  if(t==='defense') renderDefenseTab();
-  if(t==='quests') renderQuestsTab();
-  if(t==='achievements') renderAchievementsTab();
-  if(t==='exchange') renderExchange();
+  if(t==='defense')     renderDefenseTab();
+  if(t==='quests')      renderQuestsTab();
+  if(t==='achievements')renderAchievementsTab();
+  if(t==='research')    renderResearchTab();
+  if(t==='hero')        renderHeroTab();
+  if(t==='stats')       renderStatsTab();
+  if(t==='exchange')    renderExchange();
 }
 
 // ============================================================
@@ -3026,6 +3042,28 @@ setInterval(()=>{
     storage.synth_energy=(storage.synth_energy||0)+autoGain;
     psCounters.synth_energy=(psCounters.synth_energy||0)+autoGain;
   }
+
+  // Research r_exch2 passive synth income
+  if(researchSynthIncome>0){
+    storage.synth_energy=(storage.synth_energy||0)+researchSynthIncome*0.5;
+    psCounters.synth_energy=(psCounters.synth_energy||0)+researchSynthIncome*0.5;
+  }
+
+  // Hero skill cooldown
+  if(hero.class && hero.skillCd>0){
+    hero.skillCd=Math.max(0, hero.skillCd-0.5);
+    if(hero.skillCd===0) addLog(`${HERO_CLASSES[hero.class]?.icon} Навичка готова!`);
+  }
+
+  // Random events
+  _rollEvent();
+
+  // Nav badges
+  updateNavBadges();
+
+  // Quest + achievement check
+  checkQuests();
+  checkAchievements();
 
   // Check quests and achievements every second
   checkQuests();
@@ -4902,6 +4940,17 @@ function serializeGameState() {
     quests: QUESTS.map(q => ({ id: q.id, done: q.done, claimed: q.claimed, _maxSeen: q._maxSeen })),
     // Achievements
     achievements: ACHIEVEMENTS.map(a => ({ id: a.id, unlocked: a.unlocked })),
+    // Prestige
+    prestige: { count: prestigeCount, mult: prestigeMult },
+    // Research
+    research: RESEARCH_TREE.map(r=>({id:r.id, lvl:r.lvl})),
+    // Hero
+    hero: { class:hero.class, lvl:hero.lvl, xp:hero.xp, xpNext:hero.xpNext, skillCd:hero.skillCd },
+    // Stats
+    gameStats: { synthSold:gameStats.synthSold||0, synthBought:gameStats.synthBought||0,
+                 eventsTotal:gameStats.eventsTotal||0,
+                 totalTime:Math.floor((Date.now()-gameStats.startTime)/1000)+(gameStats.totalTime||0) },
+    exchTradesTotal: exchTradesTotal,
     // Map tiles
     mapTiles: mapTiles.map(row => row.map(t => ({
       type: t.type, variation: t.variation,
@@ -4997,6 +5046,24 @@ function deserializeGameState(s) {
         if (a) a.unlocked = sa.unlocked;
       });
     }
+    // Prestige
+    if (s.prestige) { prestigeCount = s.prestige.count||0; prestigeMult = s.prestige.mult||1; }
+    // Research
+    if (s.research) {
+      s.research.forEach(sr => {
+        const r = RESEARCH_TREE.find(x=>x.id===sr.id);
+        if(r && sr.lvl>0){ r.lvl=sr.lvl; researchSynthIncome=(RESEARCH_TREE.find(x=>x.id==='r_exch2')?.lvl||0)*2; }
+      });
+    }
+    // Hero
+    if (s.hero && s.hero.class) {
+      Object.assign(hero, s.hero);
+      hero.xpNext = heroXpFor(hero.lvl);
+      _applyHeroPassive();
+    }
+    // Stats
+    if (s.gameStats) Object.assign(gameStats, s.gameStats);
+    if (s.exchTradesTotal) exchTradesTotal = s.exchTradesTotal;
     // Map
     if (s.mapTiles && s.mapTiles.length > 0) {
       mapTiles.splice(0, mapTiles.length, ...s.mapTiles);
@@ -5314,8 +5381,619 @@ function checkOfflineEarnings() {
 }
 
 // ============================================================
-// CITY DAMAGE PENALTY — виробництво падає при низькому HP
+// 1. ПРЕСТИЖ — скидання прогресу за постійний бонус
 // ============================================================
+let prestigeCount = 0;
+let prestigeMult  = 1.0; // постійний множник виробництва
+
+const PRESTIGE_COSTS = [
+  {epoch:12, builds:30,  bonus:'+20% назавжди',  mult:0.20},
+  {epoch:12, builds:80,  bonus:'+25% назавжди',  mult:0.25},
+  {epoch:12, builds:150, bonus:'+30% назавжди',  mult:0.30},
+  {epoch:12, builds:300, bonus:'+40% назавжди',  mult:0.40},
+  {epoch:12, builds:500, bonus:'+50% назавжди',  mult:0.50},
+];
+
+function canPrestige(){
+  let req = PRESTIGE_COSTS[Math.min(prestigeCount, PRESTIGE_COSTS.length-1)];
+  return epoch >= req.epoch && buildCount >= req.builds;
+}
+
+function showPrestigeModal(){
+  let req = PRESTIGE_COSTS[Math.min(prestigeCount, PRESTIGE_COSTS.length-1)];
+  let can = canPrestige();
+  let m = document.createElement('div');
+  m.id = 'prestige-modal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:20000;display:flex;align-items:center;justify-content:center;';
+  m.innerHTML = `<div style="background:var(--panel);border:2px solid var(--purple);padding:20px;max-width:340px;width:92vw;">
+    <div style="font-family:var(--font2);font-size:10px;color:var(--purple);margin-bottom:10px;">✨ ПЕРЕРОДЖEННЯ #${prestigeCount+1}</div>
+    <div style="font-size:11px;color:var(--dim);line-height:1.7;margin-bottom:12px;">
+      Скинеш: ресурси, споруди, технології, епоху.<br>
+      <span style="color:var(--red)">Назавжди залишаться:</span> ачівки, квести, авто-клікер, дослідження.<br>
+      <span style="color:var(--green)">Нагорода: ${req.bonus} до виробництва.</span><br>
+      Поточний престиж-бонус: ×${prestigeMult.toFixed(2)}
+    </div>
+    <div style="font-size:11px;color:var(--orange);margin-bottom:6px;">
+      Потрібно: Еп.${req.epoch} (є: ${epoch}) · ${req.builds} споруд (є: ${buildCount})
+    </div>
+    ${!can ? `<div style="font-size:11px;color:var(--red);margin-bottom:12px;">⚠️ Умови не виконано</div>` : ''}
+    <div style="display:flex;gap:8px;">
+      <button onclick="document.getElementById('prestige-modal').remove()" style="flex:1;font-family:var(--font);font-size:11px;padding:9px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;">❌ СКАСУВАТИ</button>
+      <button onclick="doPrestige()" ${!can?'disabled':''} style="flex:1;font-family:var(--font);font-size:11px;padding:9px;border:1px solid var(--purple);background:${can?'rgba(155,114,207,.15)':'transparent'};color:${can?'var(--purple)':'var(--dim)'};cursor:${can?'pointer':'not-allowed'};">✨ ПЕРЕРОДИТИСЬ</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+}
+
+function doPrestige(){
+  document.getElementById('prestige-modal')?.remove();
+  let req = PRESTIGE_COSTS[Math.min(prestigeCount, PRESTIGE_COSTS.length-1)];
+  prestigeMult += req.mult;
+  prestigeCount++;
+  prodMult = 1 * prestigeMult;
+
+  // Скидаємо прогрес
+  epoch = 1; tech = 0; buildCount = 0;
+  Object.keys(storage).forEach(k => storage[k] = 0);
+  Object.keys(BASE_RES_BUILDINGS).forEach(id => { BASE_RES_BUILDINGS[id].lvl = 0; BASE_RES_BUILDINGS[id].boost = 0; });
+  Object.values(buildings).forEach(b => { b.instances = []; b.mapTile = null; });
+  TECH_NODES.forEach(n => n.unlocked = false);
+  BINDS.forEach(b => b.lvl = 0);
+  exchangeLevel = 0; techCostDiscount = 1;
+  goblinWave.waveNum = 0; goblinWave.totalWaves = 0;
+  goblinWave.cityHp = goblinWave.cityHpMax;
+  goblinWave.nextWaveIn = 90; goblinWave.active = false;
+  generateMap(); resizeCanvas(); drawMap();
+
+  addLog(`✨ Переродження #${prestigeCount}! Бонус виробництва ×${prestigeMult.toFixed(2)}`, true);
+  showToast(`✨ Переродження! +${Math.round(req.mult*100)}% назавжди!`);
+  markDirty('full');
+}
+
+// ============================================================
+// 2. ДОСЛІДЖЕННЯ — пасивні апгрейди за Синтез
+// ============================================================
+const RESEARCH_TREE = [
+  // Кліки
+  {id:'r_click1', name:'Ергономіка', icon:'🖐', cat:'Кліки',
+   desc:'Зменшує втому від кліків.', effect:'Кожен клік +5% до поточного значення',
+   cost:{synth_energy:50}, req:null, lvl:0, maxLvl:5,
+   costScale:2.0, apply:()=>{ clickMult += 0.05; }},
+  {id:'r_click2', name:'Техніка удару', icon:'👊', cat:'Кліки',
+   desc:'Оптимізована техніка видобутку.', effect:'+10% до кліків за рівень',
+   cost:{synth_energy:200}, req:'r_click1', lvl:0, maxLvl:5,
+   costScale:2.5, apply:()=>{ clickMult += 0.10; }},
+  {id:'r_click3', name:'Автоматизація кліку', icon:'⚡', cat:'Кліки',
+   desc:'Синтез-підсилення кожного кліку.', effect:'+20% до кліків за рівень',
+   cost:{synth_energy:1000}, req:'r_click2', lvl:0, maxLvl:3,
+   costScale:3.0, apply:()=>{ clickMult += 0.20; }},
+
+  // Виробництво
+  {id:'r_prod1', name:'Оптимізація потоків', icon:'🔄', cat:'Виробництво',
+   desc:'Зменшує простої у виробничому ланцюгу.', effect:'+8% виробництво за рівень',
+   cost:{synth_energy:80}, req:null, lvl:0, maxLvl:5,
+   costScale:2.0, apply:()=>{ prodMult += 0.08; }},
+  {id:'r_prod2', name:'Синтез-каталізатор', icon:'⚗️', cat:'Виробництво',
+   desc:'Синтез прискорює хімічні реакції.', effect:'+15% виробництво за рівень',
+   cost:{synth_energy:400}, req:'r_prod1', lvl:0, maxLvl:5,
+   costScale:2.5, apply:()=>{ prodMult += 0.15; }},
+  {id:'r_prod3', name:'Наноматеріали', icon:'🔬', cat:'Виробництво',
+   desc:'Наноструктури підвищують міцність.', effect:'+25% виробництво за рівень',
+   cost:{synth_energy:2000}, req:'r_prod2', lvl:0, maxLvl:3,
+   costScale:3.0, apply:()=>{ prodMult += 0.25; }},
+
+  // Будівлі
+  {id:'r_bld1', name:'Архітектурний план', icon:'📐', cat:'Будівлі',
+   desc:'Знижує вартість будівництва.', effect:'-5% вартість будівель за рівень',
+   cost:{synth_energy:120}, req:null, lvl:0, maxLvl:5,
+   costScale:2.0, apply:()=>{ /* застосовується через getBuildCostDiscount */ }},
+  {id:'r_bld2', name:'Стандартизація', icon:'🏗', cat:'Будівлі',
+   desc:'Уніфікація деталей скорочує витрати.', effect:'-8% вартість будівель за рівень',
+   cost:{synth_energy:600}, req:'r_bld1', lvl:0, maxLvl:5,
+   costScale:2.5, apply:()=>{}},
+  {id:'r_bld3', name:'Синтез-бетон', icon:'🧱', cat:'Будівлі',
+   desc:'Революційний будматеріал.', effect:'+20% HP споруд, -10% вартість',
+   cost:{synth_energy:3000}, req:'r_bld2', lvl:0, maxLvl:3,
+   costScale:3.0, apply:()=>{}},
+
+  // Оборона
+  {id:'r_def1', name:'Розвідка гоблінів', icon:'🗺', cat:'Оборона',
+   desc:'Передбачаєш атаки заздалегідь.', effect:'+30с до наступної хвилі за рівень',
+   cost:{synth_energy:150}, req:null, lvl:0, maxLvl:3,
+   costScale:2.0, apply:()=>{ goblinWave.nextWaveIn += 30; }},
+  {id:'r_def2', name:'Синтез-зброя', icon:'⚔️', cat:'Оборона',
+   desc:'Зброя на основі Синтезу.', effect:'+1 знищення гоблінів за хвилю',
+   cost:{synth_energy:500}, req:'r_def1', lvl:0, maxLvl:5,
+   costScale:2.5, apply:()=>{ defenseStats.totalKillPerWave += 1; recalcDefenseStats(); }},
+  {id:'r_def3', name:'Синтез-щит', icon:'🛡', cat:'Оборона',
+   desc:'Поле захисту навколо міста.', effect:'+200 HP міста за рівень',
+   cost:{synth_energy:1500}, req:'r_def2', lvl:0, maxLvl:5,
+   costScale:2.5, apply:()=>{ goblinWave.cityHpMax += 200; goblinWave.cityHp = Math.min(goblinWave.cityHp+200,goblinWave.cityHpMax); }},
+
+  // Біржа
+  {id:'r_exch1', name:'Торгові маршрути', icon:'🗺', cat:'Біржа',
+   desc:'Нові ринки збуту.', effect:'+5% до курсу обміну Синтезу за рівень',
+   cost:{synth_energy:300}, req:null, lvl:0, maxLvl:4,
+   costScale:2.5, apply:()=>{ if(EXCHANGE_RATES[exchangeLevel]) EXCHANGE_RATES[exchangeLevel] = Math.min(0.99, EXCHANGE_RATES[exchangeLevel]+0.05); }},
+  {id:'r_exch2', name:'Синтез-банк', icon:'🏦', cat:'Біржа',
+   desc:'Власний банк на основі Синтезу.', effect:'+2 Синтез/с пасивно за рівень',
+   cost:{synth_energy:2000}, req:'r_exch1', lvl:0, maxLvl:5,
+   costScale:3.0, apply:()=>{}}, // пасивний дохід рахується окремо
+];
+
+let researchSynthIncome = 0; // пасивний дохід від r_exch2
+
+function getResearchCost(r){
+  let cost = {};
+  Object.entries(r.cost).forEach(([k,v]) => {
+    cost[k] = Math.floor(v * Math.pow(r.costScale, r.lvl));
+  });
+  return cost;
+}
+
+function getBuildCostResearchDiscount(){
+  let disc = 0;
+  let r1 = RESEARCH_TREE.find(r=>r.id==='r_bld1');
+  let r2 = RESEARCH_TREE.find(r=>r.id==='r_bld2');
+  let r3 = RESEARCH_TREE.find(r=>r.id==='r_bld3');
+  if(r1) disc += r1.lvl * 0.05;
+  if(r2) disc += r2.lvl * 0.08;
+  if(r3) disc += r3.lvl * 0.10;
+  return Math.min(0.80, disc);
+}
+
+function buyResearch(id){
+  let r = RESEARCH_TREE.find(x=>x.id===id);
+  if(!r || r.lvl>=r.maxLvl) return;
+  if(r.req){
+    let pre = RESEARCH_TREE.find(x=>x.id===r.req);
+    if(!pre || pre.lvl===0){ showToast('⚠️ Потрібне попереднє дослідження!'); return; }
+  }
+  let cost = getResearchCost(r);
+  if(!Object.entries(cost).every(([k,v])=>(storage[k]||0)>=v)){
+    showToast('⚠️ Не вистачає Синтезу!'); return;
+  }
+  Object.entries(cost).forEach(([k,v])=>storage[k]-=v);
+  r.lvl++;
+  r.apply();
+  // Перераховуємо passiveIncome
+  let r2 = RESEARCH_TREE.find(x=>x.id==='r_exch2');
+  researchSynthIncome = r2 ? r2.lvl * 2 : 0;
+  addLog(`🔬 Дослідження: ${r.name} рів.${r.lvl}`, true);
+  checkAchievements();
+  markDirty('full');
+}
+
+function renderResearchTab(){
+  let div = document.getElementById('tab-research-content');
+  if(!div) return;
+  let sv = storage.synth_energy||0;
+  let cats = [...new Set(RESEARCH_TREE.map(r=>r.cat))];
+  let html = `<div style="padding:6px 0 4px;">
+    <div class="sh">🧬 ДОСЛІДЖЕННЯ <span class="sh-badge">Синтез: ${fmt(sv)} 🌀</span></div>
+    <div style="font-size:10px;color:var(--dim);margin-bottom:8px;line-height:1.5;">Пасивні апгрейди за Синтез. На відміну від технологій — зберігаються після Переродження.</div>
+  </div>`;
+  cats.forEach(cat=>{
+    html += `<div style="font-size:11px;color:var(--gold);border-bottom:1px solid var(--border);padding-bottom:3px;margin:6px 0 5px;">${cat}</div>`;
+    RESEARCH_TREE.filter(r=>r.cat===cat).forEach(r=>{
+      let cost = getResearchCost(r);
+      let pre = r.req ? RESEARCH_TREE.find(x=>x.id===r.req) : null;
+      let preOk = !pre || pre.lvl>0;
+      let canBuy = preOk && r.lvl<r.maxLvl && Object.entries(cost).every(([k,v])=>(storage[k]||0)>=v);
+      let maxed = r.lvl>=r.maxLvl;
+      let costStr = Object.entries(cost).map(([k,v])=>{
+        let ok=(storage[k]||0)>=v;
+        return `<span style="color:${ok?'var(--green)':'var(--red)'}">${RES[k]?.e||''}${fmt(v)}</span>`;
+      }).join(' ');
+      html += `<div style="background:var(--panel2);border:1px solid ${maxed?'var(--gold)':r.lvl>0?'var(--teal)':'var(--border)'};padding:7px 9px;margin-bottom:4px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+          <span style="font-size:18px">${r.icon}</span>
+          <div style="flex:1;">
+            <div style="font-size:12px;color:var(--text)">${r.name} ${r.lvl>0?`<span style="color:var(--teal)">рів.${r.lvl}/${r.maxLvl}</span>`:''}</div>
+            <div style="font-size:10px;color:var(--dim)">${r.desc}</div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--teal);margin-bottom:4px;">⚡ ${r.effect}</div>
+        ${pre&&!preOk?`<div style="font-size:9px;color:var(--red);margin-bottom:3px;">🔒 Потрібно: ${pre.name}</div>`:''}
+        ${!maxed?`<div style="font-size:10px;margin-bottom:5px;">💰 ${costStr}</div>
+        <button onclick="buyResearch('${r.id}')" style="width:100%;font-family:var(--font);font-size:11px;padding:6px;border:1px solid ${canBuy?'var(--synth)':'var(--border)'};background:transparent;color:${canBuy?'var(--synth)':'var(--dim)'};cursor:${canBuy?'pointer':'not-allowed'};touch-action:manipulation;" ${!canBuy?'disabled':''}>
+          🧬 ДОСЛІДИТИ
+        </button>`
+        :`<div style="font-size:11px;color:var(--gold);text-align:center;">✅ Максимальний рівень</div>`}
+      </div>`;
+    });
+  });
+  div.innerHTML = html;
+}
+
+// ============================================================
+// 3. ВИПАДКОВІ ПОДІЇ
+// ============================================================
+const RANDOM_EVENTS = [
+  {id:'ore_vein',    icon:'⛏️', title:'Знайдено жилу руди!',
+   desc:'Мандрівники натрапили на багате родовище.',
+   type:'bonus', res:'iron', amt:()=>Math.floor(200+epoch*50)},
+  {id:'forest_fire', icon:'🔥', title:'Лісова пожежа!',
+   desc:'Вогонь знищив частину деревини.',
+   type:'penalty', res:'wood', pct:0.20},
+  {id:'trader',      icon:'🧑‍💼', title:'Мандрівний торговець',
+   desc:'Пропонує обмін: деревина → залізо.',
+   type:'trade', give:'wood', giveMult:3, get:'iron', getMult:1},
+  {id:'harvest',     icon:'🌾', title:'Багатий врожай!',
+   desc:'Поля дали подвійний урожай цього сезону.',
+   type:'bonus', res:'wheat', amt:()=>Math.floor(300+epoch*30)},
+  {id:'drought',     icon:'☀️', title:'Посуха!',
+   desc:'Спека знищила частину запасів води.',
+   type:'penalty', res:'water', pct:0.30},
+  {id:'earthquake',  icon:'🌍', title:'Землетрус!',
+   desc:'Тремтіння землі пошкодило камінь.',
+   type:'penalty', res:'stone', pct:0.15},
+  {id:'wanderer',    icon:'🧙', title:'Мандрівний маг!',
+   desc:'Маг пропонує тимчасове посилення кліків на 60с.',
+   type:'buff', buff:'click', dur:60, mult:2},
+  {id:'caravans',    icon:'🐪', title:'Торговий Шовковий шлях!',
+   desc:'Каравани везуть екзотичні товари.',
+   type:'bonus', res:'synth_energy', amt:()=>Math.floor(50+epoch*20)},
+  {id:'goblin_scout',icon:'👺', title:'Гоблінський розвідник!',
+   desc:'Розвідник вкрав частину ресурсів.',
+   type:'penalty', res:'logs', pct:0.10},
+  {id:'invention',   icon:'💡', title:'Несподіваний винахід!',
+   desc:'Винахідник поділився знаннями.',
+   type:'bonus', res:'synth_energy', amt:()=>Math.floor(100+epoch*30)},
+];
+
+let _eventBuff = null; // {type, mult, endsAt}
+let _lastEventTime = 0;
+let _pendingEvent = null;
+
+function _rollEvent(){
+  let now = Date.now();
+  if(now - _lastEventTime < 90000) return; // мін. 90с між подіями
+  if(_pendingEvent) return;
+  if(Math.random() > 0.3) return; // 30% шанс щосекунди після cooldown
+  _lastEventTime = now;
+  let ev = RANDOM_EVENTS[Math.floor(Math.random()*RANDOM_EVENTS.length)];
+  _pendingEvent = ev;
+  _showEventPopup(ev);
+}
+
+function _showEventPopup(ev){
+  let existing = document.getElementById('event-popup');
+  if(existing) existing.remove();
+
+  let actions = '';
+  if(ev.type==='bonus'){
+    let amt = ev.amt();
+    actions = `<button onclick="_applyEvent('accept')" style="${_evBtnStyle('var(--green)')}">✅ ПРИЙНЯТИ +${fmt(amt)} ${RES[ev.res]?.e||''}</button>`;
+  } else if(ev.type==='penalty'){
+    let cur = storage[ev.res]||0;
+    let loss = Math.floor(cur*ev.pct);
+    actions = `<button onclick="_applyEvent('accept')" style="${_evBtnStyle('var(--red)')}">😔 ПРИЙНЯТИ (-${fmt(loss)} ${RES[ev.res]?.e||''})</button>
+    <button onclick="_applyEvent('pay')" style="${_evBtnStyle('var(--gold)')}">💰 ВІДКУПИТИСЬ (${fmt(Math.floor(loss*2))} 🌀)</button>`;
+  } else if(ev.type==='trade'){
+    let cost = Math.floor((storage[ev.give]||0)*0.3);
+    let gain = Math.floor(cost/ev.giveMult);
+    actions = `<button onclick="_applyEvent('accept')" style="${_evBtnStyle('var(--teal)')}">🤝 ОБМІНЯТИ</button>
+    <button onclick="_applyEvent('skip')" style="${_evBtnStyle('var(--dim)')}">❌ ВІДМОВИТИ</button>`;
+  } else if(ev.type==='buff'){
+    actions = `<button onclick="_applyEvent('accept')" style="${_evBtnStyle('var(--gold)')}">⚡ ПРИЙНЯТИ (×${ev.mult} на ${ev.dur}с)</button>`;
+  }
+
+  let pop = document.createElement('div');
+  pop.id = 'event-popup';
+  pop.style.cssText = 'position:fixed;top:70px;left:50%;margin-left:-155px;width:310px;z-index:5000;background:var(--panel);border:1px solid var(--gold);padding:14px;box-shadow:0 4px 24px rgba(0,0,0,.8);';
+  pop.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+    <span style="font-size:26px">${ev.icon}</span>
+    <div>
+      <div style="font-size:12px;color:var(--gold)">${ev.title}</div>
+      <div style="font-size:10px;color:var(--dim)">${ev.desc}</div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:5px;">${actions}
+    <button onclick="_applyEvent('skip')" style="${_evBtnStyle('var(--border)')}">🚫 ІГНОРУВАТИ</button>
+  </div>
+  <div style="font-size:9px;color:var(--dim);margin-top:6px;text-align:right;" id="ev-timer">⏱ зникне через 30с</div>`;
+  document.body.appendChild(pop);
+
+  // Автозакрити через 30с
+  let t = 30;
+  let interval = setInterval(()=>{
+    t--;
+    let el = document.getElementById('ev-timer');
+    if(el) el.textContent = `⏱ зникне через ${t}с`;
+    if(t<=0){ clearInterval(interval); _applyEvent('skip'); }
+  }, 1000);
+  pop._interval = interval;
+}
+
+function _evBtnStyle(color){
+  return `font-family:var(--font);font-size:11px;padding:8px;border:1px solid ${color};background:transparent;color:${color};cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;text-align:center;`;
+}
+
+function _applyEvent(action){
+  let pop = document.getElementById('event-popup');
+  if(pop){ clearInterval(pop._interval); pop.remove(); }
+  let ev = _pendingEvent;
+  _pendingEvent = null;
+  if(!ev || action==='skip') return;
+
+  if(ev.type==='bonus'){
+    let amt = ev.amt();
+    storage[ev.res] = (storage[ev.res]||0) + amt;
+    addLog(`${ev.icon} ${ev.title}: +${fmt(amt)} ${RES[ev.res]?.n||ev.res}`, true);
+  } else if(ev.type==='penalty'){
+    if(action==='pay'){
+      let cur = storage[ev.res]||0, loss = Math.floor(cur*ev.pct);
+      let cost = Math.floor(loss*2);
+      if((storage.synth_energy||0)>=cost){
+        storage.synth_energy -= cost;
+        addLog(`${ev.icon} Відкупились від ${ev.title} за ${cost}🌀`, true);
+      } else {
+        storage[ev.res] = Math.max(0, (storage[ev.res]||0) - Math.floor((storage[ev.res]||0)*ev.pct));
+        addLog(`${ev.icon} ${ev.title} — не вистачило Синтезу!`, true);
+      }
+    } else {
+      storage[ev.res] = Math.max(0, (storage[ev.res]||0) - Math.floor((storage[ev.res]||0)*ev.pct));
+      addLog(`${ev.icon} ${ev.title}: -${Math.round(ev.pct*100)}% ${RES[ev.res]?.n||ev.res}`, true);
+    }
+  } else if(ev.type==='trade'){
+    let cost = Math.floor((storage[ev.give]||0)*0.3);
+    let gain = Math.floor(cost/ev.giveMult);
+    storage[ev.give] = Math.max(0, (storage[ev.give]||0)-cost);
+    storage[ev.get] = (storage[ev.get]||0)+gain;
+    addLog(`${ev.icon} ${ev.title}: -${cost}${RES[ev.give]?.e} +${gain}${RES[ev.get]?.e}`, true);
+  } else if(ev.type==='buff'){
+    _eventBuff = {type:ev.buff, mult:ev.mult, endsAt:Date.now()+ev.dur*1000};
+    clickMult *= ev.mult;
+    addLog(`${ev.icon} ${ev.title}: ×${ev.mult} кліки на ${ev.dur}с!`, true);
+    setTimeout(()=>{
+      if(_eventBuff){ clickMult /= _eventBuff.mult; _eventBuff=null; addLog('⏱ Бонус кліків вичерпано'); }
+    }, ev.dur*1000);
+  }
+  markDirty('full');
+}
+
+// ============================================================
+// 4. ГЕРОЙ
+// ============================================================
+const HERO_CLASSES = {
+  archer: {name:'Лучник', icon:'🏹', desc:'Знищує +2 гобліна за хвилю з рівня 1.',
+    passive:(lvl)=>({ killBonus: lvl*2 }),
+    skill:{name:'Залп', desc:'×5 вбивств протягом 10с', cd:120, dur:10, mult:5}},
+  mage:   {name:'Маг',    icon:'🧙', desc:'+5% до виробництва за рівень.',
+    passive:(lvl)=>({ prodBonus: lvl*0.05 }),
+    skill:{name:'Синтез-вибух', desc:'Наносить 500×рівень шкоди всім гоблінам', cd:90, dur:0, dmg:(lvl)=>lvl*500}},
+  warrior:{name:'Воїн',   icon:'⚔️', desc:'+50 HP міста за рівень.',
+    passive:(lvl)=>({ cityHpBonus: lvl*50 }),
+    skill:{name:'Берсерк', desc:'+100% блоку пошкоджень на 20с', cd:180, dur:20, blockMult:2}},
+};
+
+let hero = {
+  class:  null,  // 'archer'|'mage'|'warrior'
+  lvl:    0,
+  xp:     0,
+  xpNext: 100,
+  skillCd: 0,    // секунди до готовності
+  skillActive: false,
+  skillEndsAt: 0,
+};
+
+function heroXpFor(lvl){ return Math.floor(100 * Math.pow(1.5, lvl)); }
+
+function gainHeroXp(amt){
+  if(!hero.class) return;
+  hero.xp += amt;
+  while(hero.xp >= hero.xpNext && hero.lvl < 50){
+    hero.xp -= hero.xpNext;
+    hero.lvl++;
+    hero.xpNext = heroXpFor(hero.lvl);
+    addLog(`${HERO_CLASSES[hero.class].icon} Герой рів.${hero.lvl}!`, true);
+    // Apply passive again
+    _applyHeroPassive();
+  }
+}
+
+function _applyHeroPassive(){
+  if(!hero.class) return;
+  let cls = HERO_CLASSES[hero.class];
+  let p = cls.passive(hero.lvl);
+  if(p.prodBonus)  prodMult = 1 * prestigeMult + p.prodBonus;
+  if(p.cityHpBonus) goblinWave.cityHpMax = 1000 + p.cityHpBonus;
+  recalcDefenseStats();
+}
+
+function chooseHeroClass(cls){
+  if(hero.class) return;
+  hero.class = cls;
+  hero.lvl = 1; hero.xp = 0; hero.xpNext = heroXpFor(1);
+  _applyHeroPassive();
+  document.getElementById('hero-choose-modal')?.remove();
+  addLog(`${HERO_CLASSES[cls].icon} Герой обраний: ${HERO_CLASSES[cls].name}!`, true);
+  markDirty('full');
+}
+
+function useHeroSkill(){
+  if(!hero.class || hero.skillCd>0 || hero.lvl<3) return;
+  let cls = HERO_CLASSES[hero.class];
+  let sk = cls.skill;
+  hero.skillCd = sk.cd;
+  hero.skillActive = true;
+  hero.skillEndsAt = Date.now() + (sk.dur||1)*1000;
+
+  if(hero.class==='archer'){
+    // Підвищуємо кількість вбивств тимчасово
+    defenseStats._heroKillBoost = sk.mult * hero.lvl * 2;
+    setTimeout(()=>{ defenseStats._heroKillBoost=0; hero.skillActive=false; }, sk.dur*1000);
+  } else if(hero.class==='mage'){
+    // Шкода всім гоблінам
+    let dmg = sk.dmg(hero.lvl);
+    goblinWave.goblins.forEach(g=>g.hp=Math.max(0,g.hp-dmg));
+    goblinWave.goblins = goblinWave.goblins.filter(g=>g.hp>0);
+    hero.skillActive = false;
+  } else if(hero.class==='warrior'){
+    defenseStats._blockMult = sk.blockMult;
+    setTimeout(()=>{ defenseStats._blockMult=1; hero.skillActive=false; }, sk.dur*1000);
+  }
+  addLog(`${cls.icon} Використано навичку: ${sk.name}!`, true);
+  markDirty('full');
+}
+
+function renderHeroTab(){
+  let div = document.getElementById('tab-hero-content');
+  if(!div) return;
+
+  if(!hero.class){
+    div.innerHTML = `<div class="sh" style="margin-bottom:8px;">⚔️ ГЕРОЙ МІСТА</div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:12px;line-height:1.6;">Обери героя для захисту міста. Герой отримує досвід з кожної хвилі.</div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      ${Object.entries(HERO_CLASSES).map(([k,c])=>`
+        <div style="background:var(--panel2);border:1px solid var(--border);padding:10px;">
+          <div style="font-size:22px;margin-bottom:4px;">${c.icon}</div>
+          <div style="font-size:12px;color:var(--text);margin-bottom:3px;">${c.name}</div>
+          <div style="font-size:11px;color:var(--dim);margin-bottom:6px;">${c.desc}</div>
+          <div style="font-size:10px;color:var(--teal);margin-bottom:6px;">⚡ Навичка: ${c.skill.name} — ${c.skill.desc}</div>
+          <button onclick="chooseHeroClass('${k}')" style="width:100%;font-family:var(--font);font-size:11px;padding:8px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;touch-action:manipulation;">ОБРАТИ ${c.name.toUpperCase()}</button>
+        </div>`).join('')}
+    </div>`;
+    return;
+  }
+
+  let cls = HERO_CLASSES[hero.class];
+  let sk = cls.skill;
+  let xpPct = (hero.xp/hero.xpNext*100).toFixed(0);
+  let cdReady = hero.skillCd<=0 && hero.lvl>=3;
+  div.innerHTML = `<div class="sh" style="margin-bottom:8px;">⚔️ ГЕРОЙ: ${cls.name.toUpperCase()}</div>
+  <div style="background:var(--panel2);border:1px solid ${hero.class==='mage'?'var(--purple)':hero.class==='archer'?'var(--teal)':'var(--orange)'};padding:10px;margin-bottom:8px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <span style="font-size:32px">${cls.icon}</span>
+      <div style="flex:1;">
+        <div style="font-size:13px;color:var(--text)">${cls.name} · Рів.${hero.lvl}</div>
+        <div style="font-size:10px;color:var(--dim)">XP: ${fmt(hero.xp)}/${fmt(hero.xpNext)}</div>
+        <div style="height:5px;background:#111;margin-top:3px;"><div style="height:100%;background:var(--gold);width:${xpPct}%"></div></div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px;">${cls.desc}</div>
+    ${hero.lvl>=3
+      ? `<button onclick="useHeroSkill()" style="width:100%;font-family:var(--font);font-size:11px;padding:8px;border:1px solid ${cdReady?'var(--gold)':'var(--border)'};background:transparent;color:${cdReady?'var(--gold)':'var(--dim)'};cursor:${cdReady?'pointer':'not-allowed'};touch-action:manipulation;" ${!cdReady?'disabled':''}>
+          ${hero.skillCd>0 ? `⏱ ${sk.name}: ${Math.ceil(hero.skillCd)}с` : `⚡ ${sk.name}: ${sk.desc}`}
+        </button>`
+      : `<div style="font-size:10px;color:var(--dim);text-align:center;">🔒 Навичка відкриється на рів.3</div>`}
+  </div>
+  <div style="font-size:11px;color:var(--dim);">💡 Герой отримує досвід після кожної відбитої хвилі гоблінів.</div>`;
+}
+
+// ============================================================
+// 5. СТАТИСТИКА
+// ============================================================
+let gameStats = {
+  startTime:    Date.now(),
+  totalTime:    0,
+  bestWave:     0,
+  mostBuilt:    {id:null, count:0},
+  synthSold:    0,
+  synthBought:  0,
+  eventsTotal:  0,
+  researchDone: 0,
+  heroSkillsUsed:0,
+  maxStorage:   {},
+};
+
+function renderStatsTab(){
+  let div = document.getElementById('tab-stats-content');
+  if(!div) return;
+  let elapsed = Math.floor((Date.now()-gameStats.startTime)/1000) + gameStats.totalTime;
+  let h=Math.floor(elapsed/3600), m=Math.floor((elapsed%3600)/60), s=elapsed%60;
+  let timeStr=`${h>0?h+'г ':'}${m}хв ${s}с`;
+
+  let mostBuilt = Object.entries(buildings)
+    .map(([id,b])=>({id,count:b.instances.length,name:b.name}))
+    .sort((a,b_)=>b_.count-a.count)[0];
+
+  div.innerHTML = `<div class="sh" style="margin-bottom:8px;">📊 СТАТИСТИКА</div>
+  <div style="display:flex;flex-direction:column;gap:3px;">
+    ${[
+      ['⏱ Час у грі', timeStr],
+      ['👆 Всього кліків', fmt(totalClicks)],
+      ['🏗 Збудовано', fmt(buildCount)],
+      ['🌍 Поточна Епоха', epoch],
+      ['✨ Переродження', prestigeCount],
+      ['✨ Престиж-бонус', `×${prestigeMult.toFixed(2)}`],
+      ['⚔️ Відбито хвиль', goblinWave.totalWaves],
+      ['💀 Знищено гоблінів', fmt(goblinWave.totalDefeated)],
+      ['⚡ Найбільша хвиля', goblinWave.bestWave||goblinWave.waveNum],
+      ['🔬 Технологій', TECH_NODES.filter(n=>n.unlocked).length+'/'+TECH_NODES.length],
+      ['🧬 Досліджень', RESEARCH_TREE.reduce((s,r)=>s+r.lvl,0)],
+      ['🎲 Подій', fmt(gameStats.eventsTotal||0)],
+      ['📤 Синтезу продано', fmt(Math.floor(gameStats.synthSold||0))],
+      ['📥 Синтезу куплено', fmt(Math.floor(gameStats.synthBought||0))],
+      ['🏆 Ачівок', ACHIEVEMENTS.filter(a=>a.unlocked).length+'/'+ACHIEVEMENTS.length],
+      ['📜 Квестів', QUESTS.filter(q=>q.claimed).length+'/'+QUESTS.length],
+      mostBuilt?.count>0 ? ['🏗 Популярна споруда', `${mostBuilt.name.slice(0,20)} (${mostBuilt.count}шт)`] : null,
+    ].filter(Boolean).map(([k,v])=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:var(--panel2);border:1px solid var(--border);">
+        <span style="font-size:11px;color:var(--dim)">${k}</span>
+        <span style="font-size:12px;color:var(--text)">${v}</span>
+      </div>`).join('')}
+  </div>`;
+}
+
+// ============================================================
+// 6. СПОВІЩЕННЯ (badges)
+// ============================================================
+function updateNavBadges(){
+  // Квести готові до отримання
+  let doneQuests = QUESTS.filter(q=>q.done&&!q.claimed).length;
+  let qBtn = document.getElementById('tab-btn-quests');
+  if(qBtn){
+    let badge = doneQuests>0 ? ` <span style="background:var(--red);color:#fff;font-size:8px;padding:0 4px;border-radius:2px;">${doneQuests}</span>` : '';
+    if(!qBtn.innerHTML.includes('КВЕСТИ')) qBtn.innerHTML = '📜 КВЕСТИ' + badge;
+    else qBtn.innerHTML = '📜 КВЕСТИ' + badge;
+  }
+  // Хвиля наближається
+  let defBtn = document.getElementById('tab-btn-defense');
+  if(defBtn && goblinWave.nextWaveIn<=15 && !goblinWave.active){
+    defBtn.style.color='var(--orange)';
+  } else if(defBtn && !goblinWave.active){
+    defBtn.style.color='';
+  }
+}
+
+// ============================================================
+// HOOK INTO EXISTING SYSTEMS
+// ============================================================
+// Героя отримує XP після кожної хвилі
+let _origProcessWave = processGoblinWave;
+processGoblinWave = function(){
+  _origProcessWave.apply(this, arguments);
+  gainHeroXp(50 + goblinWave.waveNum*10);
+  if(goblinWave.waveNum > (gameStats.bestWave||0)) gameStats.bestWave = goblinWave.waveNum;
+  // Герой-лучник пасивний бонус
+  if(hero.class==='archer'){
+    let p = HERO_CLASSES.archer.passive(hero.lvl);
+    defenseStats.totalKillPerWave += (p.killBonus||0);
+  }
+};
+
+// Статистика продажів Синтезу
+let _orig_doSell = _doSell;
+_doSell = function(amt){
+  let before = storage.synth_energy||0;
+  _orig_doSell.apply(this, arguments);
+  let after = storage.synth_energy||0;
+  gameStats.synthSold = (gameStats.synthSold||0) + (after-before);
+  gameStats.eventsTotal = (gameStats.eventsTotal||0);
+};
+
+let _orig_doBuy = _doBuy;
+_doBuy = function(amt){
+  let before = storage.synth_energy||0;
+  _orig_doBuy.apply(this, arguments);
+  let after = storage.synth_energy||0;
+  gameStats.synthBought = (gameStats.synthBought||0) + (before-after);
+};
+
+// Пасивний дохід Синтезу від r_exch2
+let _origProdTick = null; // інтегруємо в existing production loop нижче
 function getCityProductionMult() {
   if (!goblinWave) return 1;
   let pct = goblinWave.cityHp / goblinWave.cityHpMax;
