@@ -388,11 +388,19 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .base-b-card{background:var(--panel2);border:1px solid var(--border);padding:5px 7px;transition:border-color .2s;}
 .base-b-card.active-bld{border-color:var(--green);}
 .base-b-card.active-bld::before{content:'';display:block;height:2px;background:linear-gradient(90deg,var(--green),var(--teal));margin:-5px -7px 4px;}
-/* Cap selector */
-.cap-row{display:flex;gap:2px;margin-top:4px;}
-.cap-btn{flex:1;font-family:var(--font);font-size:8px;padding:3px 2px;background:transparent;border:1px solid var(--border);color:var(--dim);cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:all .12s;text-align:center;line-height:1.2;}
-.cap-btn.active{background:#1a1400;border-color:var(--gold);color:var(--gold);}
-.cap-btn:hover:not(.active){border-color:var(--teal);color:var(--teal);}
+.base-b-card.boosted{border-color:var(--gold);}
+.base-b-card.boosted::before{background:linear-gradient(90deg,var(--gold),var(--orange));}
+.boost-btn{
+  width:100%;margin-top:4px;
+  font-family:var(--font);font-size:9px;padding:5px 4px;
+  background:transparent;border:1px solid var(--teal);color:var(--teal);
+  cursor:pointer;transition:all .15s;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+}
+.boost-btn:hover:not(:disabled):not(.active){background:rgba(0,229,229,0.1);}
+.boost-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(232,184,75,0.08);animation:boostpulse 1s ease-in-out infinite alternate;}
+.boost-btn.disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;}
+@keyframes boostpulse{from{box-shadow:0 0 0 0 rgba(232,184,75,.1);}to{box-shadow:0 0 6px 2px rgba(232,184,75,.25);}}
 .base-b-head{display:flex;justify-content:space-between;align-items:center;}
 .base-b-name{font-size:10px;color:var(--text);}
 .base-b-lvl{font-size:9px;color:var(--gold);}
@@ -1923,11 +1931,35 @@ function maxBuyBaseResBuilding(id){
   else showToast("⚠️ Недостатньо ресурсів!");
 }
 
-function setBaseCap(id, cap){
-  if(!BASE_RES_BUILDINGS[id]) return;
-  BASE_RES_BUILDINGS[id].cap = cap;
-  const labels = {all:'∞ Все', half:'½ Ліміт', keep20:'20% min'};
-  addLog(`⚙️ ${BASE_RES_BUILDINGS[id].name}: режим накопичення → ${labels[cap]}`);
+// Вартість бусту залежить від рівня споруди і рідкісності ресурсу
+function _boostCost(b){
+  let ep=RES[b.res]?.ep||1;
+  let lvl=Math.max(1,b.lvl);
+  // Базова вартість: сам ресурс що видобуває + камінь/деревина
+  let amt=Math.max(5, Math.floor(lvl*ep*2));
+  let cost={};
+  cost[b.res]=amt;
+  if(ep<=3) cost.stone=Math.floor(amt*0.5);
+  else if(ep<=6) cost.logs=Math.floor(amt*0.3);
+  else cost.iron=Math.floor(amt*0.2);
+  return cost;
+}
+
+function _fmtTime(s){
+  s=Math.ceil(s);
+  return s>=60?`${Math.floor(s/60)}хв ${s%60}с`:`${s}с`;
+}
+
+function activateBoost(id){
+  let b=BASE_RES_BUILDINGS[id];
+  if(!b||!b.lvl||b.boost>0) return;
+  let cost=_boostCost(b);
+  if(!Object.keys(cost).every(k=>(storage[k]||0)>=cost[k])){
+    showToast('⚠️ Не вистачає ресурсів для бусту!'); return;
+  }
+  Object.keys(cost).forEach(k=>storage[k]-=cost[k]);
+  b.boost=30; // 30 секунд
+  addLog(`⚡ Буст ${b.name} ×3 на 30 секунд!`, true);
   markDirty('bld');
 }
 
@@ -2973,26 +3005,19 @@ setInterval(()=>{
   Object.keys(BASE_RES_BUILDINGS).forEach(id=>{
     let b=BASE_RES_BUILDINGS[id];
     if(!b.lvl||epoch<b.ep_req) return;
-    let gain=b.prodBase*b.lvl*baseResMultiplier;
-    let cur=storage[b.res]||0;
-    let cap=b.cap||'all';
-
-    if(cap==='half'){
-      // Зупиняє накопичення якщо є більше ніж 100с виробництва (умовна стеля)
-      let ceiling=b.prodBase*b.lvl*baseResMultiplier*100;
-      if(cur>=ceiling) gain=0;
-    } else if(cap==='keep20'){
-      // Накопичує до рівня "мінімальний запас 20с" і більше не росте
-      let minKeep=b.prodBase*b.lvl*baseResMultiplier*20;
-      if(cur>=minKeep) gain=0;
+    let mult=1;
+    if(b.boost>0){
+      mult=3;
+      b.boost=Math.max(0, b.boost-0.5); // тік = 0.5с
+      if(b.boost===0){
+        addLog(`⏱ Буст ${b.name} завершився`);
+        markDirty('bld');
+      }
     }
-    // cap==='all' — без обмежень
-
-    if(gain>0){
-      storage[b.res]=(storage[b.res]||0)+gain;
-      psCounters[b.res]=(psCounters[b.res]||0)+gain;
-      addPoints(Math.ceil(gain*0.05), 'resources');
-    }
+    let gain=b.prodBase*b.lvl*baseResMultiplier*mult;
+    storage[b.res]=(storage[b.res]||0)+gain;
+    psCounters[b.res]=(psCounters[b.res]||0)+gain;
+    addPoints(Math.ceil(gain*0.05), 'resources');
   });
 
   // Passive synth auto-gain from exchange upgrades
@@ -3750,26 +3775,34 @@ function renderBuildings(){
     let costStr=Object.keys(cost).map(k=>`${RES[k]?.e||''}${fmt(cost[k])} ${RES[k]?.n}`).join(' + ');
     let res=RES[b.res];
     let tipText=`${b.name}\nВидобуває: ${res?.n||b.res} (${res?.e||''})\nВиробництво: +${prod}/с (рів.×${b.prodBase})\nВартість: ${costStr}\nЕпоха: ${b.ep_req}`;
-    let cap=b.cap||'all';
-    baseHtml+=`<div class="base-b-card ${b.lvl>0?'active-bld':''}" title="${tipText}">
+    let boost=b.boost||0; // секунд буст залишилось
+    let boostedProd=boost>0?(b.prodBase*Math.max(1,b.lvl)*baseResMultiplier*3).toFixed(2):null;
+    let boostCost=_boostCost(b);
+    let canBoost=Object.keys(boostCost).every(k=>(storage[k]||0)>=boostCost[k]);
+    let boostCostStr=Object.entries(boostCost).map(([k,v])=>`${RES[k]?.e||''}${fmt(v)}`).join(' ');
+    baseHtml+=`<div class="base-b-card ${b.lvl>0?'active-bld':''} ${boost>0?'boosted':''}" title="${tipText}">
       <div class="base-b-head">
         <div class="base-b-name">${b.name}</div>
         ${b.lvl>0?`<div class="base-b-lvl">рів.${b.lvl}</div>`:''}
       </div>
-      ${b.lvl>0?`<div class="base-b-out">+${prod} ${res?.e||''} ${res?.n||b.res}/с</div>`
-               :`<div style="font-size:9px;color:var(--dim)">+${b.prodBase} ${res?.e||''}/с за рів.</div>`}
+      ${b.lvl>0
+        ? boost>0
+          ? `<div class="base-b-out" style="color:var(--gold)">⚡ +${boostedProd} ${res?.e||''}/с <span style="color:var(--orange);font-size:9px">${_fmtTime(boost)}</span></div>`
+          : `<div class="base-b-out">+${prod} ${res?.e||''} ${res?.n||b.res}/с</div>`
+        : `<div style="font-size:9px;color:var(--dim)">+${b.prodBase} ${res?.e||''}/с за рів.</div>`}
       <div class="base-b-cost">${costStr}</div>
       <div style="display:flex;gap:3px;margin-top:4px;">
         <button class="base-b-btn ${canAfford?'can':''}" onclick="buyBaseResBuilding('${id}')" ${!canAfford?'disabled':''} style="flex:1;margin-top:0;">
           ${b.lvl===0?'🏗 БУДУВАТИ':'+РІВ'}
         </button>
-        ${b.lvl>0?`<button class="base-b-btn can" style="border-color:var(--gold);color:var(--gold);flex:0 0 28px;margin-top:0;" onclick="maxBuyBaseResBuilding('${id}')" ${!canAfford?'disabled':''} title="Максимум">МАХ</button>`:''}
+        ${b.lvl>0?`<button class="base-b-btn can" style="border-color:var(--gold);color:var(--gold);flex:0 0 28px;margin-top:0;" onclick="maxBuyBaseResBuilding('${id}')" ${!canAfford?'disabled':''}>МАХ</button>`:''}
       </div>
-      ${b.lvl>0?`<div class="cap-row">
-        <button class="cap-btn ${cap==='all'?'active':''}"    onclick="setBaseCap('${id}','all')"    title="Накопичувати без обмежень">∞ Все</button>
-        <button class="cap-btn ${cap==='half'?'active':''}"   onclick="setBaseCap('${id}','half')"   title="Зупинити накопичення після 50% від максимуму — решта іде у переробку">½ Ліміт</button>
-        <button class="cap-btn ${cap==='keep20'?'active':''}" onclick="setBaseCap('${id}','keep20')" title="Зберігати мінімум 20% — решта автоматично вивільняється для переробки">20% min</button>
-      </div>`:''}
+      ${b.lvl>0?`<button class="boost-btn ${boost>0?'active':''} ${!canBoost&&!boost?'disabled':''}"
+        onclick="activateBoost('${id}')" ${boost>0?'disabled':''}>
+        ${boost>0
+          ? `⚡ БУСТ: ${_fmtTime(boost)}`
+          : `⚡ БУСТ ×3 · 30с · ${boostCostStr}`}
+      </button>`:''}
     </div>`;
   });
   if(hasBase){
@@ -4843,7 +4876,7 @@ function serializeGameState() {
     binds: BINDS.map(b => ({ lvl: b.lvl })),
     // BASE_RES_BUILDINGS
     baseResBuildings: Object.fromEntries(
-      Object.entries(BASE_RES_BUILDINGS).map(([k, v]) => [k, { lvl: v.lvl, cap: v.cap||'all' }])
+      Object.entries(BASE_RES_BUILDINGS).map(([k, v]) => [k, { lvl: v.lvl, cap: v.cap||'all', boost: v.boost||0 }])
     ),
     // Buildings instances
     buildings: Object.fromEntries(
@@ -4932,7 +4965,7 @@ function deserializeGameState(s) {
     // Base res buildings
     if (s.baseResBuildings) {
       Object.entries(s.baseResBuildings).forEach(([k, v]) => {
-        if (BASE_RES_BUILDINGS[k]) { BASE_RES_BUILDINGS[k].lvl = v.lvl || 0; BASE_RES_BUILDINGS[k].cap = v.cap || 'all'; }
+        if (BASE_RES_BUILDINGS[k]) { BASE_RES_BUILDINGS[k].lvl = v.lvl || 0; BASE_RES_BUILDINGS[k].cap = v.cap||'all'; BASE_RES_BUILDINGS[k].boost = v.boost||0; }
       });
     }
     // Buildings instances
