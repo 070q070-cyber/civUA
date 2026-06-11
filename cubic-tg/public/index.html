@@ -1923,6 +1923,14 @@ function maxBuyBaseResBuilding(id){
   else showToast("⚠️ Недостатньо ресурсів!");
 }
 
+function setBaseCap(id, cap){
+  if(!BASE_RES_BUILDINGS[id]) return;
+  BASE_RES_BUILDINGS[id].cap = cap;
+  const labels = {all:'∞ Все', half:'½ Ліміт', keep20:'20% min'};
+  addLog(`⚙️ ${BASE_RES_BUILDINGS[id].name}: режим накопичення → ${labels[cap]}`);
+  markDirty('bld');
+}
+
 function buyBaseResBuilding(id){
   let b=BASE_RES_BUILDINGS[id];
   if(!b||epoch<b.ep_req) return;
@@ -2961,20 +2969,30 @@ setInterval(()=>{
     });
   });
 
+  // Base resource buildings production
   Object.keys(BASE_RES_BUILDINGS).forEach(id=>{
     let b=BASE_RES_BUILDINGS[id];
     if(!b.lvl||epoch<b.ep_req) return;
     let gain=b.prodBase*b.lvl*baseResMultiplier;
-    // Обмеження накопичення: cap = 'all' | 'half' | 'keep20'
-    if(b.cap && b.cap!=='all'){
-      let cur=storage[b.res]||0;
-      let max=b.prodBase*b.lvl*baseResMultiplier*200; // "розумна" стеля = 200с виробництва
-      if(b.cap==='half'  && cur>=max*0.5){ gain=0; }
-      if(b.cap==='keep20'){ let keep=max*0.2; if(cur>=keep) gain=Math.min(gain, Math.max(0,keep-cur+gain)); }
+    let cur=storage[b.res]||0;
+    let cap=b.cap||'all';
+
+    if(cap==='half'){
+      // Зупиняє накопичення якщо є більше ніж 100с виробництва (умовна стеля)
+      let ceiling=b.prodBase*b.lvl*baseResMultiplier*100;
+      if(cur>=ceiling) gain=0;
+    } else if(cap==='keep20'){
+      // Накопичує до рівня "мінімальний запас 20с" і більше не росте
+      let minKeep=b.prodBase*b.lvl*baseResMultiplier*20;
+      if(cur>=minKeep) gain=0;
     }
-    storage[b.res]=(storage[b.res]||0)+gain;
-    psCounters[b.res]=(psCounters[b.res]||0)+gain;
-    addPoints(Math.ceil(gain*0.05), 'resources');
+    // cap==='all' — без обмежень
+
+    if(gain>0){
+      storage[b.res]=(storage[b.res]||0)+gain;
+      psCounters[b.res]=(psCounters[b.res]||0)+gain;
+      addPoints(Math.ceil(gain*0.05), 'resources');
+    }
   });
 
   // Passive synth auto-gain from exchange upgrades
@@ -3732,6 +3750,7 @@ function renderBuildings(){
     let costStr=Object.keys(cost).map(k=>`${RES[k]?.e||''}${fmt(cost[k])} ${RES[k]?.n}`).join(' + ');
     let res=RES[b.res];
     let tipText=`${b.name}\nВидобуває: ${res?.n||b.res} (${res?.e||''})\nВиробництво: +${prod}/с (рів.×${b.prodBase})\nВартість: ${costStr}\nЕпоха: ${b.ep_req}`;
+    let cap=b.cap||'all';
     baseHtml+=`<div class="base-b-card ${b.lvl>0?'active-bld':''}" title="${tipText}">
       <div class="base-b-head">
         <div class="base-b-name">${b.name}</div>
@@ -3746,6 +3765,11 @@ function renderBuildings(){
         </button>
         ${b.lvl>0?`<button class="base-b-btn can" style="border-color:var(--gold);color:var(--gold);flex:0 0 28px;margin-top:0;" onclick="maxBuyBaseResBuilding('${id}')" ${!canAfford?'disabled':''} title="Максимум">МАХ</button>`:''}
       </div>
+      ${b.lvl>0?`<div class="cap-row">
+        <button class="cap-btn ${cap==='all'?'active':''}"    onclick="setBaseCap('${id}','all')"    title="Накопичувати без обмежень">∞ Все</button>
+        <button class="cap-btn ${cap==='half'?'active':''}"   onclick="setBaseCap('${id}','half')"   title="Зупинити накопичення після 50% від максимуму — решта іде у переробку">½ Ліміт</button>
+        <button class="cap-btn ${cap==='keep20'?'active':''}" onclick="setBaseCap('${id}','keep20')" title="Зберігати мінімум 20% — решта автоматично вивільняється для переробки">20% min</button>
+      </div>`:''}
     </div>`;
   });
   if(hasBase){
@@ -4819,7 +4843,7 @@ function serializeGameState() {
     binds: BINDS.map(b => ({ lvl: b.lvl })),
     // BASE_RES_BUILDINGS
     baseResBuildings: Object.fromEntries(
-      Object.entries(BASE_RES_BUILDINGS).map(([k, v]) => [k, { lvl: v.lvl }])
+      Object.entries(BASE_RES_BUILDINGS).map(([k, v]) => [k, { lvl: v.lvl, cap: v.cap||'all' }])
     ),
     // Buildings instances
     buildings: Object.fromEntries(
@@ -4908,7 +4932,7 @@ function deserializeGameState(s) {
     // Base res buildings
     if (s.baseResBuildings) {
       Object.entries(s.baseResBuildings).forEach(([k, v]) => {
-        if (BASE_RES_BUILDINGS[k]) BASE_RES_BUILDINGS[k].lvl = v.lvl || 0;
+        if (BASE_RES_BUILDINGS[k]) { BASE_RES_BUILDINGS[k].lvl = v.lvl || 0; BASE_RES_BUILDINGS[k].cap = v.cap || 'all'; }
       });
     }
     // Buildings instances
