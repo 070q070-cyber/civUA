@@ -34,20 +34,21 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .main{display:grid;grid-template-columns:270px 1fr 310px;overflow:hidden;}
 
 /* HEADER */
-header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 14px;flex-shrink:0;}
-.logo{font-family:var(--font2);font-size:10px;color:var(--gold);text-shadow:0 0 20px #e8b84b88;white-space:nowrap;}
-.epoch-info{display:flex;align-items:center;gap:10px;flex:1;}
-.epoch-label{font-size:11px;color:var(--dim);}
-.epoch-name{font-size:13px;color:var(--text);}
-.epoch-progress{flex:1;max-width:200px;}
+header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 10px;flex-shrink:0;overflow:hidden;}
+.logo{font-family:var(--font2);font-size:9px;color:var(--gold);text-shadow:0 0 20px #e8b84b88;white-space:nowrap;flex-shrink:0;}
+.epoch-info{display:flex;align-items:center;gap:8px;flex:1;min-width:0;overflow:hidden;}
+.epoch-label{font-size:10px;color:var(--dim);white-space:nowrap;}
+.epoch-name{font-size:11px;color:var(--text);white-space:nowrap;}
+.epoch-progress{flex:1;min-width:60px;max-width:180px;}
 .prog-track{height:7px;background:#0e1218;border:1px solid var(--border);overflow:hidden;}
 .prog-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:width .4s;box-shadow:0 0 8px var(--gold);}
-.prog-label{font-size:11px;color:var(--dim);margin-top:2px;}
-.evo-btn{font-family:var(--font2);font-size:8px;background:transparent;border:1px solid var(--gold);color:var(--gold);padding:7px 12px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.prog-label{font-size:10px;color:var(--dim);margin-top:2px;white-space:nowrap;}
+.evo-btn{font-family:var(--font2);font-size:7px;background:transparent;border:1px solid var(--gold);color:var(--gold);padding:5px 8px;cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0;}
 .evo-btn:hover:not(:disabled){background:var(--gold);color:#000;}
 .evo-btn:disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;}
-.hstats{display:flex;gap:10px;margin-left:auto;}
-.hstat{font-size:11px;color:var(--dim);}
+.header-actions{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.hstats{display:flex;gap:6px;flex-shrink:0;}
+.hstat{font-size:10px;color:var(--dim);white-space:nowrap;}
 .hstat span{color:var(--gold);}
 
 /* LEFT PANEL */
@@ -738,8 +739,8 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   border: 1px solid var(--border); color: var(--dim); padding: 7px; cursor: pointer; }
 .lb-close:hover { border-color: var(--gold); color: var(--gold); }
 /* Leaderboard button in header */
-#lb-btn { font-family: var(--font); font-size: 9px; background: transparent;
-  border: 1px solid var(--border); color: var(--dim); padding: 4px 8px; cursor: pointer;
+#lb-btn { font-family: var(--font); font-size: 14px; background: transparent;
+  border: 1px solid var(--border); color: var(--dim); padding: 4px 6px; cursor: pointer;
   transition: all .15s; white-space: nowrap; }
 #lb-btn:hover { border-color: var(--gold); color: var(--gold); }
 
@@ -917,15 +918,17 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
       <div class="prog-track"><div class="prog-fill" id="ep-bar" style="width:0%"></div></div>
       <div class="prog-label" id="ep-label">0 / 50 Колод</div>
     </div>
-    <button class="evo-btn" id="btn-evo" onclick="advanceEpoch()" title="Перейти до наступної епохи. Потрібний ресурс вказано в прогрес-барі.">🚀 ЕВОЛЮЦІЯ</button>
+    <button class="evo-btn" id="btn-evo" onclick="advanceEpoch()" title="Перейти до наступної епохи. Потрібний ресурс вказано в прогрес-барі.">🚀 ЕВО</button>
   </div>
-  <button id="lb-btn" onclick="openLeaderboard()">🏆 ТОП</button>
-  <button onclick="showPrestigeModal()" style="font-family:var(--font2);font-size:7px;background:transparent;border:1px solid var(--purple);color:var(--purple);padding:6px 10px;cursor:pointer;touch-action:manipulation;" title="Переродження — постійний бонус">✨</button>
-  <div class="hstats">
-    <div class="hstat">🔬 <span id="hs-tech">0</span></div>
-    <div class="hstat">🏗️ <span id="hs-bld">0</span></div>
-    <div class="hstat">🤖 <span id="hs-acs">0</span>/с</div>
-    <div class="hstat"><span class="synth-label">⚡ <span id="hs-synth">0</span></span></div>
+  <div class="header-actions">
+    <button id="lb-btn" onclick="openLeaderboard()" title="Рейтинг гравців">🏆</button>
+    <button onclick="showPrestigeModal()" style="font-family:var(--font2);font-size:7px;background:transparent;border:1px solid var(--purple);color:var(--purple);padding:5px 8px;cursor:pointer;touch-action:manipulation;white-space:nowrap;" title="Переродження — постійний бонус">✨</button>
+    <div class="hstats">
+      <div class="hstat">🔬 <span id="hs-tech">0</span></div>
+      <div class="hstat">🏗 <span id="hs-bld">0</span></div>
+      <div class="hstat">🤖 <span id="hs-acs">0</span>/с</div>
+      <div class="hstat">⚡ <span id="hs-synth">0</span></div>
+    </div>
   </div>
 </header>
 
@@ -5523,7 +5526,7 @@ const RESEARCH_TREE = [
 
 let researchSynthIncome = 0; // пасивний дохід від r_exch2
 
-function getResearchCost(r){
+function getResearchTreeCost(r){
   let cost = {};
   Object.entries(r.cost).forEach(([k,v]) => {
     cost[k] = Math.floor(v * Math.pow(r.costScale, r.lvl));
@@ -5542,14 +5545,14 @@ function getBuildCostResearchDiscount(){
   return Math.min(0.80, disc);
 }
 
-function buyResearch(id){
+function buyResearchTree(id){
   let r = RESEARCH_TREE.find(x=>x.id===id);
   if(!r || r.lvl>=r.maxLvl) return;
   if(r.req){
     let pre = RESEARCH_TREE.find(x=>x.id===r.req);
     if(!pre || pre.lvl===0){ showToast('⚠️ Потрібне попереднє дослідження!'); return; }
   }
-  let cost = getResearchCost(r);
+  let cost = getResearchTreeCost(r);
   if(!Object.entries(cost).every(([k,v])=>(storage[k]||0)>=v)){
     showToast('⚠️ Не вистачає Синтезу!'); return;
   }
@@ -5576,7 +5579,7 @@ function renderResearchTab(){
   cats.forEach(cat=>{
     html += `<div style="font-size:11px;color:var(--gold);border-bottom:1px solid var(--border);padding-bottom:3px;margin:6px 0 5px;">${cat}</div>`;
     RESEARCH_TREE.filter(r=>r.cat===cat).forEach(r=>{
-      let cost = getResearchCost(r);
+      let cost = getResearchTreeCost(r);
       let pre = r.req ? RESEARCH_TREE.find(x=>x.id===r.req) : null;
       let preOk = !pre || pre.lvl>0;
       let canBuy = preOk && r.lvl<r.maxLvl && Object.entries(cost).every(([k,v])=>(storage[k]||0)>=v);
@@ -5596,7 +5599,7 @@ function renderResearchTab(){
         <div style="font-size:10px;color:var(--teal);margin-bottom:4px;">⚡ ${r.effect}</div>
         ${pre&&!preOk?`<div style="font-size:9px;color:var(--red);margin-bottom:3px;">🔒 Потрібно: ${pre.name}</div>`:''}
         ${!maxed?`<div style="font-size:10px;margin-bottom:5px;">💰 ${costStr}</div>
-        <button onclick="buyResearch('${r.id}')" style="width:100%;font-family:var(--font);font-size:11px;padding:6px;border:1px solid ${canBuy?'var(--synth)':'var(--border)'};background:transparent;color:${canBuy?'var(--synth)':'var(--dim)'};cursor:${canBuy?'pointer':'not-allowed'};touch-action:manipulation;" ${!canBuy?'disabled':''}>
+        <button onclick="buyResearchTree('${r.id}')" style="width:100%;font-family:var(--font);font-size:11px;padding:6px;border:1px solid ${canBuy?'var(--synth)':'var(--border)'};background:transparent;color:${canBuy?'var(--synth)':'var(--dim)'};cursor:${canBuy?'pointer':'not-allowed'};touch-action:manipulation;" ${!canBuy?'disabled':''}>
           🧬 ДОСЛІДИТИ
         </button>`
         :`<div style="font-size:11px;color:var(--gold);text-align:center;">✅ Максимальний рівень</div>`}
