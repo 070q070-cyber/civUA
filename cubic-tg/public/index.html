@@ -5903,7 +5903,7 @@ function renderStatsTab(){
   if(!div) return;
   let elapsed = Math.floor((Date.now()-gameStats.startTime)/1000) + gameStats.totalTime;
   let h=Math.floor(elapsed/3600), m=Math.floor((elapsed%3600)/60), s=elapsed%60;
-  let timeStr=`${h>0?h+'г ':'}${m}хв ${s}с`;
+  let timeStr=`${h>0?(h+"г "):""} ${m}хв ${s}с`;
 
   let mostBuilt = Object.entries(buildings)
     .map(([id,b])=>({id,count:b.instances.length,name:b.name}))
