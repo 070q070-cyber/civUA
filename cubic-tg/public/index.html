@@ -2138,48 +2138,6 @@ function generateMap(){
   mapTiles[startR][startC].building={epoch:1,name:"⛺ Табір",autoClicker:false,lvl:1};
 }
 
-function initMap(){
-  canvas = document.getElementById('isoCanvas');
-  generateMap();
-  // Small delay to ensure layout is computed
-  setTimeout(()=>{
-    resizeCanvas();
-    drawMap();
-  }, 50);
-  canvas.addEventListener('mousemove', onMapMouse);
-  canvas.addEventListener('click', onMapClick);
-  canvas.addEventListener('mousedown', onMapMouseDown);
-  canvas.addEventListener('mouseup', onMapMouseUp);
-  canvas.addEventListener('mouseleave', ()=>{mapDrag.active=false; mapHover={col:-1,row:-1};});
-
-  // Touch events для мобільного
-  let _touchStart = null;
-  canvas.addEventListener('touchstart', e=>{
-    e.preventDefault();
-    let t = e.touches[0];
-    _touchStart = {x: t.clientX, y: t.clientY};
-    // Pass clientX/Y so mapDrag works correctly
-    onMapMouseDown({clientX: t.clientX, clientY: t.clientY});
-  }, {passive:false});
-  canvas.addEventListener('touchmove', e=>{
-    e.preventDefault();
-    let t = e.touches[0];
-    let rect = canvas.getBoundingClientRect();
-    // Pass both clientX/Y (for drag) and compute offsetX for hover
-    onMapMouse({clientX: t.clientX, clientY: t.clientY, offsetX: t.clientX-rect.left, offsetY: t.clientY-rect.top});
-  }, {passive:false});
-  canvas.addEventListener('touchend', e=>{
-    e.preventDefault();
-    let t = e.changedTouches[0];
-    let rect = canvas.getBoundingClientRect();
-    let dx = _touchStart ? Math.abs(t.clientX - _touchStart.x) : 99;
-    let dy = _touchStart ? Math.abs(t.clientY - _touchStart.y) : 99;
-    if(dx < 8 && dy < 8) onMapClick({offsetX: t.clientX-rect.left, offsetY: t.clientY-rect.top});
-    onMapMouseUp();
-    mapDrag.active = false;
-  }, {passive:false});
-
-  
 // ============================================================
 // TUTORIAL SYSTEM — навчання
 // ============================================================
@@ -2296,36 +2254,10 @@ function skipTutorial(){
   sessionStorage.setItem('tut_done','1');
 }
 
-window.addEventListener('resize', ()=>{ resizeCanvas(); drawMap(); });
-}
-
 // ============================================================
-// MAP STUBS — рендер повністю у map.js
+// MAP — рендер повністю у map.js (initMap, resizeCanvas, drawMap,
+// onMapMouse/Down/Up/Click тощо визначені у map.js)
 // ============================================================
-function resizeCanvas(){
-  if(typeof isoEl!=='undefined'&&isoEl){
-    let area=document.querySelector('.map-area');
-    let w=area?area.offsetWidth:window.innerWidth;
-    let h=area?area.offsetHeight:Math.floor(window.innerHeight*0.55);
-    if(w<10) w=window.innerWidth;
-    if(h<10) h=Math.floor(window.innerHeight*0.55);
-    isoEl.width=w; isoEl.height=h;
-    isoCtx=isoEl.getContext('2d');
-    if(typeof centerIsoMap==='function') centerIsoMap();
-  }
-  _mapDirty=true;
-}
-function screenToTile(sx,sy){
-  if(typeof screenToIso==='function') return screenToIso(sx,sy);
-  return {col:Math.floor(sx/64),row:Math.floor(sy/32)};
-}
-function drawCell(){}
-function drawBuilding2D(){}
-function drawMap(){ if(typeof _isoDirty!=='undefined') _isoDirty=true; }
-function onMapMouseDown(e){ if(typeof isoDrag!=='undefined') isoDrag={active:true,sx:e.clientX,sy:e.clientY,ox:isoOffset.x,oy:isoOffset.y}; }
-function onMapMouseUp()   { if(typeof isoDrag!=='undefined') isoDrag.active=false; }
-function onMapMouse(e){}
-function onMapClick(e){}
 function placeOnMap(building){
   for(let r=1;r<MAP_ROWS-1;r++){
     for(let c=1;c<MAP_COLS-1;c++){
@@ -2825,7 +2757,6 @@ setInterval(()=>{
   markDirty('res');
 },1000);
 
-let _mapDirty=true;
 let _lastHover={col:-1,row:-1};
 
 // RAF-цикл для ізометричної мапи (map.js)
@@ -5034,7 +4965,7 @@ async function openLeaderboard() {
 // ============================================================
 (async function init() {
   // Ініціалізуємо карту та UI
-  initMap();
+  // initMap() викликається після завантаження map.js (нижче)
   recalcDefenseStats();
   checkQuests();
   checkAchievements();
@@ -6165,5 +6096,6 @@ initTutorial();
 </script>
 <!-- ═══ ІЗОМЕТРИЧНА МАПА — окремий файл ═══ -->
 <script src="map.js"></script>
+<script>initMap();</script>
 </body>
 </html>
