@@ -5067,9 +5067,14 @@ function deserializeGameState(s) {
       s.heroRoster.forEach(r => { if(heroRoster[r.id]) Object.assign(heroRoster[r.id], {purchased:r.purchased, lvl:r.lvl||1, xp:r.xp||0}); });
     }
     if (s.hero && s.hero.class) {
-      Object.assign(hero, s.hero);
-      hero.xpNext = heroXpFor(hero.lvl+1);
-      _applyHeroPassive();
+      // Якщо старий save має старий клас (archer/mage/warrior) — скидаємо
+      if(!HERO_DEFS[s.hero.class]){
+        hero.class = null;
+      } else {
+        Object.assign(hero, s.hero);
+        hero.xpNext = heroXpFor(hero.lvl+1);
+        _applyHeroPassive();
+      }
     }
     // Stats
     if (s.gameStats) Object.assign(gameStats, s.gameStats);
@@ -5894,6 +5899,7 @@ function gainHeroXp(amt){
 function _applyHeroPassive(){
   if(!hero.class) return;
   let def = HERO_DEFS[hero.class];
+  if(!def) { hero.class = null; return; } // старий save — ігноруємо
   let h = heroRoster[hero.class];
   if(!h || !h.purchased) return;
   let p = def.passive(h.lvl);
