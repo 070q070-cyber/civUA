@@ -1048,18 +1048,18 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 // CONSTANTS & DATA
 // ============================================================
 const EPOCH_DATA = {
-  1:{name:"ВИЖИВАННЯ",   req:"logs",        amt:50},
-  2:{name:"ОСІЛІСТЬ",    req:"wheat",       amt:100},
-  3:{name:"РЕМЕСЛА",     req:"boards",      amt:150},
-  4:{name:"БРОНЗОВИЙ",   req:"bronze",      amt:80},
-  5:{name:"ЗАЛІЗНИЙ",    req:"iron",        amt:120},
-  6:{name:"СЕРЕДНЬОВІЧ", req:"wine",        amt:80},
-  7:{name:"ПРОТОРИНДУСТ",req:"books",       amt:100},
-  8:{name:"ПРОМ.РЕВ.",   req:"steel",       amt:180},
-  9:{name:"ХІМІЧНА",     req:"plastic",     amt:120},
-  10:{name:"ЕЛЕКТРИФІК", req:"electricity", amt:250},
-  11:{name:"ЕЛЕКТРОНІКА",req:"chips",       amt:80},
-  12:{name:"АВТОМАТИЗАЦ",req:"auto_drone",  amt:40}
+  1:{name:"ВИЖИВАННЯ",   req:"logs",        amt:200,  minBuilds:3,  minBuildDesc:"3 базові споруди"},
+  2:{name:"ОСІЛІСТЬ",    req:"wheat",       amt:400,  minBuilds:6,  minBuildDesc:"6 споруд"},
+  3:{name:"РЕМЕСЛА",     req:"boards",      amt:700,  minBuilds:12, minBuildDesc:"12 споруд"},
+  4:{name:"БРОНЗОВИЙ",   req:"bronze",      amt:500,  minBuilds:20, minBuildDesc:"20 споруд"},
+  5:{name:"ЗАЛІЗНИЙ",    req:"iron",        amt:800,  minBuilds:30, minBuildDesc:"30 споруд"},
+  6:{name:"СЕРЕДНЬОВІЧ", req:"wine",        amt:600,  minBuilds:45, minBuildDesc:"45 споруд"},
+  7:{name:"ПРОТОРИНДУСТ",req:"books",       amt:900,  minBuilds:60, minBuildDesc:"60 споруд"},
+  8:{name:"ПРОМ.РЕВ.",   req:"steel",       amt:1500, minBuilds:80, minBuildDesc:"80 споруд"},
+  9:{name:"ХІМІЧНА",     req:"plastic",     amt:1200, minBuilds:100,minBuildDesc:"100 споруд"},
+  10:{name:"ЕЛЕКТРИФІК", req:"electricity", amt:2500, minBuilds:130,minBuildDesc:"130 споруд"},
+  11:{name:"ЕЛЕКТРОНІКА",req:"chips",       amt:800,  minBuilds:160,minBuildDesc:"160 споруд"},
+  12:{name:"АВТОМАТИЗАЦ",req:"auto_drone",  amt:400,  minBuilds:200,minBuildDesc:"200 споруд"}
 };
 
 const RES = {
@@ -1645,16 +1645,50 @@ let bacMult = 1; // building AC multiplier
 let prodMult = 1;
 
 // ============================================================
-// BINDS
+// BINDS — інструменти прискорення кліку
 // ============================================================
 const BINDS = [
-  {id:"b_wood",  name:"🪓 Сокира",         res:"wood",      costRes:"wood",      costBase:60,  costMult:1.08, lvl:0, maxLvl:999, addPerLvl:1},
-  {id:"b_stone", name:"⛏️ Кирка",          res:"stone",     costRes:"stone",     costBase:50,  costMult:1.08, lvl:0, maxLvl:999, addPerLvl:1},
-  {id:"b_water", name:"🪣 Відро",           res:"water",     costRes:"water",     costBase:40,  costMult:1.08, lvl:0, maxLvl:999, addPerLvl:1},
-  {id:"b_clay",  name:"🏺 Лопата",          res:"clay",      costRes:"clay",      costBase:40,  costMult:1.08, lvl:0, maxLvl:999, addPerLvl:1},
-  {id:"b_veg",   name:"🌿 Серп",            res:"vegetation",costRes:"vegetation",costBase:40,  costMult:1.08, lvl:0, maxLvl:999, addPerLvl:1},
-  {id:"b_ore",   name:"🏔️ Кайло",           res:"raw_ore",   costRes:"raw_ore",   costBase:50,  costMult:1.08, lvl:0, maxLvl:999, addPerLvl:1},
-  {id:"b_all",   name:"🎒 Рюкзак",          res:"all",       costRes:"logs",      costBase:200, costMult:1.12, lvl:0, maxLvl:999, addPerLvl:2},
+  // === ЕПОХА 1 — базові інструменти ===
+  {id:"b_wood",    name:"🪓 Сокира",          res:"wood",       costRes:"wood",        costBase:60,   costMult:1.08, lvl:0, maxLvl:999, ep_req:1, addPerLvl:1},
+  {id:"b_stone",   name:"⛏️ Кирка",           res:"stone",      costRes:"stone",       costBase:50,   costMult:1.08, lvl:0, maxLvl:999, ep_req:1, addPerLvl:1},
+  {id:"b_water",   name:"🪣 Відро",            res:"water",      costRes:"water",       costBase:40,   costMult:1.08, lvl:0, maxLvl:999, ep_req:1, addPerLvl:1},
+  {id:"b_clay",    name:"🏺 Лопата",           res:"clay",       costRes:"clay",        costBase:40,   costMult:1.08, lvl:0, maxLvl:999, ep_req:1, addPerLvl:1},
+  {id:"b_veg",     name:"🌿 Серп",             res:"vegetation", costRes:"vegetation",  costBase:40,   costMult:1.08, lvl:0, maxLvl:999, ep_req:1, addPerLvl:1},
+  {id:"b_ore",     name:"🏔️ Кайло",            res:"raw_ore",    costRes:"raw_ore",     costBase:50,   costMult:1.08, lvl:0, maxLvl:999, ep_req:1, addPerLvl:1},
+  {id:"b_logs",    name:"🪵 Лісоруб",          res:"logs",       costRes:"logs",        costBase:80,   costMult:1.09, lvl:0, maxLvl:999, ep_req:1, addPerLvl:1},
+  {id:"b_all",     name:"🎒 Рюкзак",           res:"all",        costRes:"logs",        costBase:200,  costMult:1.12, lvl:0, maxLvl:999, ep_req:1, addPerLvl:2},
+  // === ЕПОХА 2 — аграрні ===
+  {id:"b_wheat",   name:"🌾 Жатка",            res:"wheat",      costRes:"wheat",       costBase:150,  costMult:1.09, lvl:0, maxLvl:999, ep_req:2, addPerLvl:1},
+  {id:"b_barley",  name:"🌿 Вила",             res:"barley",     costRes:"barley",      costBase:130,  costMult:1.09, lvl:0, maxLvl:999, ep_req:2, addPerLvl:1},
+  {id:"b_charcoal",name:"🕳️ Міх",              res:"charcoal",   costRes:"charcoal",    costBase:100,  costMult:1.09, lvl:0, maxLvl:999, ep_req:1, addPerLvl:1},
+  // === ЕПОХА 3 — ремісничі ===
+  {id:"b_boards",  name:"🪵 Рубанок",          res:"boards",     costRes:"boards",      costBase:300,  costMult:1.10, lvl:0, maxLvl:999, ep_req:3, addPerLvl:2},
+  {id:"b_bricks",  name:"🧱 Кельня",           res:"bricks",     costRes:"bricks",      costBase:280,  costMult:1.10, lvl:0, maxLvl:999, ep_req:3, addPerLvl:2},
+  {id:"b_fiber",   name:"🧵 Прядка",           res:"fiber",      costRes:"fiber",       costBase:250,  costMult:1.10, lvl:0, maxLvl:999, ep_req:3, addPerLvl:2},
+  // === ЕПОХА 4 — ковальські ===
+  {id:"b_copper",  name:"🟤 Ливарна ложка",    res:"copper",     costRes:"copper",      costBase:500,  costMult:1.11, lvl:0, maxLvl:999, ep_req:4, addPerLvl:3},
+  {id:"b_bronze",  name:"🛡️ Молот коваля",     res:"bronze",     costRes:"bronze",      costBase:600,  costMult:1.11, lvl:0, maxLvl:999, ep_req:4, addPerLvl:3},
+  {id:"b_tools",   name:"⚒️ Верстак",          res:"tools",      costRes:"tools",       costBase:400,  costMult:1.11, lvl:0, maxLvl:999, ep_req:4, addPerLvl:3},
+  // === ЕПОХА 5 — залізо ===
+  {id:"b_iron",    name:"🔩 Залізний молот",   res:"iron",       costRes:"iron",        costBase:800,  costMult:1.12, lvl:0, maxLvl:999, ep_req:5, addPerLvl:4},
+  // === ЕПОХА 6 — середньовіччя ===
+  {id:"b_wine",    name:"🍷 Виноградний прес", res:"wine",       costRes:"wine",        costBase:1000, costMult:1.12, lvl:0, maxLvl:999, ep_req:6, addPerLvl:5},
+  {id:"b_beer",    name:"🍺 Пивний котел",     res:"beer",       costRes:"beer",        costBase:900,  costMult:1.12, lvl:0, maxLvl:999, ep_req:6, addPerLvl:5},
+  // === ЕПОХА 7-8 — промисловість ===
+  {id:"b_paper",   name:"📄 Друкарський стан", res:"paper",      costRes:"paper",       costBase:1500, costMult:1.13, lvl:0, maxLvl:999, ep_req:7, addPerLvl:8},
+  {id:"b_books",   name:"📚 Скриптор",         res:"books",      costRes:"books",       costBase:2000, costMult:1.13, lvl:0, maxLvl:999, ep_req:7, addPerLvl:8},
+  {id:"b_steel",   name:"⚙️ Парова машина",    res:"steel",      costRes:"steel",       costBase:3000, costMult:1.14, lvl:0, maxLvl:999, ep_req:8, addPerLvl:12},
+  {id:"b_coke",    name:"🔥 Коксова піч",      res:"coke",       costRes:"coke",        costBase:2500, costMult:1.13, lvl:0, maxLvl:999, ep_req:8, addPerLvl:10},
+  // === ЕПОХА 9-10 — хімія та енергія ===
+  {id:"b_oil",     name:"🛢️ Бурова вишка",     res:"oil",        costRes:"oil",         costBase:4000, costMult:1.14, lvl:0, maxLvl:999, ep_req:9, addPerLvl:15},
+  {id:"b_plastic", name:"🧪 Полімерна лінія",  res:"plastic",    costRes:"plastic",     costBase:4500, costMult:1.14, lvl:0, maxLvl:999, ep_req:9, addPerLvl:15},
+  {id:"b_elec",    name:"⚡ Електрогенератор", res:"electricity",costRes:"electricity", costBase:6000, costMult:1.15, lvl:0, maxLvl:999, ep_req:10,addPerLvl:20},
+  {id:"b_cable",   name:"🔌 Кабелеукладач",   res:"cable",      costRes:"cable",       costBase:5000, costMult:1.14, lvl:0, maxLvl:999, ep_req:10,addPerLvl:18},
+  // === ЕПОХА 11-12 — хайтек ===
+  {id:"b_silicon", name:"💎 Кристалізатор",   res:"silicon",    costRes:"silicon",     costBase:8000, costMult:1.16, lvl:0, maxLvl:999, ep_req:11,addPerLvl:25},
+  {id:"b_chips",   name:"🎛️ Мікрочіп-лінія",  res:"chips",      costRes:"chips",       costBase:12000,costMult:1.16, lvl:0, maxLvl:999, ep_req:11,addPerLvl:30},
+  {id:"b_robot",   name:"🤖 Роботизована рука",res:"robot",      costRes:"robot",       costBase:20000,costMult:1.18, lvl:0, maxLvl:999, ep_req:12,addPerLvl:50},
+  {id:"b_drone",   name:"🛸 Дрон-збирач",     res:"auto_drone", costRes:"auto_drone",  costBase:30000,costMult:1.18, lvl:0, maxLvl:999, ep_req:12,addPerLvl:80},
 ];
 
 // ============================================================
@@ -1948,17 +1982,22 @@ function maxBuyBaseResBuilding(id){
   else showToast("⚠️ Недостатньо ресурсів!");
 }
 
-// Вартість бусту залежить від рівня споруди і рідкісності ресурсу
+// Вартість бусту залежить від рівня споруди, рідкісності ресурсу та епохи
 function _boostCost(b){
   let ep=RES[b.res]?.ep||1;
   let lvl=Math.max(1,b.lvl);
-  // Базова вартість: сам ресурс що видобуває + камінь/деревина
-  let amt=Math.max(5, Math.floor(lvl*ep*2));
+  // Базова вартість: квадратично зростає з епохою
+  let epScale = Math.pow(2.5, ep-1); // ep1=1, ep2=2.5, ep3=6.25, ep6=95, ep10=9536...
+  let amt=Math.max(10, Math.floor(lvl*ep*5*epScale));
   let cost={};
   cost[b.res]=amt;
-  if(ep<=3) cost.stone=Math.floor(amt*0.5);
-  else if(ep<=6) cost.logs=Math.floor(amt*0.3);
-  else cost.iron=Math.floor(amt*0.2);
+  // Додатковий ресурс залежно від епохи
+  if(ep<=2)      { cost.stone=Math.floor(amt*0.8); }
+  else if(ep<=4) { cost.logs=Math.floor(amt*0.5); cost.stone=Math.floor(amt*0.3); }
+  else if(ep<=6) { cost.iron=Math.floor(amt*0.4); cost.logs=Math.floor(amt*0.2); }
+  else if(ep<=8) { cost.steel=Math.floor(amt*0.3); cost.iron=Math.floor(amt*0.2); }
+  else if(ep<=10){ cost.electricity=Math.floor(amt*0.25); cost.steel=Math.floor(amt*0.15); }
+  else           { cost.chips=Math.floor(amt*0.2); cost.electricity=Math.floor(amt*0.1); }
   return cost;
 }
 
@@ -2278,7 +2317,11 @@ function placeOnMap(building){
 // ACTIONS
 // ============================================================
 function getClickAmt(res){
-  let base=1+(BINDS.find(b=>b.res===res)?.lvl||0)+(BINDS.find(b=>b.res==="all")?.lvl||0)*2;
+  // Конкретний інструмент для цього ресурсу
+  let specific = BINDS.filter(b=>b.res===res&&(b.ep_req||1)<=epoch).reduce((s,b)=>s+b.lvl*(b.addPerLvl||1),0);
+  // Рюкзак та "all" бонуси
+  let allBonus = BINDS.filter(b=>b.res==='all'&&(b.ep_req||1)<=epoch).reduce((s,b)=>s+b.lvl*(b.addPerLvl||2),0);
+  let base = 1 + specific + allBonus;
   return Math.floor(base*clickMult);
 }
 
@@ -2556,6 +2599,13 @@ function advanceEpoch(){
   let d=EPOCH_DATA[epoch];
   if(!d||!EPOCH_DATA[epoch+1]) return;
   if((storage[d.req]||0)<d.amt) return;
+  // Перевірка мінімальної кількості споруд
+  let minBuilds = d.minBuilds || 0;
+  if(buildCount < minBuilds){
+    showToast(`⚠️ Потрібно щонайменше ${minBuilds} споруд! (є: ${buildCount})`);
+    addLog(`🏗 Для переходу до Епохи ${epoch+1} потрібно ${minBuilds} споруд (є: ${buildCount})`, true);
+    return;
+  }
   storage[d.req]-=d.amt;
   epoch++;
   tech+=10;
@@ -2839,9 +2889,16 @@ function renderUI(){
   let d=EPOCH_DATA[epoch],nx=EPOCH_DATA[epoch+1];
   if(d&&nx){
     let cur=storage[d.req]||0,pct=Math.min(100,(cur/d.amt)*100);
+    let minBuilds=d.minBuilds||0;
+    let buildsOk=buildCount>=minBuilds;
+    let resOk=cur>=d.amt;
+    // Колір прогрес-бару: жовтий якщо ресурс є, але не вистачає споруд
+    let barColor = resOk && !buildsOk ? 'linear-gradient(90deg,var(--orange),var(--gold))' : 'linear-gradient(90deg,var(--gold),var(--gold2))';
     document.getElementById('ep-bar').style.width=pct+'%';
-    document.getElementById('ep-label').textContent=`${fmt(cur)} / ${d.amt} ${RES[d.req]?.n||d.req}`;
-    document.getElementById('btn-evo').disabled=cur<d.amt;
+    document.getElementById('ep-bar').style.background=barColor;
+    let buildLabel = minBuilds>0 ? ` · 🏗${buildCount}/${minBuilds}` : '';
+    document.getElementById('ep-label').textContent=`${fmt(cur)}/${d.amt} ${RES[d.req]?.n||d.req}${buildLabel}`;
+    document.getElementById('btn-evo').disabled=!(resOk && buildsOk);
   } else {
     document.getElementById('ep-bar').style.width='100%';
     let b=document.getElementById('btn-evo');
@@ -2942,27 +2999,44 @@ function renderUI(){
     if(exchTab.dataset.needsRender==='1'){ exchTab.dataset.needsRender='0'; renderExchange(); }
   } else if(exchTab){ exchTab.dataset.needsRender='1'; }
 
-  // Binds
+  // Binds — показуємо тільки доступні для поточної епохи, групуємо
   let bDiv=document.getElementById('ui-binds');
   bDiv.innerHTML='';
+  // Групуємо по епохах
+  let bindsByEp = {};
   BINDS.forEach((b,idx)=>{
-    let cost=Math.floor(b.costBase*Math.pow(b.costMult,b.lvl));
-    let canBuy=b.lvl<b.maxLvl&&(storage[b.costRes]||0)>=cost;
-    let tipText=`${b.name}\nДодає +${b.addPerLvl} до ${b.res==='all'?'всіх ресурсів':RES[b.res]?.n||b.res} за кліком\nРівень: ${b.lvl}/${b.maxLvl}\nВартість: ${cost} ${RES[b.costRes]?.n}`;
-    bDiv.innerHTML+=`<div class="bind-card" title="${tipText}">
-      <div class="bind-left">
-        <div class="bind-name">${b.name}</div>
-        <div class="bind-stat">+${b.addPerLvl*b.lvl} до ${b.res==='all'?'ВСІХ':RES[b.res]?.n}</div>
-        <div class="bind-lvl">рів. ${b.lvl}/${b.maxLvl}</div>
-      </div>
-      <div style="display:flex;gap:3px;">
-        <button class="small-btn ${canBuy?'can':''}" onclick="buyBind(${idx})" ${b.lvl>=b.maxLvl||!canBuy?'disabled':''} title="${canBuy?`Купити рівень за ${cost} ${RES[b.costRes]?.n}`:'Недостатньо ресурсів'}">
-          ${b.lvl>=b.maxLvl?'MAX':`${cost}${RES[b.costRes]?.e||''}`}
-        </button>
-        ${b.lvl<b.maxLvl&&canBuy?`<button class="small-btn can" style="border-color:var(--gold);color:var(--gold);" onclick="maxBuyBind(${idx})" title="Вкласти максимум ресурсів">МАХ</button>`:''}
-      </div>
-    </div>`;
+    let ep = b.ep_req||1;
+    if(ep>epoch) return; // ще не доступний
+    if(!bindsByEp[ep]) bindsByEp[ep]=[];
+    bindsByEp[ep].push({b,idx});
   });
+  Object.keys(bindsByEp).sort((a,b)=>a-b).forEach(ep=>{
+    bDiv.innerHTML+=`<div style="font-size:10px;color:var(--gold);border-bottom:1px solid var(--border);padding-bottom:2px;margin:6px 0 4px;letter-spacing:1px;">ЕПОХА ${ep}</div>`;
+    bindsByEp[ep].forEach(({b,idx})=>{
+      let cost=Math.floor(b.costBase*Math.pow(b.costMult,b.lvl));
+      let canBuy=b.lvl<b.maxLvl&&(storage[b.costRes]||0)>=cost;
+      let bonus=b.addPerLvl*b.lvl;
+      let tipText=`${b.name}\n+${b.addPerLvl} до ${b.res==='all'?'всіх ресурсів':RES[b.res]?.n||b.res} за кліком\nРівень: ${b.lvl}/${b.maxLvl}\nВартість: ${cost} ${RES[b.costRes]?.n}`;
+      bDiv.innerHTML+=`<div class="bind-card" title="${tipText}" style="${b.lvl>0?'border-color:var(--teal)':''}">
+        <div class="bind-left">
+          <div class="bind-name">${b.name}</div>
+          <div class="bind-stat">+${bonus} до ${b.res==='all'?'ВСІХ':RES[b.res]?.n} (+${b.addPerLvl}/рів)</div>
+          <div class="bind-lvl">рів. ${b.lvl}/${b.maxLvl}</div>
+        </div>
+        <div style="display:flex;gap:3px;">
+          <button class="small-btn ${canBuy?'can':''}" onclick="buyBind(${idx})" ${b.lvl>=b.maxLvl||!canBuy?'disabled':''} title="${canBuy?`Купити рівень за ${cost} ${RES[b.costRes]?.n}`:'Недостатньо ресурсів'}">
+            ${b.lvl>=b.maxLvl?'MAX':`${cost}${RES[b.costRes]?.e||''}`}
+          </button>
+          ${b.lvl<b.maxLvl&&canBuy?`<button class="small-btn can" style="border-color:var(--gold);color:var(--gold);" onclick="maxBuyBind(${idx})" title="Вкласти максимум ресурсів">МАХ</button>`:''}
+        </div>
+      </div>`;
+    });
+  });
+  // Заблоковані — показуємо preview
+  let nextBindEp = Math.min(...Object.keys(BINDS.reduce((acc,b)=>{ if((b.ep_req||1)>epoch) acc[b.ep_req||1]=1; return acc; },{})).map(Number).filter(e=>!isNaN(e)));
+  if(isFinite(nextBindEp)){
+    bDiv.innerHTML+=`<div style="font-size:10px;color:var(--dim);border:1px solid var(--border);padding:5px 8px;margin-top:6px;">🔒 Нові інструменти відкриються в Епосі ${nextBindEp}</div>`;
+  }
 
   // Filters
   let fDiv=document.getElementById('ui-filters');
@@ -5344,47 +5418,67 @@ function renderResearchTab(){
 // ============================================================
 const RANDOM_EVENTS = [
   {id:'ore_vein',    icon:'⛏️', title:'Знайдено жилу руди!',
-   desc:'Мандрівники натрапили на багате родовище.',
-   type:'bonus', res:'iron', amt:()=>Math.floor(200+epoch*50)},
+   desc:'Мандрівники натрапили на велике родовище. Значний запас металів!',
+   type:'bonus', res:'iron', amt:()=>Math.floor(800+epoch*300)},
+  {id:'ancient_logs',icon:'🌲', title:'Стародавній ліс!',
+   desc:'Виявлено нетронутий ліс — тонни деревини чекають.',
+   type:'bonus', res:'wood', amt:()=>Math.floor(1000+epoch*400)},
   {id:'forest_fire', icon:'🔥', title:'Лісова пожежа!',
-   desc:'Вогонь знищив частину деревини.',
-   type:'penalty', res:'wood', pct:0.20},
-  {id:'trader',      icon:'🧑‍💼', title:'Мандрівний торговець',
-   desc:'Пропонує обмін: деревина → залізо.',
-   type:'trade', give:'wood', giveMult:3, get:'iron', getMult:1},
-  {id:'harvest',     icon:'🌾', title:'Багатий врожай!',
-   desc:'Поля дали подвійний урожай цього сезону.',
-   type:'bonus', res:'wheat', amt:()=>Math.floor(300+epoch*30)},
-  {id:'drought',     icon:'☀️', title:'Посуха!',
-   desc:'Спека знищила частину запасів води.',
-   type:'penalty', res:'water', pct:0.30},
-  {id:'earthquake',  icon:'🌍', title:'Землетрус!',
-   desc:'Тремтіння землі пошкодило камінь.',
-   type:'penalty', res:'stone', pct:0.15},
-  {id:'wanderer',    icon:'🧙', title:'Мандрівний маг!',
-   desc:'Маг пропонує тимчасове посилення кліків на 60с.',
-   type:'buff', buff:'click', dur:60, mult:2},
-  {id:'caravans',    icon:'🐪', title:'Торговий Шовковий шлях!',
-   desc:'Каравани везуть екзотичні товари.',
-   type:'bonus', res:'synth_energy', amt:()=>Math.floor(50+epoch*20)},
-  {id:'goblin_scout',icon:'👺', title:'Гоблінський розвідник!',
-   desc:'Розвідник вкрав частину ресурсів.',
-   type:'penalty', res:'logs', pct:0.10},
-  {id:'invention',   icon:'💡', title:'Несподіваний винахід!',
-   desc:'Винахідник поділився знаннями.',
-   type:'bonus', res:'synth_energy', amt:()=>Math.floor(100+epoch*30)},
+   desc:'Вогонь знищив значну частину деревини та рослинності.',
+   type:'penalty', res:'wood', pct:0.25},
+  {id:'trader',      icon:'🧑‍💼', title:'Великий торговий обоз',
+   desc:'Багатий купець пропонує вигідний обмін: деревина → залізо.',
+   type:'trade', give:'wood', giveMult:2, get:'iron', getMult:1},
+  {id:'harvest',     icon:'🌾', title:'Рекордний врожай!',
+   desc:'Неймовірно врожайний рік — сховища переповнені пшеницею.',
+   type:'bonus', res:'wheat', amt:()=>Math.floor(1200+epoch*200)},
+  {id:'drought',     icon:'☀️', title:'Жорстока посуха!',
+   desc:'Тривала спека знищила значну частину запасів води.',
+   type:'penalty', res:'water', pct:0.35},
+  {id:'earthquake',  icon:'🌍', title:'Сильний землетрус!',
+   desc:'Тремтіння землі зруйнувало частину кам\'яних запасів.',
+   type:'penalty', res:'stone', pct:0.20},
+  {id:'wanderer',    icon:'🧙', title:'Легендарний маг!',
+   desc:'Древній чарівник дарує потужне посилення кліків на 3 хвилини.',
+   type:'buff', buff:'click', dur:180, mult:3},
+  {id:'caravans',    icon:'🐪', title:'Великий Шовковий шлях!',
+   desc:'Цілий торговий рік пройшов через ваше місто — велика кількість Синтезу.',
+   type:'bonus', res:'synth_energy', amt:()=>Math.floor(500+epoch*150)},
+  {id:'goblin_raid', icon:'👺', title:'Гоблінський набіг!',
+   desc:'Ціла банда гоблінів вкрала значну частину колод.',
+   type:'penalty', res:'logs', pct:0.20},
+  {id:'invention',   icon:'💡', title:'Геніальний винахід!',
+   desc:'Місцевий винахідник відкрив щось революційне — Синтез льється рікою.',
+   type:'bonus', res:'synth_energy', amt:()=>Math.floor(800+epoch*250)},
+  {id:'stone_cache', icon:'⛰️', title:'Кам\'яний скарб!',
+   desc:'Під містом знайдено величезне підземне родовище каменю.',
+   type:'bonus', res:'stone', amt:()=>Math.floor(1000+epoch*350)},
+  {id:'synth_storm', icon:'🌀', title:'Синтез-буря!',
+   desc:'Магічна буря насичує все Синтезом — колосальний запас.',
+   type:'bonus', res:'synth_energy', amt:()=>Math.floor(2000+epoch*500)},
+  {id:'plague',      icon:'🦠', title:'Хвороба у місті!',
+   desc:'Епідемія знищила частину їжі та ресурсів. Жахлива втрата.',
+   type:'penalty', res:'wheat', pct:0.30},
+  {id:'prod_surge',  icon:'⚡', title:'Виробничий прорив!',
+   desc:'Всі споруди працюють на 150% — відчутний приріст ресурсів.',
+   type:'buff', buff:'prod', dur:120, mult:2},
 ];
 
 let _eventBuff = null; // {type, mult, endsAt}
 let _lastEventTime = 0;
 let _pendingEvent = null;
+// Мінімальний інтервал між подіями: 3-5 хвилин (180-300с)
+const EVENT_MIN_INTERVAL = 180000;  // 3 хв мінімум
+const EVENT_MAX_INTERVAL = 300000;  // 5 хв максимум
+let _nextEventDelay = EVENT_MIN_INTERVAL + Math.random()*(EVENT_MAX_INTERVAL-EVENT_MIN_INTERVAL);
 
 function _rollEvent(){
   let now = Date.now();
-  if(now - _lastEventTime < 90000) return; // мін. 90с між подіями
+  if(now - _lastEventTime < _nextEventDelay) return;
   if(_pendingEvent) return;
-  if(Math.random() > 0.3) return; // 30% шанс щосекунди після cooldown
+  // Гарантована подія після затримки (не рандомна 30%)
   _lastEventTime = now;
+  _nextEventDelay = EVENT_MIN_INTERVAL + Math.random()*(EVENT_MAX_INTERVAL-EVENT_MIN_INTERVAL);
   let ev = RANDOM_EVENTS[Math.floor(Math.random()*RANDOM_EVENTS.length)];
   _pendingEvent = ev;
   _showEventPopup(ev);
@@ -5477,11 +5571,19 @@ function _applyEvent(action){
     addLog(`${ev.icon} ${ev.title}: -${cost}${RES[ev.give]?.e} +${gain}${RES[ev.get]?.e}`, true);
   } else if(ev.type==='buff'){
     _eventBuff = {type:ev.buff, mult:ev.mult, endsAt:Date.now()+ev.dur*1000};
-    clickMult *= ev.mult;
-    addLog(`${ev.icon} ${ev.title}: ×${ev.mult} кліки на ${ev.dur}с!`, true);
-    setTimeout(()=>{
-      if(_eventBuff){ clickMult /= _eventBuff.mult; _eventBuff=null; addLog('⏱ Бонус кліків вичерпано'); }
-    }, ev.dur*1000);
+    if(ev.buff==='click'){
+      clickMult *= ev.mult;
+      addLog(`${ev.icon} ${ev.title}: ×${ev.mult} кліки на ${ev.dur}с!`, true);
+      setTimeout(()=>{
+        if(_eventBuff&&_eventBuff.type==='click'){ clickMult /= _eventBuff.mult; _eventBuff=null; addLog('⏱ Бонус кліків вичерпано'); }
+      }, ev.dur*1000);
+    } else if(ev.buff==='prod'){
+      prodMult *= ev.mult;
+      addLog(`${ev.icon} ${ev.title}: ×${ev.mult} виробництво на ${ev.dur}с!`, true);
+      setTimeout(()=>{
+        if(_eventBuff&&_eventBuff.type==='prod'){ prodMult /= _eventBuff.mult; _eventBuff=null; addLog('⏱ Виробничий бонус вичерпано'); }
+      }, ev.dur*1000);
+    }
   }
   markDirty('full');
 }
