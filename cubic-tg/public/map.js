@@ -14,6 +14,41 @@ const ISO = {
   BLDH: 42, // висота будівлі
 };
 
+// ============================================================
+// СПРАЙТИ БАЗОВИХ СПОРУД (PNG зображення замість процедурного малювання)
+// Ключ = resKey будівлі (id з BASE_RES_BUILDINGS), значення = шлях до файлу.
+// ============================================================
+const ISO_BUILDING_SPRITES = {
+  bw:  'sprites/bw.png',   // Лісозаготівля
+  bs:  'sprites/bs.png',   // Каменоломня
+  bwa: 'sprites/bwa.png',  // Колодязь
+  bc:  'sprites/bc.png',   // Глинище
+  bv:  'sprites/bv.png',   // Розплідник
+  bo:  'sprites/bo.png',   // Рудна яма
+  bl:  'sprites/bl.png',   // Лісопилка
+  bch: 'sprites/bch.png',  // Вугільник
+  bwh: 'sprites/bwh.png',  // Поле пшениці
+  bba: 'sprites/bba.png',  // Ячмінне поле
+  bcu: 'sprites/bcu.png',  // Мідний кар'єр
+  bir: 'sprites/bir.png',  // Залізна шахта
+  boi: 'sprites/boi.png',  // Нафтова вежа
+  bel: 'sprites/bel.png',  // Генератор
+  bsi: 'sprites/bsi.png',  // Кремнієва ферма
+};
+
+// Кеш завантажених Image-об'єктів
+const _isoSpriteCache = {};
+function getIsoSprite(key) {
+  if (!ISO_BUILDING_SPRITES[key]) return null;
+  let cached = _isoSpriteCache[key];
+  if (cached) return cached;
+  let img = new Image();
+  img.src = ISO_BUILDING_SPRITES[key];
+  img.onload = () => { _isoDirty = true; };
+  _isoSpriteCache[key] = img;
+  return img;
+}
+
 // --- СТАН КАМЕРИ ---
 let isoOffset = { x: 0, y: 0 };
 let isoDrag   = { active: false, sx: 0, sy: 0, ox: 0, oy: 0 };
@@ -211,6 +246,13 @@ function drawTerrainDetail(col, row, tile, x, y, T) {
 // ============================================================
 function drawIsoBuilding(col, row, bdata) {
   let { x, y } = isoToScreen(col, row);
+
+  // Якщо для цієї будівлі є готовий PNG-спрайт — малюємо його замість процедурної графіки
+  if (bdata.resKey && ISO_BUILDING_SPRITES[bdata.resKey]) {
+    drawIsoBuildingSprite(x, y, bdata);
+    return;
+  }
+
   let ep  = Math.min(bdata.epoch || 1, 12);
   let bc  = ISO_BLDCOL[ep] || ISO_BLDCOL[1];
   let lvl = bdata.lvl || 1;
@@ -242,7 +284,46 @@ function drawIsoBuilding(col, row, bdata) {
   drawStandardBuilding(x, y, bc, bw, bh, lvl, isAC, ep);
 }
 
-// --- СТАНДАРТНА БУДІВЛЯ ---
+// --- БУДІВЛЯ-СПРАЙТ (PNG) ---
+function drawIsoBuildingSprite(x, y, bdata) {
+  let img = getIsoSprite(bdata.resKey);
+  if (!img || !img.complete || !img.naturalWidth) return; // ще завантажується
+
+  let lvl  = bdata.lvl || 1;
+  let isAC = bdata.autoClicker;
+  let scale = 0.62 + Math.min(lvl - 1, 9) * 0.025;
+
+  // Масштабуємо так, щоб ширина спрайту приблизно відповідала ширині тайлу
+  let drawW = ISO.TW * 1.5 * scale;
+  let drawH = drawW * (img.naturalHeight / img.naturalWidth);
+
+  let dx = x - drawW / 2;
+  let dy = y + ISO.TH - drawH; // нижній край спрайту сідає на центр ромба тайлу
+
+  // Тінь під будівлею
+  isoCtx.fillStyle = 'rgba(0,0,0,0.3)';
+  isoCtx.beginPath();
+  isoCtx.ellipse(x, y + ISO.TH * 0.85, drawW * 0.32, ISO.TH * 0.22, 0, 0, Math.PI * 2);
+  isoCtx.fill();
+
+  if (isAC) {
+    isoCtx.shadowColor = 'rgba(0,229,255,0.7)';
+    isoCtx.shadowBlur  = 16;
+  }
+
+  isoCtx.drawImage(img, dx, dy, drawW, drawH);
+  isoCtx.shadowBlur = 0;
+
+  // Рівень
+  if (lvl > 1) {
+    isoCtx.fillStyle = isAC ? '#00e5ff' : '#e8b84b';
+    isoCtx.font = 'bold 8px monospace';
+    isoCtx.textAlign = 'center';
+    isoCtx.fillText('L' + lvl, x + drawW * 0.32, y + ISO.TH * 0.4 + 9);
+  }
+}
+
+
 function drawStandardBuilding(x, y, bc, bw, bh, lvl, isAC, ep) {
   let tw = ISO.TW, th = ISO.TH;
 
