@@ -5113,8 +5113,8 @@ function showPrestigeModal(){
   m.innerHTML = `<div style="background:var(--panel);border:2px solid var(--purple);padding:20px;max-width:340px;width:92vw;">
     <div style="font-family:var(--font2);font-size:10px;color:var(--purple);margin-bottom:10px;">✨ ПЕРЕРОДЖEННЯ #${prestigeCount+1}</div>
     <div style="font-size:11px;color:var(--dim);line-height:1.7;margin-bottom:12px;">
-      Скинеш: ресурси, споруди, технології, епоху.<br>
-      <span style="color:var(--red)">Назавжди залишаться:</span> ачівки, квести, авто-клікер, дослідження.<br>
+      Скинеш: ресурси, споруди, технології, автоклікер, дослідження, квести, ачівки, героїв, оборону.<br>
+      <span style="color:var(--green)">Назавжди залишається тільки: prestige-бонус до виробництва.</span><br>
       <span style="color:var(--green)">Нагорода: ${req.bonus} до виробництва.</span><br>
       Поточний престиж-бонус: ×${prestigeMult.toFixed(2)}
     </div>
@@ -5130,31 +5130,57 @@ function showPrestigeModal(){
   document.body.appendChild(m);
 }
 
+function _fullPrestigeReset(){
+  // Ресурси, споруди, технології, епоха
+  epoch = 1; tech = 0; buildCount = 0; totalClicks = 0;
+  Object.keys(storage).forEach(k => storage[k] = 0);
+  Object.keys(psCounters).forEach(k => psCounters[k] = 0);
+  Object.keys(BASE_RES_BUILDINGS).forEach(id => { BASE_RES_BUILDINGS[id].lvl = 0; BASE_RES_BUILDINGS[id].boost = 0; });
+  Object.values(buildings).forEach(b => { b.instances = []; b.mapTile = null; });
+  TECH_NODES.forEach(n => n.unlocked = false);
+  BINDS.forEach(b => b.lvl = 0);
+  // Автоклікер — повний скид
+  Object.values(AC_NODES).forEach(n => { n.unlocked = false; n.lvl = 0; });
+  acTotalRate = 0; acMult = 1; bacMult = 1;
+  // Дослідження — скид
+  RESEARCH_TREE.forEach(r => { r.lvl = 0; });
+  researchSynthIncome = 0;
+  // Наука (RESEARCH_DEFS якщо є)
+  if(typeof RESEARCH_DEFS !== 'undefined') { RESEARCH_DEFS.forEach(r => { r.lvl = 0; }); applyResearchEffects(); }
+  // Квести — скинути прогрес та виконання
+  QUESTS.forEach(q => { q.done = false; q.claimed = false; if(q._maxSeen) q._maxSeen = 0; });
+  questProgress = {};
+  // Ачівки — скинути
+  ACHIEVEMENTS.forEach(a => { a.unlocked = false; });
+  // Герої — скинути
+  Object.keys(heroRoster).forEach(id => { heroRoster[id] = {purchased:false, lvl:0, xp:0}; });
+  hero.class = null; hero.lvl = 0; hero.xp = 0; hero.xpNext = 100; hero.skillCd = 0; hero.skillActive = false;
+  // Оборона
+  Object.values(DEFENSE_STRUCTS).forEach(s => { s.count = 0; s.hp = s.hpMax; });
+  exchangeLevel = 0; techCostDiscount = 1; baseResMultiplier = 1;
+  goblinWave.waveNum = 0; goblinWave.totalWaves = 0; goblinWave.totalDefeated = 0;
+  goblinWave.cityHp = 1000; goblinWave.cityHpMax = 1000;
+  goblinWave.nextWaveIn = 360; goblinWave.active = false; goblinWave.goblins = [];
+  // Множники — скидаємо до базових (prestige бонус застосується після)
+  clickMult = 1; recalcDefenseStats();
+  generateMap(); resizeCanvas(); drawMap();
+}
+
 function doPrestige(){
   document.getElementById('prestige-modal')?.remove();
   let req = PRESTIGE_COSTS[Math.min(prestigeCount, PRESTIGE_COSTS.length-1)];
   prestigeMult += req.mult;
   prestigeCount++;
-  prodMult = 1 * prestigeMult;
 
-  // Скидаємо прогрес
-  epoch = 1; tech = 0; buildCount = 0;
-  Object.keys(storage).forEach(k => storage[k] = 0);
-  Object.keys(BASE_RES_BUILDINGS).forEach(id => { BASE_RES_BUILDINGS[id].lvl = 0; BASE_RES_BUILDINGS[id].boost = 0; });
-  Object.values(buildings).forEach(b => { b.instances = []; b.mapTile = null; });
-  TECH_NODES.forEach(n => n.unlocked = false);
-  RESEARCH_DEFS.forEach(r => { r.lvl = 0; });
-  applyResearchEffects();
-  BINDS.forEach(b => b.lvl = 0);
-  exchangeLevel = 0; techCostDiscount = 1;
-  goblinWave.waveNum = 0; goblinWave.totalWaves = 0;
-  goblinWave.cityHp = goblinWave.cityHpMax;
-  goblinWave.nextWaveIn = 90; goblinWave.active = false;
-  generateMap(); resizeCanvas(); drawMap();
+  _fullPrestigeReset();
+
+  // Застосовуємо prestige бонус
+  prodMult = 1 * prestigeMult;
 
   addLog(`✨ Переродження #${prestigeCount}! Бонус виробництва ×${prestigeMult.toFixed(2)}`, true);
   showToast(`✨ Переродження! +${Math.round(req.mult*100)}% назавжди!`);
   markDirty('full');
+  cloudSave();
 }
 
 // ============================================================
@@ -6061,8 +6087,8 @@ function confirmResetGame(){
       <div style="background:#0a1020;border:1px solid var(--purple);padding:12px;margin-bottom:10px;">
         <div style="font-size:12px;color:var(--purple);margin-bottom:5px;">✨ Скинути поточне переродження</div>
         <div style="font-size:11px;color:var(--dim);line-height:1.6;margin-bottom:10px;">
-          Скидає: ресурси, споруди, технології, епоху.<br>
-          <span style="color:var(--green)">Зберігає: ачівки, квести, дослідження, бонус ×${(typeof prestigeMult!=='undefined'?prestigeMult:1).toFixed(2)}</span>
+          Скидає: ресурси, споруди, технології, автоклікер, дослідження, квести, ачівки, героїв, оборону.<br>
+          <span style="color:var(--green)">Зберігає тільки: prestige-бонус ×${(typeof prestigeMult!=='undefined'?prestigeMult:1).toFixed(2)}</span>
         </div>
         <button id="reset-prestige-btn" onclick="doResetPrestigeOnly()" style="width:100%;font-family:var(--font);font-size:11px;padding:9px;border:1px solid var(--purple);background:rgba(155,114,207,0.1);color:var(--purple);cursor:pointer;touch-action:manipulation;">✨ СКИНУТИ ПЕРЕРОДЖЕННЯ</button>
       </div>
@@ -6090,7 +6116,7 @@ function doResetPrestigeOnly(){
   overlay2.innerHTML = `
     <div style="background:#0d1219;border:2px solid var(--purple);max-width:300px;width:92vw;padding:20px;text-align:center;">
       <div style="font-family:var(--font2);font-size:10px;color:var(--purple);margin-bottom:10px;">✨ СКИНУТИ ПЕРЕРОДЖЕННЯ?</div>
-      <div style="font-size:11px;color:var(--dim);margin-bottom:16px;line-height:1.6;">Ресурси, споруди, технології та епоха будуть скинуті. Ачівки, квести та бонус ×${(typeof prestigeMult!=='undefined'?prestigeMult:1).toFixed(2)} залишаться.</div>
+      <div style="font-size:11px;color:var(--dim);margin-bottom:16px;line-height:1.6;">Ресурси, споруди, технології, автоклікер, дослідження, квести, ачівки, герої та оборона будуть скинуті. Залишиться тільки prestige-бонус ×${(typeof prestigeMult!=='undefined'?prestigeMult:1).toFixed(2)}.</div>
       <div style="display:flex;gap:8px;">
         <button onclick="document.getElementById('reset-prestige-confirm').remove()" style="flex:1;font-family:var(--font);font-size:11px;padding:10px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;touch-action:manipulation;">❌ НІ</button>
         <button onclick="executeResetPrestige()" style="flex:1;font-family:var(--font);font-size:11px;padding:10px;border:1px solid var(--purple);background:rgba(155,114,207,0.15);color:var(--purple);cursor:pointer;touch-action:manipulation;">✅ ТАК</button>
@@ -6101,20 +6127,13 @@ function doResetPrestigeOnly(){
 
 function executeResetPrestige(){
   document.getElementById('reset-prestige-confirm')?.remove();
-  // Скидаємо як prestige, але без нагороди і без зміни prestigeMult
-  epoch = 1; tech = 0; buildCount = 0;
-  Object.keys(storage).forEach(k => storage[k] = 0);
-  Object.keys(BASE_RES_BUILDINGS).forEach(id => { BASE_RES_BUILDINGS[id].lvl = 0; BASE_RES_BUILDINGS[id].boost = 0; });
-  Object.values(buildings).forEach(b => { b.instances = []; b.mapTile = null; });
-  TECH_NODES.forEach(n => n.unlocked = false);
-  BINDS.forEach(b => b.lvl = 0);
-  exchangeLevel = 0; techCostDiscount = 1;
-  goblinWave.waveNum = 0; goblinWave.cityHp = goblinWave.cityHpMax;
-  goblinWave.nextWaveIn = 90; goblinWave.active = false;
-  generateMap(); resizeCanvas(); drawMap();
-  addLog('🔄 Переродження скинуто вручну. Бонуси збережено.', true);
+  _fullPrestigeReset();
+  // Застосовуємо prestige бонус
+  prodMult = 1 * prestigeMult;
+  addLog('🔄 Переродження скинуто вручну. Prestige-бонус збережено.', true);
   showToast('🔄 Переродження скинуто!');
   markDirty('full');
+  cloudSave();
 }
 
 function confirmFullReset(){
