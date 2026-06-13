@@ -2044,29 +2044,31 @@ let logLines = [];
 let toastTimer = null;
 
 // ============================================================
-// 2D TOP-DOWN MAP
+// 2D/ISO MAP — рендер та логіка у map.js
+// Тут лише спільні змінні, константи та логіка генерації
 // ============================================================
-const CELL = 36; // px per tile
+const CELL = 64; // сумісність зі старим кодом (не використовується для рендеру)
 const MAP_COLS = 28, MAP_ROWS = 20;
-let canvas, ctx;
+let canvas, ctx; // залишаємо для сумісності (map.js використовує isoEl/isoCtx)
 let mapTiles = [];
-let mapHover = {col:-1, row:-1};
-let mapOffset = {x:0, y:0};
-let mapDrag = {active:false, sx:0, sy:0, ox:0, oy:0};
+let mapHover  = { col: -1, row: -1 };  // оновлюється map.js
+let mapOffset = { x: 0, y: 0 };        // оновлюється map.js
+let mapDrag   = { active: false, sx: 0, sy: 0, ox: 0, oy: 0 }; // оновлюється map.js
+let _mapDirty = true;
 
-// Terrain types with colors
+// Terrain types — використовується generateMap()
 const TERRAIN = {
-  grass:  {base:'#2d5a1b', dark:'#1e3f10', accent:'#3a7023'},
-  forest: {base:'#1a4a10', dark:'#0f2e08', accent:'#245c14'},
-  dirt:   {base:'#7a5a30', dark:'#5a3f1a', accent:'#8a6a3a'},
-  stone:  {base:'#505560', dark:'#353840', accent:'#606870'},
-  water:  {base:'#1a4870', dark:'#0e2e50', accent:'#2060a0'},
-  sand:   {base:'#a08840', dark:'#705e25', accent:'#b09850'},
-  snow:   {base:'#ccd8e8', dark:'#8898b0', accent:'#e0eaf8'},
-  swamp:  {base:'#2a4530', dark:'#182a1c', accent:'#3a5a38'},
+  grass:  { base:'#2d5a1b', dark:'#1e3f10', accent:'#3a7023' },
+  forest: { base:'#1a4a10', dark:'#0f2e08', accent:'#245c14' },
+  dirt:   { base:'#7a5a30', dark:'#5a3f1a', accent:'#8a6a3a' },
+  stone:  { base:'#505560', dark:'#353840', accent:'#606870' },
+  water:  { base:'#1a4870', dark:'#0e2e50', accent:'#2060a0' },
+  sand:   { base:'#a08840', dark:'#705e25', accent:'#b09850' },
+  snow:   { base:'#ccd8e8', dark:'#8898b0', accent:'#e0eaf8' },
+  swamp:  { base:'#2a4530', dark:'#182a1c', accent:'#3a5a38' },
 };
 
-// Building visual colors per epoch
+// Building colors (для сумісності зі старим кодом, map.js має свою палітру)
 const BLDCOL = {
   1:{wall:'#8a6640',roof:'#6a4825',win:'#f0c060',smoke:false},
   2:{wall:'#6a8040',roof:'#485a20',win:'#d8e880',smoke:false},
@@ -2297,299 +2299,47 @@ function skipTutorial(){
 window.addEventListener('resize', ()=>{ resizeCanvas(); drawMap(); });
 }
 
+// ============================================================
+// MAP STUBS — рендер повністю у map.js
+// ============================================================
 function resizeCanvas(){
-  let area = document.querySelector('.map-area');
-  if(!area||!canvas) return;
-  // Отримуємо реальні розміри (навіть якщо display:none)
-  let w = area.offsetWidth || area.parentElement?.offsetWidth || window.innerWidth;
-  let h = area.offsetHeight || Math.floor(window.innerHeight * 0.6);
-  if(w < 10) w = window.innerWidth;
-  if(h < 10) h = Math.floor(window.innerHeight * 0.6);
-  canvas.width  = w;
-  canvas.height = h;
-  ctx = canvas.getContext('2d');
-  mapOffset.x = Math.max(0, Math.floor((canvas.width  - MAP_COLS*CELL)/2));
-  mapOffset.y = Math.max(0, Math.floor((canvas.height - MAP_ROWS*CELL)/2));
-  _mapDirty = true;
-}
-
-function screenToTile(sx,sy){
-  let col = Math.floor((sx - mapOffset.x) / CELL);
-  let row = Math.floor((sy - mapOffset.y) / CELL);
-  return {col, row};
-}
-
-function drawCell(c,r,tile){
-  let x = mapOffset.x + c*CELL;
-  let y = mapOffset.y + r*CELL;
-  let T = TERRAIN[tile.type] || TERRAIN.grass;
-  let isHov = (c===mapHover.col && r===mapHover.row);
-  let v = tile.variation||0;
-
-  // Base fill
-  ctx.fillStyle = isHov ? T.accent : T.base;
-  ctx.fillRect(x,y,CELL,CELL);
-
-  // Texture detail
-  if(tile.type==='grass'||tile.type==='forest'){
-    ctx.fillStyle = T.dark+'88';
-    // scattered dots
-    let dots=[[4,5],[12,9],[22,4],[8,20],[18,16],[28,8],[6,26],[24,22]];
-    dots.forEach(([dx,dy],i)=>{
-      if((v+i)%3===0) return;
-      ctx.fillRect(x+dx,y+dy,2,2);
-    });
-  } else if(tile.type==='water'){
-    // Wave lines
-    ctx.strokeStyle = T.accent+'66';
-    ctx.lineWidth=1;
-    for(let wi=0;wi<3;wi++){
-      ctx.beginPath();
-      ctx.moveTo(x+2, y+8+wi*10);
-      ctx.bezierCurveTo(x+10,y+4+wi*10, x+24,y+12+wi*10, x+CELL-2,y+8+wi*10);
-      ctx.stroke();
-    }
-  } else if(tile.type==='stone'||tile.type==='snow'){
-    ctx.fillStyle = T.accent+'55';
-    ctx.fillRect(x+4,y+4,6,6);
-    ctx.fillRect(x+18,y+20,8,5);
-    ctx.fillRect(x+10,y+14,5,8);
-  } else if(tile.type==='sand'){
-    ctx.fillStyle = T.dark+'44';
-    ctx.fillRect(x+8,y+8,3,3);
-    ctx.fillRect(x+20,y+15,3,3);
-    ctx.fillRect(x+14,y+25,3,3);
-  }
-
-  // Grid border
-  ctx.strokeStyle = isHov ? 'rgba(232,184,75,0.7)' : 'rgba(0,0,0,0.2)';
-  ctx.lineWidth = isHov ? 1.5 : 0.5;
-  ctx.strokeRect(x+.5, y+.5, CELL-1, CELL-1);
-
-  // Forest trees (small icons)
-  if(tile.type==='forest' && !tile.building){
-    ctx.fillStyle='#1a5c0a';
-    // simple triangle tree
-    ctx.beginPath();
-    ctx.moveTo(x+CELL/2, y+5);
-    ctx.lineTo(x+CELL/2+9, y+22);
-    ctx.lineTo(x+CELL/2-9, y+22);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle='#0e3806';
-    ctx.fillRect(x+CELL/2-2, y+22, 4, 6);
-  }
-}
-
-function drawBuilding2D(c,r,bdata){
-  let x = mapOffset.x + c*CELL;
-  let y = mapOffset.y + r*CELL;
-  let ep = bdata.epoch||1;
-  let bc = BLDCOL[ep]||BLDCOL[1];
-  let lvl = bdata.lvl||1;
-  let isAC = bdata.autoClicker;
-  let sz = Math.min(CELL-6, 20 + Math.min(lvl-1,5)*2); // grows with level
-  let bx = x + (CELL-sz)/2;
-  let by = y + (CELL-sz)/2;
-
-  // Shadow
-  ctx.fillStyle='rgba(0,0,0,0.25)';
-  ctx.fillRect(bx+3, by+3, sz, sz);
-
-  // Roof (top triangle area)
-  ctx.fillStyle = bc.roof;
-  ctx.beginPath();
-  ctx.moveTo(bx, by+sz*0.45);
-  ctx.lineTo(bx+sz/2, by);
-  ctx.lineTo(bx+sz, by+sz*0.45);
-  ctx.closePath(); ctx.fill();
-
-  // Wall
-  ctx.fillStyle = bc.wall;
-  ctx.fillRect(bx, by+sz*0.4, sz, sz*0.6);
-
-  // Door
-  ctx.fillStyle='rgba(0,0,0,0.5)';
-  ctx.fillRect(bx+sz*0.4, by+sz*0.75, sz*0.2, sz*0.25);
-
-  // Windows
-  ctx.fillStyle = isAC ? '#00e5ff' : bc.win;
-  if(ep>=3){
-    ctx.fillRect(bx+sz*0.1, by+sz*0.5, sz*0.2, sz*0.15);
-    ctx.fillRect(bx+sz*0.7, by+sz*0.5, sz*0.2, sz*0.15);
-  }
-
-  // AC glow
-  if(isAC){
-    ctx.shadowColor='rgba(0,229,255,0.8)';
-    ctx.shadowBlur=10;
-    ctx.strokeStyle='rgba(0,229,255,0.7)';
-    ctx.lineWidth=1.5;
-    ctx.strokeRect(bx,by,sz,sz);
-    ctx.shadowBlur=0;
-  }
-
-  // Level badge
-  if(lvl>1){
-    ctx.fillStyle=isAC?'#00e5ff':'#e8b84b';
-    ctx.font='bold 9px monospace';
-    ctx.textAlign='center';
-    ctx.fillText('L'+lvl, x+CELL-8, y+CELL-3);
-  }
-
-  // Smoke (for industrial buildings)
-  if(bc.smoke && lvl>0){
-    let t=Date.now()/1200;
-    for(let s=0;s<2;s++){
-      let alpha=0.3+0.2*Math.sin(t+s*2);
-      ctx.fillStyle=`rgba(150,150,150,${alpha})`;
-      ctx.beginPath();
-      let sx2=bx+sz*0.3+s*sz*0.25;
-      let sy2=by-3-Math.abs(Math.sin(t+s))*4;
-      ctx.arc(sx2, sy2, 3+s, 0, Math.PI*2);
-      ctx.fill();
-    }
-  }
-}
-
-function drawMap(){
-  if(!ctx||!canvas||!canvas.width) return;
-  // Background
-  ctx.fillStyle='#080c10';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-
-  // Tiles
-  for(let r=0;r<MAP_ROWS;r++){
-    for(let c=0;c<MAP_COLS;c++){
-      drawCell(c,r,mapTiles[r][c]);
-    }
-  }
-  // Buildings on top
-  for(let r=0;r<MAP_ROWS;r++){
-    for(let c=0;c<MAP_COLS;c++){
-      if(mapTiles[r][c].building){
-        drawBuilding2D(c,r,mapTiles[r][c].building);
-      }
-    }
-  }
-
-  // Map legend overlay
-  ctx.fillStyle='rgba(7,10,15,0.75)';
-  ctx.fillRect(mapOffset.x, mapOffset.y+MAP_ROWS*CELL+2, MAP_COLS*CELL, 18);
-
-  // Draw goblin wave indicators on map edge
-  if(goblinWave.active && goblinWave.goblins.length > 0){
-    let t = Date.now()/400;
-    let maxShow = Math.min(goblinWave.goblins.length, 8);
-    for(let gi=0;gi<maxShow;gi++){
-      let g = goblinWave.goblins[gi];
-      let gx = mapOffset.x + MAP_COLS*CELL - 20 + Math.sin(t+gi)*5;
-      let gy = mapOffset.y + 30 + gi * 28 + Math.cos(t*1.2+gi)*4;
-      // Goblin body
-      ctx.fillStyle = g.color || '#c0392b';
-      ctx.beginPath();
-      ctx.arc(gx, gy, 10, 0, Math.PI*2);
-      ctx.fill();
-      // Eyes
-      ctx.fillStyle='#ffff00';
-      ctx.beginPath(); ctx.arc(gx-4, gy-3, 2.5, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(gx+4, gy-3, 2.5, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle='#000';
-      ctx.beginPath(); ctx.arc(gx-4, gy-3, 1, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(gx+4, gy-3, 1, 0, Math.PI*2); ctx.fill();
-      // HP bar
-      let hpPct = g.hp/g.maxHp;
-      ctx.fillStyle='#300';
-      ctx.fillRect(gx-12, gy+13, 24, 3);
-      ctx.fillStyle=hpPct>0.5?'#0f0':hpPct>0.25?'#f80':'#f00';
-      ctx.fillRect(gx-12, gy+13, Math.floor(24*hpPct), 3);
-    }
-    // Attack arrow
-    ctx.fillStyle='rgba(200,50,50,0.6)';
-    ctx.beginPath();
-    ctx.moveTo(mapOffset.x+MAP_COLS*CELL-35, mapOffset.y+MAP_ROWS*CELL/2);
-    ctx.lineTo(mapOffset.x+MAP_COLS*CELL-10, mapOffset.y+MAP_ROWS*CELL/2-15);
-    ctx.lineTo(mapOffset.x+MAP_COLS*CELL-10, mapOffset.y+MAP_ROWS*CELL/2+15);
-    ctx.closePath(); ctx.fill();
-  } else if(!goblinWave.active && goblinWave.nextWaveIn > 0){
-    // Show countdown on map
-    let alpha = goblinWave.nextWaveIn <= 15 ? 0.7 + Math.sin(Date.now()/300)*0.3 : 0.4;
-    ctx.fillStyle=`rgba(180,60,60,${alpha})`;
-    ctx.font='bold 11px Share Tech Mono,monospace';
-    ctx.textAlign='right';
-    ctx.fillText(`⚔ хвиля через ${goblinWave.nextWaveIn}с`, mapOffset.x+MAP_COLS*CELL-5, mapOffset.y+15);
-    ctx.textAlign='left';
-  }
-
-  ctx.fillStyle='#5a6880';
-  ctx.font='9px Share Tech Mono,monospace';
-  ctx.textAlign='left';
-  const legend=[
-    {c:'#2d5a1b',l:'Луки'},
-    {c:'#1a4a10',l:'Ліс'},
-    {c:'#1a4870',l:'Вода'},
-    {c:'#505560',l:'Скеля'},
-    {c:'#a08840',l:'Пісок'},
-  ];
-  legend.forEach((item,i)=>{
-    ctx.fillStyle=item.c;
-    ctx.fillRect(mapOffset.x+5+i*70, mapOffset.y+MAP_ROWS*CELL+6, 8, 8);
-    ctx.fillStyle='#5a6880';
-    ctx.fillText(item.l, mapOffset.x+16+i*70, mapOffset.y+MAP_ROWS*CELL+14);
-  });
-}
-
-function onMapMouseDown(e){
-  // Left click drag to pan
-  mapDrag={active:true,sx:e.clientX,sy:e.clientY,ox:mapOffset.x,oy:mapOffset.y};
-}
-function onMapMouseUp(e){ mapDrag.active=false; }
-
-function onMapMouse(e){
-  let rect=canvas.getBoundingClientRect();
-  let mx=e.clientX-rect.left, my=e.clientY-rect.top;
-
-  if(mapDrag.active){
-    mapOffset.x=(mapDrag.ox+(e.clientX-mapDrag.sx))|0;
-    mapOffset.y=(mapDrag.oy+(e.clientY-mapDrag.sy))|0;
-    _mapDirty=true; return;
-  }
-
-  let {col,row}=screenToTile(mx,my);
-  mapHover={col,row};
-  let tip=document.getElementById('map-tooltip');
-  if(col>=0&&col<MAP_COLS&&row>=0&&row<MAP_ROWS){
-    let tile=mapTiles[row][col];
-    let tname=(TERRAIN[tile.type]||{}).label||tile.type;
-    tip.style.display='block';
-    tip.style.left=(mx+12)+'px';
-    tip.style.top=(my+12)+'px';
-    if(tile.building){
-      let b=tile.building;
-      tip.innerHTML=`<b style="color:var(--gold)">${b.name}</b><br>🏗 Рів.${b.lvl||1} · Еп.${b.epoch}${b.autoClicker?'<br><span style="color:var(--synth)">🤖 Автоклікер</span>':''}`;
-    } else {
-      let tLabel={grass:'🌿 Луки',forest:'🌲 Ліс',water:'💧 Вода',stone:'⛰ Скеля',sand:'🌾 Пісок',dirt:'🪨 Каміння',snow:'❄ Сніг',swamp:'🌿 Болото'}[tile.type]||tile.type;
-      tip.innerHTML=`<span style="color:var(--dim)">${tLabel} [${col},${row}]</span>`;
-    }
-  } else {
-    tip.style.display='none';
+  if(typeof isoEl!=='undefined'&&isoEl){
+    let area=document.querySelector('.map-area');
+    let w=area?area.offsetWidth:window.innerWidth;
+    let h=area?area.offsetHeight:Math.floor(window.innerHeight*0.55);
+    if(w<10) w=window.innerWidth;
+    if(h<10) h=Math.floor(window.innerHeight*0.55);
+    isoEl.width=w; isoEl.height=h;
+    isoCtx=isoEl.getContext('2d');
+    if(typeof centerIsoMap==='function') centerIsoMap();
   }
   _mapDirty=true;
 }
-
+function screenToTile(sx,sy){
+  if(typeof screenToIso==='function') return screenToIso(sx,sy);
+  return {col:Math.floor(sx/64),row:Math.floor(sy/32)};
+}
+function drawCell(){}
+function drawBuilding2D(){}
+function drawMap(){ if(typeof _isoDirty!=='undefined') _isoDirty=true; }
+function onMapMouseDown(e){ if(typeof isoDrag!=='undefined') isoDrag={active:true,sx:e.clientX,sy:e.clientY,ox:isoOffset.x,oy:isoOffset.y}; }
+function onMapMouseUp()   { if(typeof isoDrag!=='undefined') isoDrag.active=false; }
+function onMapMouse(e){}
 function onMapClick(e){}
-
 function placeOnMap(building){
   for(let r=1;r<MAP_ROWS-1;r++){
     for(let c=1;c<MAP_COLS-1;c++){
       let t=mapTiles[r][c];
       if(!t.building&&t.type!=='water'){
         t.building={epoch:building.epoch,name:building.name,autoClicker:false,lvl:1};
+        if(typeof _isoDirty!=='undefined') _isoDirty=true;
         return {r,c};
       }
     }
   }
   return null;
 }
+
 
 // ============================================================
 // ACTIONS
@@ -3077,13 +2827,21 @@ setInterval(()=>{
 
 let _mapDirty=true;
 let _lastHover={col:-1,row:-1};
-setInterval(()=>{
-  if(_mapDirty||mapHover.col!==_lastHover.col||mapHover.row!==_lastHover.row){
-    drawMap();
+
+// RAF-цикл для ізометричної мапи (map.js)
+(function isoLoop(){
+  requestAnimationFrame(isoLoop);
+  // Перевіряємо чи є зміни (dirty flag або hover)
+  let hoverChanged = (typeof isoHover!=='undefined') &&
+    (isoHover.col!==_lastHover.col || isoHover.row!==_lastHover.row);
+  let dirty = (typeof _isoDirty!=='undefined') ? _isoDirty : _mapDirty;
+  if(dirty || hoverChanged){
+    if(typeof drawMap==='function') drawMap();   // stub → map.js::drawMap()
     _mapDirty=false;
-    _lastHover={col:mapHover.col,row:mapHover.row};
+    if(typeof _isoDirty!=='undefined') _isoDirty=false;
+    if(typeof isoHover!=='undefined') _lastHover={col:isoHover.col,row:isoHover.row};
   }
-},100);
+})();
 
 // ============================================================
 // LOG & TOAST
@@ -6405,5 +6163,7 @@ window.addEventListener('resize', () => {
 initMobNav();
 initTutorial();
 </script>
+<!-- ═══ ІЗОМЕТРИЧНА МАПА — окремий файл ═══ -->
+<script src="map.js"></script>
 </body>
 </html>
