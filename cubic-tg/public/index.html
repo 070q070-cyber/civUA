@@ -1978,7 +1978,10 @@ function maxBuyBaseResBuilding(id){
     b.lvl++; leveled++;
     addPoints(50*b.ep_req, 'builds');
   }
-  if(leveled>0){ addLog(`⚒⚒ МАХ ${b.name} → рів.${b.lvl} (+${leveled})`,true); markDirty("full"); }
+  if(leveled>0){
+    syncBaseResMapTile(id,b);
+    addLog(`⚒⚒ МАХ ${b.name} → рів.${b.lvl} (+${leveled})`,true); markDirty("full");
+  }
   else showToast("⚠️ Недостатньо ресурсів!");
 }
 
@@ -2019,6 +2022,48 @@ function activateBoost(id){
   markDirty('bld');
 }
 
+function syncAllBuildingsToMap(){
+  if (typeof mapTiles === 'undefined' || !mapTiles.length) return;
+  // Базові споруди видобутку сировини
+  Object.entries(BASE_RES_BUILDINGS).forEach(([k, b]) => {
+    if (b.lvl > 0) placeBaseResOnMap(k, b);
+  });
+  // Звичайні споруди (buildings)
+  if (typeof buildings !== 'undefined') {
+    Object.entries(buildings).forEach(([id, b]) => {
+      (b.instances || []).forEach(inst => {
+        let tile = placeOnMap(b);
+        if (tile) { inst.tileR = tile.r; inst.tileC = tile.c; }
+      });
+    });
+  }
+  if (typeof _isoDirty !== 'undefined') _isoDirty = true;
+}
+
+function placeBaseResOnMap(id, b){
+  for(let r=1;r<MAP_ROWS-1;r++){
+    for(let c=1;c<MAP_COLS-1;c++){
+      let t=mapTiles[r][c];
+      if(!t.building&&t.type!=='water'){
+        t.building={epoch:b.ep_req, name:b.name, resKey:id, autoClicker:false, lvl:b.lvl};
+        b.tileR=r; b.tileC=c;
+        if(typeof _isoDirty!=='undefined') _isoDirty=true;
+        return {r,c};
+      }
+    }
+  }
+  return null;
+}
+
+function syncBaseResMapTile(id, b){
+  if(b.tileR==null||b.tileC==null) return;
+  let t = mapTiles[b.tileR] && mapTiles[b.tileR][b.tileC];
+  if(t && t.building && t.building.resKey===id){
+    t.building.lvl = b.lvl;
+    if(typeof _isoDirty!=='undefined') _isoDirty=true;
+  }
+}
+
 function buyBaseResBuilding(id){
   let b=BASE_RES_BUILDINGS[id];
   if(!b||epoch<b.ep_req) return;
@@ -2028,7 +2073,10 @@ function buyBaseResBuilding(id){
   let canAfford=Object.keys(cost).every(k=>(storage[k]||0)>=cost[k]);
   if(!canAfford) return;
   Object.keys(cost).forEach(k=>storage[k]-=cost[k]);
+  let wasZero = b.lvl===0;
   b.lvl++;
+  if(wasZero) placeBaseResOnMap(id,b);
+  else syncBaseResMapTile(id,b);
   addPoints(50*b.ep_req, 'builds');
   addLog(`⚒ ${b.name} → рів.${b.lvl}`);
   markDirty("full");
@@ -4684,7 +4732,7 @@ function serializeGameState() {
     binds: BINDS.map(b => ({ lvl: b.lvl })),
     // BASE_RES_BUILDINGS
     baseResBuildings: Object.fromEntries(
-      Object.entries(BASE_RES_BUILDINGS).map(([k, v]) => [k, { lvl: v.lvl, cap: v.cap||'all', boost: v.boost||0 }])
+      Object.entries(BASE_RES_BUILDINGS).map(([k, v]) => [k, { lvl: v.lvl, cap: v.cap||'all', boost: v.boost||0, tileR: v.tileR, tileC: v.tileC }])
     ),
     // Buildings instances
     buildings: Object.fromEntries(
@@ -6293,6 +6341,6 @@ initTutorial();
 </script>
 <!-- ═══ ІЗОМЕТРИЧНА МАПА — окремий файл ═══ -->
 <script src="map.js"></script>
-<script>initMap();</script>
+<script>initMap(); syncAllBuildingsToMap();</script>
 </body>
 </html>
