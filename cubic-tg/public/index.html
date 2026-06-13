@@ -923,6 +923,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   <div class="header-actions">
     <button id="lb-btn" onclick="openLeaderboard()" title="Рейтинг гравців" style="font-family:var(--font);font-size:13px;background:transparent;border:1px solid var(--border);color:var(--dim);padding:4px 6px;cursor:pointer;transition:all .15s;white-space:nowrap;">🏆</button>
     <button onclick="showPrestigeModal()" style="font-family:var(--font2);font-size:7px;background:transparent;border:1px solid var(--purple);color:var(--purple);padding:5px 8px;cursor:pointer;touch-action:manipulation;white-space:nowrap;" title="Переродження">✨</button>
+    <button onclick="confirmResetGame()" style="font-family:var(--font2);font-size:7px;background:transparent;border:1px solid var(--red);color:var(--red);padding:5px 8px;cursor:pointer;touch-action:manipulation;white-space:nowrap;-webkit-tap-highlight-color:transparent;" title="Почати з початку">🔄</button>
     <div class="hstats">
       <div class="hstat">🔬<span id="hs-tech">0</span></div>
       <div class="hstat">🏗<span id="hs-bld">0</span></div>
@@ -6048,27 +6049,102 @@ function initMobNav() {
 // RESET GAME
 // ============================================================
 function confirmResetGame(){
+  // Показуємо вибір: скинути переродження або всю гру
   let overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;';
+  overlay.id = 'reset-choice-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;';
   overlay.innerHTML = `
-    <div style="background:#0d1219;border:2px solid var(--red);max-width:300px;width:90vw;padding:20px;text-align:center;">
-      <div style="font-family:var(--font2);font-size:11px;color:var(--red);margin-bottom:12px;">⚠️ СКИНУТИ ГРУ?</div>
-      <div style="font-size:12px;color:var(--dim);margin-bottom:16px;line-height:1.6;">Весь прогрес буде видалено назавжди. Ресурси, споруди, технології — все зникне.</div>
-      <div style="display:flex;gap:8px;">
-        <button onclick="this.closest('div[style]').remove()" style="flex:1;font-family:var(--font);font-size:12px;padding:10px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;">❌ СКАСУВАТИ</button>
-        <button onclick="doResetGame()" style="flex:1;font-family:var(--font);font-size:12px;padding:10px;border:1px solid var(--red);background:rgba(180,40,40,0.15);color:var(--red);cursor:pointer;font-weight:bold;">🔄 ТАК, СКИНУТИ</button>
+    <div style="background:#0d1219;border:2px solid var(--gold);max-width:320px;width:92vw;padding:20px;">
+      <div style="font-family:var(--font2);font-size:10px;color:var(--gold);margin-bottom:10px;text-align:center;">🔄 ПОЧАТИ З ПОЧАТКУ</div>
+      <div style="font-size:11px;color:var(--dim);margin-bottom:16px;line-height:1.7;text-align:center;">Оберіть, що саме скинути:</div>
+
+      <div style="background:#0a1020;border:1px solid var(--purple);padding:12px;margin-bottom:10px;">
+        <div style="font-size:12px;color:var(--purple);margin-bottom:5px;">✨ Скинути поточне переродження</div>
+        <div style="font-size:11px;color:var(--dim);line-height:1.6;margin-bottom:10px;">
+          Скидає: ресурси, споруди, технології, епоху.<br>
+          <span style="color:var(--green)">Зберігає: ачівки, квести, дослідження, бонус ×${(typeof prestigeMult!=='undefined'?prestigeMult:1).toFixed(2)}</span>
+        </div>
+        <button id="reset-prestige-btn" onclick="doResetPrestigeOnly()" style="width:100%;font-family:var(--font);font-size:11px;padding:9px;border:1px solid var(--purple);background:rgba(155,114,207,0.1);color:var(--purple);cursor:pointer;touch-action:manipulation;">✨ СКИНУТИ ПЕРЕРОДЖЕННЯ</button>
       </div>
+
+      <div style="background:#0a1010;border:1px solid var(--red);padding:12px;margin-bottom:14px;">
+        <div style="font-size:12px;color:var(--red);margin-bottom:5px;">💀 Скинути всю гру</div>
+        <div style="font-size:11px;color:var(--dim);line-height:1.6;margin-bottom:10px;">
+          Видаляє абсолютно всё: ресурси, споруди, технології, ачівки, квести, переродження, дослідження.<br>
+          <span style="color:var(--red)">Дія незворотна!</span>
+        </div>
+        <button id="reset-full-btn" onclick="confirmFullReset()" style="width:100%;font-family:var(--font);font-size:11px;padding:9px;border:1px solid var(--red);background:rgba(180,40,40,0.1);color:var(--red);cursor:pointer;touch-action:manipulation;">💀 СКИНУТИ ВСЕ</button>
+      </div>
+
+      <button onclick="document.getElementById('reset-choice-overlay').remove()" style="width:100%;font-family:var(--font);font-size:11px;padding:9px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;touch-action:manipulation;">❌ СКАСУВАТИ</button>
     </div>`;
   document.body.appendChild(overlay);
 }
 
+function doResetPrestigeOnly(){
+  document.getElementById('reset-choice-overlay')?.remove();
+  // Підтвердження
+  let overlay2 = document.createElement('div');
+  overlay2.id = 'reset-prestige-confirm';
+  overlay2.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;';
+  overlay2.innerHTML = `
+    <div style="background:#0d1219;border:2px solid var(--purple);max-width:300px;width:92vw;padding:20px;text-align:center;">
+      <div style="font-family:var(--font2);font-size:10px;color:var(--purple);margin-bottom:10px;">✨ СКИНУТИ ПЕРЕРОДЖЕННЯ?</div>
+      <div style="font-size:11px;color:var(--dim);margin-bottom:16px;line-height:1.6;">Ресурси, споруди, технології та епоха будуть скинуті. Ачівки, квести та бонус ×${(typeof prestigeMult!=='undefined'?prestigeMult:1).toFixed(2)} залишаться.</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="document.getElementById('reset-prestige-confirm').remove()" style="flex:1;font-family:var(--font);font-size:11px;padding:10px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;touch-action:manipulation;">❌ НІ</button>
+        <button onclick="executeResetPrestige()" style="flex:1;font-family:var(--font);font-size:11px;padding:10px;border:1px solid var(--purple);background:rgba(155,114,207,0.15);color:var(--purple);cursor:pointer;touch-action:manipulation;">✅ ТАК</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay2);
+}
+
+function executeResetPrestige(){
+  document.getElementById('reset-prestige-confirm')?.remove();
+  // Скидаємо як prestige, але без нагороди і без зміни prestigeMult
+  epoch = 1; tech = 0; buildCount = 0;
+  Object.keys(storage).forEach(k => storage[k] = 0);
+  Object.keys(BASE_RES_BUILDINGS).forEach(id => { BASE_RES_BUILDINGS[id].lvl = 0; BASE_RES_BUILDINGS[id].boost = 0; });
+  Object.values(buildings).forEach(b => { b.instances = []; b.mapTile = null; });
+  TECH_NODES.forEach(n => n.unlocked = false);
+  BINDS.forEach(b => b.lvl = 0);
+  exchangeLevel = 0; techCostDiscount = 1;
+  goblinWave.waveNum = 0; goblinWave.cityHp = goblinWave.cityHpMax;
+  goblinWave.nextWaveIn = 90; goblinWave.active = false;
+  generateMap(); resizeCanvas(); drawMap();
+  addLog('🔄 Переродження скинуто вручну. Бонуси збережено.', true);
+  showToast('🔄 Переродження скинуто!');
+  markDirty('full');
+}
+
+function confirmFullReset(){
+  document.getElementById('reset-choice-overlay')?.remove();
+  let overlay3 = document.createElement('div');
+  overlay3.id = 'reset-full-confirm';
+  overlay3.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;';
+  overlay3.innerHTML = `
+    <div style="background:#0d1219;border:2px solid var(--red);max-width:300px;width:92vw;padding:20px;text-align:center;">
+      <div style="font-family:var(--font2);font-size:10px;color:var(--red);margin-bottom:10px;">⚠️ СКИНУТИ ВСЕ?</div>
+      <div style="font-size:11px;color:var(--dim);margin-bottom:16px;line-height:1.6;"><span style="color:var(--red)">Весь прогрес буде видалено назавжди.</span> Ресурси, споруди, технології, ачівки, квести, переродження — все зникне без можливості відновлення.</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="document.getElementById('reset-full-confirm').remove()" style="flex:1;font-family:var(--font);font-size:11px;padding:10px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;touch-action:manipulation;">❌ НІ</button>
+        <button onclick="doResetGame()" style="flex:1;font-family:var(--font);font-size:11px;padding:10px;border:1px solid var(--red);background:rgba(180,40,40,0.15);color:var(--red);cursor:pointer;font-weight:bold;touch-action:manipulation;">💀 ТАК, СКИНУТИ ВСЕ</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay3);
+}
+
 function doResetGame(){
+  document.getElementById('reset-full-confirm')?.remove();
   // Clear sessionStorage so tutorial shows again
   sessionStorage.removeItem('tut_done');
   // Clear localStorage saves
-  localStorage.removeItem('cubic_save');
-  localStorage.removeItem('cubic_save_backup');
-  localStorage.removeItem('cubic_save_ts');
+  try {
+    localStorage.removeItem('cubic_save');
+    localStorage.removeItem('cubic_save_backup');
+    localStorage.removeItem('cubic_save_ts');
+    localStorage.removeItem('cubic_last_online');
+  } catch(e){}
   // Clear server save
   if(IS_TG && TG_USER){
     fetch(API_BASE+'/api/save',{
