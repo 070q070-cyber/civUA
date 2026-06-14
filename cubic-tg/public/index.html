@@ -1234,49 +1234,65 @@ const AC_NODES = {
   // === BRANCH C — Speed ===
   spd_c1: {
     id:"spd_c1", name:"Пружина", icon:"🌀",
-    desc:"Прискорює частоту кліків автокліком.",
+    desc:"Прискорює частоту кліків автокліком. Скорочує тривалість бустів героїв.",
     branch:"speed",
-    unlockCostRes:"clay", unlockCostAmt:20,
+    unlockCostRes:"iron", unlockCostAmt:25,
     canLevel:true, lvl:0, maxLvl:999,
-    lvlCostBase:15, lvlCostRes:"clay", lvlCostMult:1.05,
+    lvlCostBase:15, lvlCostRes:"iron", lvlCostMult:1.05,
     speedPerLvl:0.5,
-    ep_req:1, prereq:"root", unlocked:false,
+    boostDurPerLvl:0.01, // -1% до тривалості бустів за рівень
+    ep_req:5, prereq:"root", unlocked:false,
     canTargetBuildings:false
   },
   spd_c2: {
     id:"spd_c2", name:"Шестерня", icon:"⚙️",
-    desc:"Механічне прискорення темпу кліків.",
+    desc:"Механічне прискорення темпу кліків. Скорочує тривалість бустів героїв.",
     branch:"speed",
     unlockCostRes:"bronze", unlockCostAmt:35,
     canLevel:true, lvl:0, maxLvl:999,
     lvlCostBase:35, lvlCostRes:"copper", lvlCostMult:1.06,
     speedPerLvl:2,
-    ep_req:4, prereq:"spd_c1", unlocked:false,
+    boostDurPerLvl:0.015,
+    ep_req:5, prereq:"spd_c1", unlocked:false,
     canTargetBuildings:false
   },
   spd_c3: {
     id:"spd_c3", name:"Турбіна", icon:"💨",
-    desc:"Турбінна швидкість: масова автоматизація.",
+    desc:"Турбінна швидкість: масова автоматизація. Скорочує тривалість бустів героїв.",
     branch:"speed",
     unlockCostRes:"steel", unlockCostAmt:70,
     canLevel:true, lvl:0, maxLvl:999,
     lvlCostBase:120, lvlCostRes:"steel", lvlCostMult:1.08,
     speedPerLvl:10,
+    boostDurPerLvl:0.02,
     ep_req:8, prereq:"spd_c2", unlocked:false,
     canTargetBuildings:false
   },
   spd_c4: {
     id:"spd_c4", name:"Квантовий такт", icon:"⚡",
-    desc:"Квантова тактова частота. Необмежена швидкість.",
+    desc:"Квантова тактова частота. Необмежена швидкість. Скорочує тривалість бустів героїв.",
     branch:"speed",
     unlockCostRes:"electricity", unlockCostAmt:80,
     canLevel:true, lvl:0, maxLvl:999,
     lvlCostBase:400, lvlCostRes:"electricity", lvlCostMult:1.1,
     speedPerLvl:50,
+    boostDurPerLvl:0.03,
     ep_req:10, prereq:"spd_c3", unlocked:false,
     canTargetBuildings:false
   }
 };
+
+// Сумарне скорочення тривалості бустів/навичок героїв від гілки "ШВИДКІСТЬ"
+// Кожен рівень спід-вузла скорочує тривалість бустів на boostDurPerLvl (максимум -75%)
+function getBoostDurationMult(){
+  let reduce = 0;
+  ['spd_c1','spd_c2','spd_c3','spd_c4'].forEach(id=>{
+    let n = AC_NODES[id];
+    if(n && n.unlocked) reduce += n.lvl * (n.boostDurPerLvl||0);
+  });
+  reduce = Math.min(0.75, reduce);
+  return 1 - reduce;
+}
 
 // AC tree order for minimap rendering
 const AC_TREE_ORDER = [
@@ -1309,6 +1325,10 @@ function recalcACRate(){
     if(n.unlocked) speedBonus+=n.lvl*(n.speedPerLvl||0);
   });
   acTotalRate=Math.max(0, base+speedBonus);
+  // Пасивний бонус героїв до швидкості автоклікера (Тарек тощо)
+  if(typeof heroAggBonuses !== 'undefined' && heroAggBonuses.acBonus>0){
+    acTotalRate *= (1 + heroAggBonuses.acBonus);
+  }
 }
 
 // Building AC multiplier from bld branch
@@ -2017,8 +2037,9 @@ function activateBoost(id){
     showToast('⚠️ Не вистачає ресурсів для бусту!'); return;
   }
   Object.keys(cost).forEach(k=>storage[k]-=cost[k]);
-  b.boost=30; // 30 секунд
-  addLog(`⚡ Буст ${b.name} ×3 на 30 секунд!`, true);
+  let dur = 30 * getBoostDurationMult(); // тривалість бусту скорочується гілкою "ШВИДКІСТЬ"
+  b.boost=dur;
+  addLog(`⚡ Буст ${b.name} ×3 на ${dur.toFixed(0)} секунд!`, true);
   markDirty('bld');
 }
 
@@ -2532,9 +2553,12 @@ function buyBind(idx){
 function buildBuilding(id){
   let b=buildings[id];
   if(b.instances.length>=999) return;
-  let canAfford=Object.keys(b.cost).every(r=>(storage[r]||0)>=b.cost[r]);
+  let free = window._freeBuildUntil && Date.now() < window._freeBuildUntil;
+  let discount = (typeof heroAggBonuses!=='undefined' ? heroAggBonuses.buildDiscount||0 : 0);
+  let costMult = free ? 0 : Math.max(0, 1-discount);
+  let canAfford = free || Object.keys(b.cost).every(r=>(storage[r]||0)>=b.cost[r]*costMult);
   if(!canAfford) return;
-  Object.keys(b.cost).forEach(r=>storage[r]-=b.cost[r]);
+  if(!free) Object.keys(b.cost).forEach(r=>storage[r]-=Math.ceil(b.cost[r]*costMult));
   let tile=placeOnMap(b);
   b.instances.push({lvl:1,tileR:tile?.r,tileC:tile?.c,autoClicker:false});
   buildCount++; tech++;
@@ -2814,7 +2838,7 @@ setInterval(()=>{
         markDirty('bld');
       }
     }
-    let gain=b.prodBase*b.lvl*baseResMultiplier*mult;
+    let gain=b.prodBase*b.lvl*baseResMultiplier*mult*(1+(typeof heroAggBonuses!=='undefined'?heroAggBonuses.globalResMult||0:0));
     storage[b.res]=(storage[b.res]||0)+gain;
     psCounters[b.res]=(psCounters[b.res]||0)+gain;
     addPoints(Math.ceil(gain*0.05), 'resources');
@@ -2833,10 +2857,22 @@ setInterval(()=>{
     psCounters.synth_energy=(psCounters.synth_energy||0)+researchSynthIncome*0.5;
   }
 
-  // Hero skill cooldown
-  if(hero.class && hero.skillCd>0){
-    hero.skillCd=Math.max(0, hero.skillCd-0.5);
-    if(hero.skillCd===0) addLog(`${HERO_CLASSES[hero.class]?.icon} Навичка готова!`);
+  // Пасивний Синтез від героїв (Нексус тощо)
+  if(typeof heroAggBonuses !== 'undefined' && heroAggBonuses.synthIncome>0){
+    storage.synth_energy=(storage.synth_energy||0)+heroAggBonuses.synthIncome*0.5;
+    psCounters.synth_energy=(psCounters.synth_energy||0)+heroAggBonuses.synthIncome*0.5;
+  }
+
+  // Пасивна шкода хвилям від магів (Зефіра тощо) — раз на хвилю обробляється у самій хвилі
+
+  // Кулдауни навичок усіх активних героїв
+  if(typeof heroSkillStates !== 'undefined'){
+    Object.entries(heroSkillStates).forEach(([id,st])=>{
+      if(st.cd>0){
+        st.cd=Math.max(0, st.cd-0.5);
+        if(st.cd===0 && getHeroTier(id)!=='inactive') addLog(`${HERO_DEFS[id]?.icon} Навичка готова: ${HERO_DEFS[id]?.name}!`);
+      }
+    });
   }
 
   // Random events
@@ -3503,8 +3539,8 @@ function renderExchange(){
   if(!_exchSellRes||!RES[_exchSellRes]) _exchSellRes=allRes[0]||'wood';
   if(!_exchBuyRes||!RES[_exchBuyRes])   _exchBuyRes=allRes[0]||'wood';
 
-  let sellPrice=parseFloat((rate*getResRarity(_exchSellRes)).toFixed(3));
-  let buyPrice=parseFloat((getResRarity(_exchBuyRes)/rate*1.5).toFixed(3));
+  let sellPrice=parseFloat((rate*getResRarity(_exchSellRes)*(1+(typeof heroAggBonuses!=='undefined'?heroAggBonuses.exchBonus||0:0))).toFixed(3));
+  let buyPrice=parseFloat((getResRarity(_exchBuyRes)/rate*1.5/(1+(typeof heroAggBonuses!=='undefined'?heroAggBonuses.exchBonus||0:0))).toFixed(3));
 
   // Кнопки-плитки для вибору ресурсу (замість <select> — погано працює на iOS)
   function resBtns(sel, cbName){
@@ -3577,7 +3613,8 @@ function _doSell(amt){
   let rate=EXCHANGE_RATES[exchangeLevel];
   amt=Math.min(amt, storage[_exchSellRes]||0);
   if(amt<=0){ showToast('⚠️ Немає ресурсу!'); return; }
-  let gained=parseFloat((amt*rate*getResRarity(_exchSellRes)).toFixed(2));
+  let exchBonus=(typeof heroAggBonuses!=='undefined'?heroAggBonuses.exchBonus||0:0);
+  let gained=parseFloat((amt*rate*getResRarity(_exchSellRes)*(1+exchBonus)).toFixed(2));
   storage[_exchSellRes]-=amt;
   storage.synth_energy=(storage.synth_energy||0)+gained;
   exchTradesTotal++;
@@ -3588,7 +3625,8 @@ function _doSell(amt){
 function _doBuy(amt){
   amt=Math.floor(amt); if(!amt||amt<=0) return;
   let rate=EXCHANGE_RATES[exchangeLevel];
-  let price=parseFloat((getResRarity(_exchBuyRes)/rate*1.5).toFixed(3));
+  let exchBonus=(typeof heroAggBonuses!=='undefined'?heroAggBonuses.exchBonus||0:0);
+  let price=parseFloat((getResRarity(_exchBuyRes)/rate*1.5/(1+exchBonus)).toFixed(3));
   let maxBuy=Math.floor((storage.synth_energy||0)/price);
   amt=Math.min(amt, maxBuy);
   if(amt<=0){ showToast('⚠️ Замало Синтезу!'); return; }
@@ -3884,11 +3922,21 @@ const QUESTS = [
 let questProgress = {};
 let newQuestCount = 0;
 
+// Складність квестів зростає з кожним переродженням:
+// +50% до цілі та +30% до нагороди за кожне переродження
+function questDifficultyMult(){ return 1 + prestigeCount * 0.5; }
+function questRewardMult(){ return 1 + prestigeCount * 0.3; }
+
 function checkQuests(){
   let anyNew = false;
+  let diffMult = questDifficultyMult();
   QUESTS.forEach(q=>{
     if(q.done||q.claimed) return;
     let prog = 0, target = q.target||1;
+    // Масштабуємо ціль складністю переродження (крім епох — їх не можна масштабувати вище 12)
+    if(q.type!=='epoch' && q.type!=='ac_unlocked' && q.type!=='defense_struct'){
+      target = Math.ceil(target * diffMult);
+    }
     switch(q.type){
       case 'clicks':        prog = totalClicks; break;
       case 'builds':        prog = buildCount; break;
@@ -3921,22 +3969,23 @@ function claimQuest(id){
   let q = QUESTS.find(x=>x.id===id);
   if(!q||!q.done||q.claimed) return;
   q.claimed = true;
-  // Give rewards
+  let rwMult = questRewardMult();
+  // Give rewards (масштабовані складністю переродження)
   if(q.reward){
-    Object.entries(q.reward).forEach(([k,v])=>{ storage[k]=(storage[k]||0)+v; });
+    Object.entries(q.reward).forEach(([k,v])=>{ storage[k]=(storage[k]||0)+Math.ceil(v*rwMult); });
   }
   // Apply bonuses
   if(q.bonus){
-    if(q.bonus.clickMult)  clickMult  += q.bonus.clickMult;
-    if(q.bonus.prodMult)   prodMult   += q.bonus.prodMult;
+    if(q.bonus.clickMult)  clickMult  += q.bonus.clickMult * rwMult;
+    if(q.bonus.prodMult)   prodMult   += q.bonus.prodMult * rwMult;
     if(q.bonus.defenseBonus){
       // Reduce goblin wave damage slightly
       goblinWave.cityHp = Math.min(goblinWave.cityHpMax, goblinWave.cityHp + 100);
     }
-    if(q.bonus.buildBonus) baseResMultiplier = Math.max(baseResMultiplier, baseResMultiplier + 0.2);
+    if(q.bonus.buildBonus) baseResMultiplier = Math.max(baseResMultiplier, baseResMultiplier + 0.2*rwMult);
   }
   addPoints(500 * (q.cat==='Майбутнє'?10:q.cat==='Промисловість'?5:2), 'tech');
-  addLog(`🎁 Нагорода отримана: ${q.rewardDesc}`, true);
+  addLog(`🎁 Нагорода отримана (×${rwMult.toFixed(2)}): ${q.rewardDesc}`, true);
   checkAchievements();
   markDirty('full');
 }
@@ -3957,6 +4006,7 @@ function renderQuestsTab(){
       <div class="ach-prog-track"><div class="ach-prog-fill" style="width:${(claimedCount/totalCount*100).toFixed(0)}%"></div></div>
       <span style="font-size:11px;color:var(--gold)">${claimedCount}/${totalCount}</span>
     </div>
+    ${prestigeCount>0?`<div style="font-size:10px;color:var(--purple);margin-top:4px;">✨ Переродження #${prestigeCount}: цілі ×${questDifficultyMult().toFixed(2)}, нагороди ×${questRewardMult().toFixed(2)}</div>`:''}
   </div>`;
 
   // Group by category
@@ -3982,7 +4032,7 @@ function renderQuestsTab(){
           <div class="quest-progress-bar ${q.done?'gold':''}" style="width:${pct}%"></div>
         </div>
         <div class="quest-prog-label">${fmt(qp.prog)} / ${fmt(qp.target)}</div>`:''}
-        <div class="quest-reward">🎁 Нагорода: <b>${q.rewardDesc}</b>${q.bonus?` <span style="color:var(--teal)">+ Бонус!</span>`:''}</div>
+        <div class="quest-reward">🎁 Нагорода: <b>${q.rewardDesc}</b>${questRewardMult()>1?` <span style="color:var(--purple)">×${questRewardMult().toFixed(2)}</span>`:''}${q.bonus?` <span style="color:var(--teal)">+ Бонус!</span>`:''}</div>
         ${q.claimed?`<div class="quest-done-badge">✅ Виконано та отримано</div>`
           :q.done?`<button class="quest-claim-btn" onclick="claimQuest('${q.id}')">🎁 ОТРИМАТИ НАГОРОДУ</button>`
           :`<button class="quest-claim-btn" disabled>⏳ В процесі... ${pct}%</button>`}
@@ -4347,6 +4397,8 @@ let goblinWave = {
 let defenseStats = {
   totalDamageBlock: 0,
   totalKillPerWave: 0,
+  _heroKillBoost: 0,
+  _blockMult: 1,
 };
 
 function recalcDefenseStats(){
@@ -4357,6 +4409,11 @@ function recalcDefenseStats(){
       kills += (s.killPerWave||0) * s.count;
     }
   });
+  // Пасивні бонуси героїв (масштабовані рангом: головний ×1.5, обрані ×1.0, інші ×0.1)
+  if(typeof heroAggBonuses !== 'undefined'){
+    kills += heroAggBonuses.killBonus||0;
+    block *= (1 + (heroAggBonuses.dmgReducePct||0));
+  }
   defenseStats.totalDamageBlock = block;
   defenseStats.totalKillPerWave = kills;
 }
@@ -4414,6 +4471,17 @@ function startGoblinWave(){
   goblinWave.active = true;
   goblinWave.goblins = buildGoblinWave(goblinWave.waveNum);
   goblinWave.alertShown = false;
+  // Пасивна шкода від магів-героїв (Зефіра тощо) — застосовується на початку хвилі
+  if(typeof heroAggBonuses !== 'undefined' && heroAggBonuses.waveDmg>0){
+    let dmg = heroAggBonuses.waveDmg;
+    let before = goblinWave.goblins.length;
+    goblinWave.goblins.forEach(g=>g.hp=Math.max(0,g.hp-dmg));
+    let killedByMage = goblinWave.goblins.filter(g=>g.hp<=0);
+    killedByMage.forEach(g=>awardGoblinLoot(g));
+    goblinWave.totalDefeated += killedByMage.length;
+    goblinWave.goblins = goblinWave.goblins.filter(g=>g.hp>0);
+    if(killedByMage.length>0) addLog(`🔥 Маги спалили ${killedByMage.length} гоблінів!`);
+  }
   let waveEl = document.getElementById('wave-alert');
   if(waveEl){ waveEl.style.display='block'; setTimeout(()=>waveEl.style.display='none', 4000); }
   addLog(`⚔️ ХВИЛЯ ${goblinWave.waveNum} — ${goblinWave.goblins.length} гоблінів!`, true);
@@ -4427,7 +4495,7 @@ function processGoblinWave(){
   if(!goblinWave.active||!goblinWave.goblins.length) return;
 
   // 1. Towers/Cannons kill some goblins first
-  let toKill = defenseStats.totalKillPerWave;
+  let toKill = defenseStats.totalKillPerWave + (defenseStats._heroKillBoost||0);
   // Cannons consume charcoal
   Object.values(DEFENSE_STRUCTS).forEach(s=>{
     if(s.id==='cannon'&&s.count>0&&s.consumeRes){
@@ -4456,9 +4524,19 @@ function processGoblinWave(){
 
   // 2. Remaining goblins deal damage, absorbed by walls/palisades
   let remainingGoblins = goblinWave.goblins.length;
+  let waveBlocked = false;
   if(remainingGoblins > 0){
+    if(goblinWave._nextWaveBlocked){
+      goblinWave._nextWaveBlocked = false;
+      waveBlocked = true;
+      addLog('🛡 Непробивний Щит відбив усю шкоду хвилі!', true);
+      goblinWave.goblins.forEach(g=>awardGoblinLoot(g));
+      goblinWave.totalDefeated += goblinWave.goblins.length;
+      goblinWave.goblins = [];
+    } else {
     let rawDmg = remainingGoblins * 20 * (1 + goblinWave.waveNum * 0.1);
-    let absorbed = Math.min(rawDmg * 0.9, defenseStats.totalDamageBlock);
+    let blockMult = defenseStats._blockMult||1;
+    let absorbed = Math.min(rawDmg * 0.9 * blockMult, defenseStats.totalDamageBlock);
 
     // Damage walls in order
     let remainAbsorb = absorbed;
@@ -4489,6 +4567,7 @@ function processGoblinWave(){
     goblinWave.goblins.forEach(g=>awardGoblinLoot(g));
     goblinWave.totalDefeated += goblinWave.goblins.length;
     goblinWave.goblins = [];
+    }
   }
 
   // Wave over
@@ -4762,8 +4841,9 @@ function serializeGameState() {
     prestige: { count: prestigeCount, mult: prestigeMult },
     // Research
     research: RESEARCH_TREE.map(r=>({id:r.id, lvl:r.lvl})),
-    // Hero
-    hero: { class:hero.class, lvl:hero.lvl, xp:hero.xp, xpNext:hero.xpNext, skillCd:hero.skillCd },
+    // Hero (нова система: головний + 4 обрані героя)
+    activeHeroes: { main: activeHeroes.main, chosen: [...activeHeroes.chosen] },
+    heroSkillStates: Object.fromEntries(Object.entries(heroSkillStates).map(([id,st])=>[id,{cd:st.cd}])),
     heroRoster: Object.entries(heroRoster).map(([id,h])=>({id, purchased:h.purchased, lvl:h.lvl, xp:h.xp})),
     // Stats
     gameStats: { synthSold:gameStats.synthSold||0, synthBought:gameStats.synthBought||0,
@@ -4874,20 +4954,26 @@ function deserializeGameState(s) {
         if(r && sr.lvl>0){ r.lvl=sr.lvl; researchSynthIncome=(RESEARCH_TREE.find(x=>x.id==='r_exch2')?.lvl||0)*2; }
       });
     }
-    // Hero
+    // Hero (нова система)
     if (s.heroRoster) {
       s.heroRoster.forEach(r => { if(heroRoster[r.id]) Object.assign(heroRoster[r.id], {purchased:r.purchased, lvl:r.lvl||1, xp:r.xp||0}); });
     }
-    if (s.hero && s.hero.class) {
-      // Якщо старий save має старий клас (archer/mage/warrior) — скидаємо
-      if(!HERO_DEFS[s.hero.class]){
-        hero.class = null;
-      } else {
-        Object.assign(hero, s.hero);
-        hero.xpNext = heroXpFor(hero.lvl+1);
-        _applyHeroPassive();
-      }
+    if (s.activeHeroes) {
+      activeHeroes.main = (s.activeHeroes.main && HERO_DEFS[s.activeHeroes.main]) ? s.activeHeroes.main : null;
+      activeHeroes.chosen = [0,1,2,3].map(i=>{
+        let id = s.activeHeroes.chosen?.[i];
+        return (id && HERO_DEFS[id]) ? id : null;
+      });
+    } else if (s.hero && s.hero.class && HERO_DEFS[s.hero.class]) {
+      // Міграція зі старого формату (один активний герой → головний)
+      activeHeroes.main = s.hero.class;
     }
+    if (s.heroSkillStates) {
+      Object.entries(s.heroSkillStates).forEach(([id,st])=>{
+        if(heroSkillStates[id]) heroSkillStates[id].cd = st.cd||0;
+      });
+    }
+    _applyHeroPassive();
     // Stats
     if (s.gameStats) Object.assign(gameStats, s.gameStats);
     if (s.exchTradesTotal) exchTradesTotal = s.exchTradesTotal;
@@ -5276,7 +5362,9 @@ function _fullPrestigeReset(){
   ACHIEVEMENTS.forEach(a => { a.unlocked = false; });
   // Герої — скинути
   Object.keys(heroRoster).forEach(id => { heroRoster[id] = {purchased:false, lvl:0, xp:0}; });
-  hero.class = null; hero.lvl = 0; hero.xp = 0; hero.xpNext = 100; hero.skillCd = 0; hero.skillActive = false;
+  activeHeroes.main = null; activeHeroes.chosen = [null,null,null,null];
+  Object.keys(heroSkillStates).forEach(id => { heroSkillStates[id] = {cd:0, active:false, endsAt:0}; });
+  heroAggBonuses = {synthIncome:0, exchBonus:0, globalResMult:0, killBonus:0, acBonus:0, dmgReducePct:0, buildDiscount:0, waveDmg:0};
   // Оборона
   Object.values(DEFENSE_STRUCTS).forEach(s => { s.count = 0; s.hp = s.hpMax; });
   exchangeLevel = 0; techCostDiscount = 1; baseResMultiplier = 1;
@@ -5731,50 +5819,102 @@ const HERO_DEFS = {
 let heroRoster = {}; // { heroId: {purchased:bool, lvl:int, xp:int} }
 Object.keys(HERO_DEFS).forEach(id => { heroRoster[id] = {purchased:false, lvl:0, xp:0}; });
 
+// Активні герої: 1 головний (×1.5), до 4 обраних (×1.0). Решта придбаних — пасивний бонус ×0.1
+let activeHeroes = {
+  main: null,        // heroId | null
+  chosen: [null,null,null,null], // heroId | null, 4 слоти
+};
+
+// Стан навичок для кожного героя окремо (cooldown/active)
+let heroSkillStates = {}; // { heroId: {cd:0, active:false, endsAt:0} }
+Object.keys(HERO_DEFS).forEach(id => { heroSkillStates[id] = {cd:0, active:false, endsAt:0}; });
+
+// Множники бонусів за рангом героя
+const HERO_TIER_MULT = { main: 1.5, chosen: 1.0, inactive: 0.1 };
+
+function getHeroTier(id){
+  if(activeHeroes.main === id) return 'main';
+  if(activeHeroes.chosen.includes(id)) return 'chosen';
+  return 'inactive';
+}
+
+// Сумісність зі старим кодом, що звертається до hero.class/hero.lvl/hero.skillCd —
+// hero тепер відображає ГОЛОВНОГО героя (для зворотної сумісності деяких перевірок)
 let hero = {
-  class:  null,
-  lvl:    0,
-  xp:     0,
-  xpNext: 100,
-  skillCd: 0,
-  skillActive: false,
-  skillEndsAt: 0,
+  get class(){ return activeHeroes.main; },
+  set class(v){ activeHeroes.main = v; },
+  lvl: 0, xp: 0, xpNext: 100,
+  skillCd: 0, skillActive: false, skillEndsAt: 0,
 };
 
 function heroXpFor(lvl){ return Math.floor(100 * Math.pow(1.5, lvl)); }
 
+// XP отримують ВСІ активні герої (головний + обрані) одночасно
 function gainHeroXp(amt){
-  if(!hero.class) return;
-  let h = heroRoster[hero.class];
-  if(!h) return;
-  h.xp += amt;
-  hero.xp = h.xp;
-  let changed = false;
-  while(h.xp >= heroXpFor(h.lvl+1) && h.lvl < 50){
-    h.xp -= heroXpFor(h.lvl+1);
-    h.lvl++;
-    hero.lvl = h.lvl;
-    hero.xp = h.xp;
-    changed = true;
-    addLog(`${HERO_DEFS[hero.class].icon} ${HERO_DEFS[hero.class].name} рів.${h.lvl}!`, true);
-    _applyHeroPassive();
-  }
-  hero.xpNext = heroXpFor(h.lvl+1);
+  let activeIds = [activeHeroes.main, ...activeHeroes.chosen].filter(Boolean);
+  activeIds.forEach(id=>{
+    let h = heroRoster[id];
+    if(!h || !h.purchased) return;
+    h.xp += amt;
+    while(h.xp >= heroXpFor(h.lvl+1) && h.lvl < 50){
+      h.xp -= heroXpFor(h.lvl+1);
+      h.lvl++;
+      addLog(`${HERO_DEFS[id].icon} ${HERO_DEFS[id].name} рів.${h.lvl}!`, true);
+    }
+  });
+  _applyHeroPassive();
 }
 
+// Перераховуємо всі пасивні бонуси від УСІХ придбаних героїв, з урахуванням рангу
 function _applyHeroPassive(){
-  if(!hero.class) return;
-  let def = HERO_DEFS[hero.class];
-  if(!def) { hero.class = null; return; } // старий save — ігноруємо
-  let h = heroRoster[hero.class];
-  if(!h || !h.purchased) return;
-  let p = def.passive(h.lvl);
-  // prodBonus
-  if(p.prodBonus) prodMult = Math.max(prodMult, 1 * prestigeMult + p.prodBonus);
-  // cityHpBonus
-  if(p.cityHpBonus) goblinWave.cityHpMax = Math.max(goblinWave.cityHpMax, 1000 + p.cityHpBonus);
+  let totalProdBonus = 0;
+  let totalCityHpBonus = 0;
+  let totalSynthIncome = 0;
+  let totalExchBonus = 0;
+  let totalGlobalResMult = 0;
+  let totalKillBonus = 0;
+  let totalAcBonus = 0;
+  let totalDmgReduce = 0;
+  let totalBuildDiscount = 0;
+  let totalWaveDmg = 0;
+
+  Object.entries(HERO_DEFS).forEach(([id, def])=>{
+    let h = heroRoster[id];
+    if(!h || !h.purchased || h.lvl<=0) return;
+    let tier = getHeroTier(id);
+    let mult = HERO_TIER_MULT[tier];
+    let p = def.passive(h.lvl);
+    if(p.prodBonus)     totalProdBonus     += p.prodBonus * mult;
+    if(p.cityHpBonus)   totalCityHpBonus   += p.cityHpBonus * mult;
+    if(p.synthIncome)   totalSynthIncome   += p.synthIncome * mult;
+    if(p.exchBonus)     totalExchBonus     += p.exchBonus * mult;
+    if(p.globalResMult) totalGlobalResMult += p.globalResMult * mult;
+    if(p.killBonus)     totalKillBonus     += p.killBonus * mult;
+    if(p.acBonus)       totalAcBonus       += p.acBonus * mult;
+    if(p.dmgReducePct)  totalDmgReduce     += p.dmgReducePct * mult;
+    if(p.buildDiscount) totalBuildDiscount += p.buildDiscount * mult;
+    if(p.waveDmg)       totalWaveDmg       += p.waveDmg * mult;
+  });
+
+  if(totalProdBonus>0) prodMult = Math.max(prodMult, 1 * prestigeMult + totalProdBonus);
+  if(totalCityHpBonus>0) goblinWave.cityHpMax = Math.max(goblinWave.cityHpMax, 1000 + totalCityHpBonus);
+  heroAggBonuses.synthIncome = totalSynthIncome;
+  heroAggBonuses.exchBonus = totalExchBonus;
+  heroAggBonuses.globalResMult = totalGlobalResMult;
+  heroAggBonuses.killBonus = totalKillBonus;
+  heroAggBonuses.acBonus = totalAcBonus;
+  heroAggBonuses.dmgReducePct = Math.min(0.85, totalDmgReduce);
+  heroAggBonuses.buildDiscount = Math.min(0.70, totalBuildDiscount);
+  heroAggBonuses.waveDmg = totalWaveDmg;
+
   recalcDefenseStats();
 }
+
+// Сумарні агреговані бонуси від усіх героїв (за рангом)
+let heroAggBonuses = {
+  synthIncome:0, exchBonus:0, globalResMult:0, killBonus:0,
+  acBonus:0, dmgReducePct:0, buildDiscount:0, waveDmg:0,
+};
 
 function buyHero(id){
   let def = HERO_DEFS[id];
@@ -5791,20 +5931,43 @@ function buyHero(id){
   h.lvl = 1;
   h.xp = 0;
   addLog(`${def.icon} Найнято героя: ${def.name}!`, true);
+  _applyHeroPassive();
   markDirty('full');
 }
 
-function activateHero(id){
+// Призначити героя на роль: 'main' або конкретний слот chosen (0-3)
+function setHeroSlot(id, slot){
   let h = heroRoster[id];
   if(!h || !h.purchased){ showToast('Спершу придбайте героя!'); return; }
-  hero.class = id;
-  hero.lvl = h.lvl;
-  hero.xp = h.xp;
-  hero.xpNext = heroXpFor(h.lvl+1);
-  hero.skillCd = 0;
-  hero.skillActive = false;
+
+  // Видаляємо героя з усіх поточних слотів
+  if(activeHeroes.main === id) activeHeroes.main = null;
+  let chosenIdx = activeHeroes.chosen.indexOf(id);
+  if(chosenIdx>=0) activeHeroes.chosen[chosenIdx] = null;
+
+  if(slot === 'main'){
+    // Старий головний герой стає звичайним (не втрачає прогрес)
+    activeHeroes.main = id;
+  } else if(slot === 'remove'){
+    // вже видалено вище — нічого не робимо
+  } else {
+    // slot — індекс 0-3 в chosen
+    let idx = parseInt(slot);
+    if(activeHeroes.chosen[idx] && activeHeroes.chosen[idx]!==id){
+      // звільняємо клітинку — попередній герой просто стає неактивним
+    }
+    activeHeroes.chosen[idx] = id;
+  }
   _applyHeroPassive();
-  addLog(`${HERO_DEFS[id].icon} Активовано героя: ${HERO_DEFS[id].name}!`, true);
+  addLog(`${HERO_DEFS[id].icon} ${HERO_DEFS[id].name}: оновлено роль.`, true);
+  markDirty('full');
+}
+
+function removeHeroFromActive(id){
+  if(activeHeroes.main === id) activeHeroes.main = null;
+  let idx = activeHeroes.chosen.indexOf(id);
+  if(idx>=0) activeHeroes.chosen[idx] = null;
+  _applyHeroPassive();
   markDirty('full');
 }
 
@@ -5818,32 +5981,43 @@ function upgradeHero(id){
   }
   Object.entries(cost).forEach(([k,v])=>storage[k]-=v);
   h.lvl++;
-  if(hero.class === id){ hero.lvl = h.lvl; _applyHeroPassive(); }
+  _applyHeroPassive();
   addLog(`${def.icon} ${def.name} → Рів.${h.lvl}!`, true);
   markDirty('full');
 }
 
-function useHeroSkill(){
-  if(!hero.class || hero.skillCd>0 || hero.lvl<3) return;
-  let def = HERO_DEFS[hero.class];
-  if(!def) return;
-  let h = heroRoster[hero.class];
+// Навичку можуть використовувати тільки активні герої (головний + 4 обрані)
+function useHeroSkill(id){
+  let h = heroRoster[id];
+  if(!h || !h.purchased || h.lvl<3) return;
+  let tier = getHeroTier(id);
+  if(tier === 'inactive'){ showToast('⚠️ Герой не активний — призначте його на роль!'); return; }
+  let st = heroSkillStates[id];
+  if(!st || st.cd>0) return;
+  let def = HERO_DEFS[id];
   let sk = def.skill;
-  hero.skillCd = sk.cd;
-  hero.skillActive = true;
-  hero.skillEndsAt = Date.now() + (sk.dur||1)*1000;
 
-  // Ефекти навички
-  if(sk.killMult){ defenseStats._heroKillBoost = sk.killMult * h.lvl * 3; setTimeout(()=>{ defenseStats._heroKillBoost=0; hero.skillActive=false; }, sk.dur*1000); }
-  else if(sk.acMult){ let prev=acMult; acMult*=sk.acMult; recalcACRate(); setTimeout(()=>{ acMult=prev; recalcACRate(); hero.skillActive=false; }, sk.dur*1000); }
-  else if(sk.prodMult){ let prev=prodMult; prodMult*=sk.prodMult; setTimeout(()=>{ prodMult=prev; hero.skillActive=false; }, sk.dur*1000); }
-  else if(sk.resMult){ let prev=baseResMultiplier; baseResMultiplier*=sk.resMult; setTimeout(()=>{ baseResMultiplier=prev; hero.skillActive=false; }, sk.dur*1000); }
-  else if(sk.synthMult){ let prev=researchSynthIncome; researchSynthIncome=(researchSynthIncome||1)*sk.synthMult; setTimeout(()=>{ researchSynthIncome=prev; hero.skillActive=false; }, sk.dur*1000); }
-  else if(sk.blockPct){ defenseStats._blockMult=1/(1-sk.blockPct+0.01); setTimeout(()=>{ defenseStats._blockMult=1; hero.skillActive=false; }, sk.dur*1000); }
-  else if(sk.dmgMult){ let lvl=h.lvl; let dmg=def.passive(lvl).waveDmg*sk.dmgMult||lvl*800; goblinWave.goblins.forEach(g=>g.hp=Math.max(0,g.hp-dmg)); goblinWave.goblins=goblinWave.goblins.filter(g=>g.hp>0); hero.skillActive=false; }
-  else if(sk.freeBuild){ window._freeBuildUntil=Date.now()+sk.dur*1000; setTimeout(()=>{ window._freeBuildUntil=0; hero.skillActive=false; }, sk.dur*1000); }
-  else if(sk.nextWaveBlock){ goblinWave._nextWaveBlocked=true; hero.skillActive=false; }
-  addLog(`${def.icon} Навичка: ${sk.name}!`, true);
+  // Тривалість навички скорочується гілкою "ШВИДКІСТЬ" технологій
+  let durMult = getBoostDurationMult();
+  let effDur = (sk.dur||1) * durMult;
+
+  st.cd = sk.cd;
+  st.active = true;
+  st.endsAt = Date.now() + effDur*1000;
+
+  // Ефекти навички (масштабуються рангом героя: main=150%, chosen=100%, inactive — недоступно)
+  let tierMult = HERO_TIER_MULT[tier];
+
+  if(sk.killMult){ defenseStats._heroKillBoost = sk.killMult * h.lvl * 3 * tierMult; setTimeout(()=>{ defenseStats._heroKillBoost=0; st.active=false; }, effDur*1000); }
+  else if(sk.acMult){ let prev=acMult; acMult*=(1+(sk.acMult-1)*tierMult); recalcACRate(); setTimeout(()=>{ acMult=prev; recalcACRate(); st.active=false; }, effDur*1000); }
+  else if(sk.prodMult){ let prev=prodMult; prodMult*=(1+(sk.prodMult-1)*tierMult); setTimeout(()=>{ prodMult=prev; st.active=false; }, effDur*1000); }
+  else if(sk.resMult){ let prev=baseResMultiplier; baseResMultiplier*=(1+(sk.resMult-1)*tierMult); setTimeout(()=>{ baseResMultiplier=prev; st.active=false; }, effDur*1000); }
+  else if(sk.synthMult){ let prev=researchSynthIncome; researchSynthIncome=(researchSynthIncome||1)*(1+(sk.synthMult-1)*tierMult); setTimeout(()=>{ researchSynthIncome=prev; st.active=false; }, effDur*1000); }
+  else if(sk.blockPct){ let effBlock=Math.min(0.98, sk.blockPct*tierMult); defenseStats._blockMult=1/(1-effBlock+0.01); setTimeout(()=>{ defenseStats._blockMult=1; st.active=false; }, effDur*1000); }
+  else if(sk.dmgMult){ let lvl=h.lvl; let dmg=def.passive(lvl).waveDmg*sk.dmgMult*tierMult||lvl*800*tierMult; goblinWave.goblins.forEach(g=>g.hp=Math.max(0,g.hp-dmg)); goblinWave.goblins=goblinWave.goblins.filter(g=>g.hp>0); st.active=false; }
+  else if(sk.freeBuild){ window._freeBuildUntil=Date.now()+effDur*1000; setTimeout(()=>{ window._freeBuildUntil=0; st.active=false; }, effDur*1000); }
+  else if(sk.nextWaveBlock){ goblinWave._nextWaveBlocked=true; st.active=false; }
+  addLog(`${def.icon} Навичка: ${sk.name} (${tier==='main'?'×1.5':'×1.0'})!`, true);
   markDirty('full');
 }
 
@@ -5851,48 +6025,38 @@ function renderHeroTab(){
   let div = document.getElementById('tab-hero-content');
   if(!div) return;
 
-  let activeId = hero.class;
+  let mainId = activeHeroes.main;
+  let chosenIds = activeHeroes.chosen;
+  let purchasedCount = Object.values(heroRoster).filter(h=>h.purchased).length;
+
   let html = `<div style="padding:6px 0 2px;">
     <div class="sh" style="margin-bottom:4px;">⚔️ ГЕРОЇ МІСТА</div>
-    <div style="font-size:10px;color:var(--dim);margin-bottom:8px;line-height:1.5;">Купуй героїв за ресурси, прокачуй їх та обери одного активним. Герої отримують XP за кожну відбиту хвилю.</div>
-    ${activeId ? `<div style="font-size:11px;color:var(--green);background:#0a1a0a;border:1px solid var(--green);padding:5px 8px;margin-bottom:8px;">
-      ✅ Активний: ${HERO_DEFS[activeId]?.icon} ${HERO_DEFS[activeId]?.name} · Рів.${heroRoster[activeId]?.lvl}
-    </div>` : '<div style="font-size:11px;color:var(--orange);background:#1a1000;border:1px solid var(--orange);padding:5px 8px;margin-bottom:8px;">⚠️ Оберіть та активуйте героя</div>'}
+    <div style="font-size:10px;color:var(--dim);margin-bottom:8px;line-height:1.5;">
+      Активні герої (до 5): <b style="color:var(--gold)">1 Головний ×150%</b> бонусу,
+      <b style="color:var(--green)">4 Обраних ×100%</b>, решта придбаних героїв дають <b style="color:var(--dim)">×10%</b> пасивно.
+      Усі активні герої отримують XP за хвилі.
+    </div>
   </div>`;
 
-  // Якщо є активний герой — показуємо панель навички
-  if(activeId){
-    let def = HERO_DEFS[activeId];
-    let h = heroRoster[activeId];
-    let sk = def.skill;
-    let xpPct = Math.min(100,(h.xp/heroXpFor(h.lvl+1)*100)).toFixed(0);
-    let cdReady = hero.skillCd<=0 && h.lvl>=3;
-    html += `<div style="background:linear-gradient(135deg,#0d0d1a,var(--panel2));border:2px solid var(${def.color});padding:10px;margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-        <span style="font-size:28px">${def.icon}</span>
-        <div style="flex:1;">
-          <div style="font-size:12px;color:var(${def.color});font-family:var(--font2);font-size:9px;">${def.name}</div>
-          <div style="font-size:10px;color:var(--dim)">${def.role} · Рів.${h.lvl}/50</div>
-          <div style="height:4px;background:#111;margin-top:3px;border:1px solid var(--border);">
-            <div style="height:100%;background:var(${def.color});width:${xpPct}%;transition:width .3s;"></div>
-          </div>
-          <div style="font-size:9px;color:var(--dim);margin-top:1px;">XP ${fmt(h.xp)} / ${fmt(heroXpFor(h.lvl+1))}</div>
-        </div>
-      </div>
-      <div style="font-size:10px;color:var(--dim);margin-bottom:6px;">${def.lore}</div>
-      <button onclick="useHeroSkill()" style="width:100%;font-family:var(--font);font-size:11px;padding:7px;border:1px solid ${cdReady?'var('+def.color+')':'var(--border)'};background:${cdReady?'rgba(0,0,0,0.4)':'transparent'};color:${cdReady?'var('+def.color+')':'var(--dim)'};cursor:${cdReady?'pointer':'not-allowed'};touch-action:manipulation;" ${!cdReady?'disabled':''}>
-        ${h.lvl<3?'🔒 Навичка — з рів.3':hero.skillCd>0?`⏱ ${sk.name}: ${Math.ceil(hero.skillCd)}с`:`⚡ ${sk.name}: ${sk.desc}`}
-      </button>
-    </div>`;
-  }
+  // ─── ПАНЕЛЬ АКТИВНИХ СЛОТІВ ───
+  html += `<div class="sh" style="margin-bottom:6px;">🎖 АКТИВНІ СЛОТИ</div>`;
+  html += `<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;">`;
 
-  // Сітка всіх героїв
-  const ROLE_ORDER = ['Воїн','Лучник','Маг','Інженер','Кіборг','Купець'];
-  html += `<div style="font-size:10px;color:var(--gold);margin-bottom:6px;letter-spacing:1px;">— ВСІ ГЕРОЇ —</div>`;
+  // Головний слот
+  html += renderHeroSlot(mainId, 'main', '👑 ГОЛОВНИЙ · ×150%', 'var(--gold)');
+  // 4 обрані слоти
+  for(let i=0;i<4;i++){
+    html += renderHeroSlot(chosenIds[i], i, `⭐ ОБРАНИЙ ${i+1} · ×100%`, 'var(--green)');
+  }
+  html += `</div>`;
+
+  // ─── СІТКА ВСІХ ГЕРОЇВ ───
+  html += `<div style="font-size:10px;color:var(--gold);margin-bottom:6px;letter-spacing:1px;">— ВСІ ГЕРОЇ (${purchasedCount}/${Object.keys(HERO_DEFS).length}) —</div>`;
 
   Object.entries(HERO_DEFS).forEach(([id, def])=>{
     let h = heroRoster[id];
-    let isActive = hero.class === id;
+    let tier = getHeroTier(id);
+    let isMain = tier==='main', isChosen = tier==='chosen';
     let canBuy = !h.purchased && epoch>=def.epReq;
     let costOk = canBuy && Object.entries(def.cost).every(([k,v])=>(storage[k]||0)>=v);
     let upgCost = h.purchased ? def.upgCost(h.lvl) : {};
@@ -5906,17 +6070,21 @@ function renderHeroTab(){
       return `<span style="color:${ok?'var(--teal)':'var(--red)'}">${RES[k]?.e||'🔹'}${fmt(v)}</span>`;
     }).join(' ') : '';
 
-    let borderColor = isActive ? `var(${def.color})` : h.purchased ? 'var(--border)' : '#1a1a2a';
-    let bgColor = isActive ? 'linear-gradient(135deg,#0a0a18,var(--panel2))' : 'var(--panel2)';
+    let tierLabel = isMain ? '<span style="font-size:8px;color:var(--gold);background:#1a1400;padding:1px 4px;">👑 ГОЛОВНИЙ ×150%</span>'
+      : isChosen ? '<span style="font-size:8px;color:var(--green);background:#0a1a0a;padding:1px 4px;">⭐ ОБРАНИЙ ×100%</span>'
+      : h.purchased ? '<span style="font-size:8px;color:var(--dim);background:var(--panel);padding:1px 4px;">💤 НЕАКТИВНИЙ ×10%</span>' : '';
+
+    let borderColor = isMain ? 'var(--gold)' : isChosen ? 'var(--green)' : h.purchased ? 'var(--border)' : '#1a1a2a';
+    let bgColor = (isMain||isChosen) ? 'linear-gradient(135deg,#0a0a18,var(--panel2))' : 'var(--panel2)';
 
     html += `<div style="background:${bgColor};border:1px solid ${borderColor};padding:9px;margin-bottom:5px;opacity:${!h.purchased&&epoch<def.epReq?0.45:1};">
       <div style="display:flex;align-items:flex-start;gap:8px;">
         <span style="font-size:24px;flex-shrink:0">${h.purchased?def.icon:'❓'}</span>
         <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:5px;margin-bottom:2px;">
+          <div style="display:flex;align-items:center;gap:5px;margin-bottom:2px;flex-wrap:wrap;">
             <span style="font-size:11px;color:var(${def.color})">${h.purchased?def.name:'???'}</span>
             <span style="font-size:9px;color:var(--dim);background:var(--panel);padding:1px 4px;">${def.role}</span>
-            ${isActive?`<span style="font-size:8px;color:var(--green);background:#0a1a0a;padding:1px 4px;">●АКТИВ</span>`:''}
+            ${tierLabel}
           </div>
           ${h.purchased?`
             <div style="font-size:10px;color:var(--dim);margin-bottom:2px;line-height:1.4;">${def.desc}</div>
@@ -5931,8 +6099,14 @@ function renderHeroTab(){
             ${!h.purchased ? `<button onclick="buyHero('${id}')" style="flex:1;font-family:var(--font);font-size:10px;padding:5px;border:1px solid ${costOk?'var(--gold)':'var(--border)'};background:transparent;color:${costOk?'var(--gold)':'var(--dim)'};cursor:${costOk?'pointer':'not-allowed'};touch-action:manipulation;" ${!costOk?'disabled':''}>
               ${epoch<def.epReq?`🔒 Еп.${def.epReq}`:'⚔️ НАЙНЯТИ'}
             </button>` : ''}
-            ${h.purchased && !isActive ? `<button onclick="activateHero('${id}')" style="flex:1;font-family:var(--font);font-size:10px;padding:5px;border:1px solid var(--green);background:transparent;color:var(--green);cursor:pointer;touch-action:manipulation;">
-              ✅ АКТИВУВАТИ
+            ${h.purchased && !isMain ? `<button onclick="setHeroSlot('${id}','main')" style="flex:1;font-family:var(--font);font-size:10px;padding:5px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;touch-action:manipulation;">
+              👑 ГОЛОВНИЙ
+            </button>` : ''}
+            ${h.purchased && !isMain && !isChosen ? `<button onclick="_pickChosenSlot('${id}')" style="flex:1;font-family:var(--font);font-size:10px;padding:5px;border:1px solid var(--green);background:transparent;color:var(--green);cursor:pointer;touch-action:manipulation;">
+              ⭐ ОБРАТИ
+            </button>` : ''}
+            ${(isMain||isChosen) ? `<button onclick="removeHeroFromActive('${id}')" style="flex:1;font-family:var(--font);font-size:10px;padding:5px;border:1px solid var(--red);background:transparent;color:var(--red);cursor:pointer;touch-action:manipulation;">
+              ⬇ ЗНЯТИ
             </button>` : ''}
             ${h.purchased ? `<button onclick="upgradeHero('${id}')" style="flex:1;font-family:var(--font);font-size:10px;padding:5px;border:1px solid ${canUpg?'var(--teal)':'var(--border)'};background:transparent;color:${canUpg?'var(--teal)':'var(--dim)'};cursor:${canUpg?'pointer':'not-allowed'};touch-action:manipulation;" ${!canUpg?'disabled':''}>
               ⬆ +РІВ ${upgStr}
@@ -5944,6 +6118,47 @@ function renderHeroTab(){
   });
 
   div.innerHTML = html;
+}
+
+// Допоміжна функція для рендеру одного активного слоту
+function renderHeroSlot(id, slotKey, label, color){
+  if(!id || !HERO_DEFS[id]){
+    return `<div style="background:var(--panel2);border:1px dashed var(--border);padding:8px;text-align:center;">
+      <div style="font-size:10px;color:${color};margin-bottom:2px;">${label}</div>
+      <div style="font-size:10px;color:var(--dim);">— Порожній слот —</div>
+    </div>`;
+  }
+  let def = HERO_DEFS[id];
+  let h = heroRoster[id];
+  let st = heroSkillStates[id]||{cd:0};
+  let sk = def.skill;
+  let xpPct = Math.min(100,(h.xp/heroXpFor(h.lvl+1)*100)).toFixed(0);
+  let cdReady = st.cd<=0 && h.lvl>=3;
+  return `<div style="background:linear-gradient(135deg,#0d0d1a,var(--panel2));border:2px solid var(${def.color});padding:8px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+      <span style="font-size:24px">${def.icon}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:10px;color:${color};font-family:var(--font2);margin-bottom:1px;">${label}</div>
+        <div style="font-size:11px;color:var(${def.color})">${def.name} · Рів.${h.lvl}/50</div>
+        <div style="height:4px;background:#111;margin-top:2px;border:1px solid var(--border);">
+          <div style="height:100%;background:var(${def.color});width:${xpPct}%;transition:width .3s;"></div>
+        </div>
+      </div>
+    </div>
+    <button onclick="useHeroSkill('${id}')" style="width:100%;font-family:var(--font);font-size:10px;padding:6px;border:1px solid ${cdReady?'var('+def.color+')':'var(--border)'};background:${cdReady?'rgba(0,0,0,0.4)':'transparent'};color:${cdReady?'var('+def.color+')':'var(--dim)'};cursor:${cdReady?'pointer':'not-allowed'};touch-action:manipulation;" ${!cdReady?'disabled':''}>
+      ${h.lvl<3?'🔒 Навичка — з рів.3':st.cd>0?`⏱ ${sk.name}: ${Math.ceil(st.cd)}с`:`⚡ ${sk.name}`}
+    </button>
+  </div>`;
+}
+
+// Поставити героя в перший вільний "обраний" слот (або запропонувати замінити)
+function _pickChosenSlot(id){
+  let idx = activeHeroes.chosen.indexOf(null);
+  if(idx === -1){
+    showToast('⚠️ Всі 4 слоти "Обраний" зайняті! Спершу зніміть когось.');
+    return;
+  }
+  setHeroSlot(id, idx);
 }
 
 // ============================================================
@@ -6031,11 +6246,6 @@ processGoblinWave = function(){
   _origProcessWave.apply(this, arguments);
   gainHeroXp(50 + goblinWave.waveNum*10);
   if(goblinWave.waveNum > (gameStats.bestWave||0)) gameStats.bestWave = goblinWave.waveNum;
-  // Герой-лучник пасивний бонус
-  if(hero.class==='archer'){
-    let p = HERO_CLASSES.archer.passive(hero.lvl);
-    defenseStats.totalKillPerWave += (p.killBonus||0);
-  }
 };
 
 // Статистика продажів Синтезу
