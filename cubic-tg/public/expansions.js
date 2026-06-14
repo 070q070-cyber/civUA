@@ -58,15 +58,17 @@ const EXPANSION_RES = {
 };
 
 // Додаємо до глобального RES якщо він є
-(function injectResources(){
+function injectResources(){
   if(typeof RES === 'undefined') return;
-  Object.entries(EXPANSION_RES).forEach(([k,v])=>{ RES[k]=v; });
+  Object.entries(EXPANSION_RES).forEach(([k,v])=>{ if(!RES[k]) RES[k]=v; });
   Object.keys(EXPANSION_RES).forEach(k=>{
     if(typeof storage !== 'undefined' && storage[k] === undefined) storage[k] = 0;
     if(typeof psCounters !== 'undefined' && psCounters[k] === undefined) psCounters[k] = 0;
     if(typeof resLifetimeTotal !== 'undefined' && resLifetimeTotal[k] === undefined) resLifetimeTotal[k] = 0;
   });
-})();
+}
+// Викликаємо одразу при завантаженні скрипта (RES вже визначений на цей момент)
+injectResources();
 
 // ============================================================
 // 1. ПОШУК ДУШ
@@ -1431,20 +1433,20 @@ setInterval(()=>{
   }
 }, 1000);
 
-// Пасивний бонус від душ до виробництва
-(function installSoulBonus(){
-  let _orig;
-  function tryInstall(){
-    if(typeof prodMult==='undefined'){ setTimeout(tryInstall,500); return; }
-    // Раз на 5 секунд додаємо бонус
-    setInterval(()=>{
-      let bonus=SOUL_SYSTEM.passiveBonus;
-      if(bonus>0&&typeof prodMult!=='undefined'){
-        // Не модифікуємо напряму — перевіряємо в рендері
-      }
-    },5000);
+// ============================================================
+// ІНТЕГРАЦІЯ: бонус від Душ Стародавніх множить виробничий мультиплікатор
+// ============================================================
+(function patchProductionMult(){
+  function tryPatch(){
+    if(typeof getCityProductionMult==='undefined'){ setTimeout(tryPatch,500); return; }
+    let _orig=getCityProductionMult;
+    window.getCityProductionMult=function(){
+      let base=_orig();
+      let soulBonus=1+SOUL_SYSTEM.passiveBonus;
+      return base*soulBonus;
+    };
   }
-  setTimeout(tryInstall,1000);
+  setTimeout(tryPatch,800);
 })();
 
 // ============================================================
@@ -1484,10 +1486,22 @@ function initExpansionTabs(){
     if(leftPanel) leftPanel.appendChild(content);
   });
 
-  // Патчимо switchTab щоб рендерити нові вкладки
+  const EXP_TAB_IDS = newTabs.map(t=>t.id);
+
+  // Патчимо switchTab щоб рендерити нові вкладки і коректно перемикати active клас
   let _origSwitch=window.switchTab;
   window.switchTab=function(name){
-    _origSwitch&&_origSwitch(name);
+    if(EXP_TAB_IDS.includes(name)){
+      // Власна логіка перемикання для нових вкладок
+      document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+      document.querySelectorAll('.ptab').forEach(el=>el.classList.remove('active'));
+      let tabEl=document.getElementById('tab-'+name);
+      if(tabEl) tabEl.classList.add('active');
+      let btn=document.getElementById('tab-btn-'+name);
+      if(btn) btn.classList.add('active');
+    } else {
+      _origSwitch&&_origSwitch(name);
+    }
     switch(name){
       case 'lore':     renderLoreTab();     break;
       case 'souls':    renderSoulTab();     break;
@@ -1550,15 +1564,78 @@ function deserializeExpansions(data){
 })();
 
 // ============================================================
+// МОБІЛЬНА НАВІГАЦІЯ — додаткова кнопка "СВІТ"
+// ============================================================
+function initExpansionMobNav(){
+  let nav=document.getElementById('mob-nav');
+  if(!nav || document.getElementById('nav-exp')) return;
+  let btn=document.createElement('button');
+  btn.className='mob-nav-btn';
+  btn.id='nav-exp';
+  btn.setAttribute('onclick','expMobNav()');
+  btn.innerHTML='<span class="nav-icon">🌍</span><span class="nav-label">СВІТ</span>';
+  nav.appendChild(btn);
+}
+
+function expMobNav(){
+  if(typeof isMobile==='function' && !isMobile()) { switchTab('lore'); return; }
+  const leftPanel  = document.querySelector('.left-panel');
+  const centerArea = document.querySelector('.center-area');
+  const rightPanel = document.querySelector('.right-panel');
+  [leftPanel, centerArea, rightPanel].forEach(p => p && p.classList.remove('mob-active'));
+  document.querySelectorAll('.mob-nav-btn').forEach(b => b.classList.remove('active'));
+  let myBtn=document.getElementById('nav-exp');
+  if(myBtn) myBtn.classList.add('active');
+  leftPanel && leftPanel.classList.add('mob-active');
+  switchTab('lore');
+}
+
+// ============================================================
+// ПАТЧ ПЕРЕРОДЖЕННЯ — скидаємо прогрес розширень при prestige
+// ============================================================
+function resetExpansionSystems(){
+  SOUL_SYSTEM.totalFound=0; SOUL_SYSTEM.lastSearch=0; SOUL_SYSTEM.searching=false; SOUL_SYSTEM.searchProgress=0;
+  HUNTING_SYSTEM.huntsTotal=0; HUNTING_SYSTEM.lastHunt=0; HUNTING_SYSTEM.hunting=false;
+  Object.values(HUNTING_SYSTEM.upgrades).forEach(u=>u.lvl=0);
+  FISHING_SYSTEM.fishedTotal=0; FISHING_SYSTEM.fishCount=0; FISHING_SYSTEM.lastFish=0; FISHING_SYSTEM.fishing=false;
+  Object.values(FISHING_SYSTEM.upgrades).forEach(u=>u.lvl=0);
+  MUSHROOM_SYSTEM.gatheredTotal=0; MUSHROOM_SYSTEM.lastGather=0; MUSHROOM_SYSTEM.gathering=false;
+  MUSHROOM_SYSTEM.basketLvl=0; MUSHROOM_SYSTEM.knowledgeLvl=0;
+  HERB_SYSTEM.harvestedTotal=0; HERB_SYSTEM.lastHarvest=0; HERB_SYSTEM.harvesting=false;
+  HERB_SYSTEM.dryingRackLvl=0; HERB_SYSTEM.alchemyLvl=0;
+  GEOLOGY_SYSTEM.expeditionsTotal=0; GEOLOGY_SYSTEM.lastExpedition=0; GEOLOGY_SYSTEM.exploring=false;
+  GEOLOGY_SYSTEM.expeditionLvl=0; GEOLOGY_SYSTEM.equipLvl=0; GEOLOGY_SYSTEM.discoveredDeposits=[]; GEOLOGY_SYSTEM.lastMined=0;
+  RAID_SYSTEM.raidsTotal=0; RAID_SYSTEM.lastRaid=0; RAID_SYSTEM.raiding=false;
+  RAID_SYSTEM.raidLevel=0; RAID_SYSTEM.victories=0; RAID_SYSTEM.defeats=0; RAID_SYSTEM.activeTarget='goblin_camp';
+  Object.keys(TROOP_SYSTEM.garrison).forEach(k=>TROOP_SYSTEM.garrison[k]=0);
+  TROOP_SYSTEM.xp=0; TROOP_SYSTEM.morale=100; TROOP_SYSTEM.lastFed=Date.now()/1000;
+  TROOP_SYSTEM.barracks.lvl=0; TROOP_SYSTEM.academy.lvl=0; TROOP_SYSTEM.armory.lvl=0;
+  TROOP_SYSTEM.trainingQueue=[]; TROOP_SYSTEM.trainingActive=false;
+}
+
+(function patchPrestigeReset(){
+  function tryPatch(){
+    if(typeof _fullPrestigeReset==='undefined'){ setTimeout(tryPatch,500); return; }
+    let _orig=_fullPrestigeReset;
+    window._fullPrestigeReset=function(){
+      _orig();
+      try{ resetExpansionSystems(); }catch(e){}
+    };
+  }
+  setTimeout(tryPatch,800);
+})();
+
+// ============================================================
 // ЗАПУСК
 // ============================================================
 document.addEventListener('DOMContentLoaded', ()=>{
   setTimeout(()=>{
     initExpansionTabs();
+    initExpansionMobNav();
     injectResources();
   }, 300);
 });
 // Також спробуємо одразу якщо DOM вже готовий
 if(document.readyState==='complete'||document.readyState==='interactive'){
-  setTimeout(()=>{ initExpansionTabs(); injectResources(); }, 400);
+  setTimeout(()=>{ initExpansionTabs(); initExpansionMobNav(); injectResources(); }, 400);
 }
