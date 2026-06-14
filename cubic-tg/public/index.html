@@ -12,7 +12,7 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap');
 :root{
-  --bg:#0a0c10;--panel:#12151c;--panel2:#191d26;--border:#252a38;
+  --bg:#14151a;--panel:#1c1d24;--panel2:#23242c;--border:#33343f;
   --gold:#e8b84b;--gold2:#f5d07a;--green:#4ecb71;--red:#e05555;
   --blue:#5b9bd5;--orange:#d4804a;--purple:#9b72cf;--teal:#4ab8a0;
   --synth:#00e5ff;--synth2:#7b2fff;
@@ -144,12 +144,13 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .center-area{display:flex;flex-direction:column;overflow:hidden;}
 .clicker-strip{flex-shrink:0;background:#070a0f;border-bottom:1px solid var(--border);padding:8px 12px;display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;}
 .clicker-strip-title{font-size:10px;color:var(--dim);margin-right:4px;}
-.click-btn{background:var(--panel2);border:2px solid var(--border);color:var(--text);font-family:var(--font);font-size:12px;padding:7px 12px;cursor:pointer;transition:all .1s;display:flex;align-items:center;gap:5px;position:relative;overflow:hidden;}
+.click-btn{background:var(--panel2);border:2px solid var(--border);color:var(--text);font-family:var(--font);font-size:12px;padding:7px 10px;cursor:pointer;transition:all .1s;display:flex;align-items:center;gap:5px;position:relative;overflow:hidden;width:118px;flex-shrink:0;}
 .click-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.03),transparent);pointer-events:none;}
 .click-btn:hover{border-color:var(--gold);color:var(--gold);background:#1a1a10;}
 .click-btn:active{transform:scale(.96);}
 .click-btn.cur-epoch{border-color:var(--teal);background:linear-gradient(135deg,var(--panel2),#0a1a18);}
-.click-btn .cb-emoji{font-size:18px;}
+.click-btn .cb-emoji{font-size:18px;flex-shrink:0;}
+.click-btn .cb-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;text-align:left;}
 .click-btn .cb-amt{font-size:9px;color:var(--green);position:absolute;top:2px;right:3px;}
 .click-btn .cb-ac{font-size:9px;color:var(--purple);position:absolute;bottom:2px;right:3px;}
 
@@ -157,6 +158,15 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .map-area{flex:1;overflow:hidden;position:relative;background:radial-gradient(ellipse at 40% 35%,#0f1a28 0%,#06090e 70%);box-shadow:inset 0 0 60px rgba(0,0,0,0.6);}
 #isoCanvas{display:block;}
 #map-tooltip{position:absolute;display:none;background:#070a0fee;border:1px solid var(--gold);padding:5px 10px;font-size:11px;pointer-events:none;max-width:200px;}
+.game-watermark{
+  position:absolute; bottom:10px; right:14px; z-index:1;
+  font-family:var(--font2); font-size:10px; letter-spacing:2px;
+  color:rgba(232,184,75,0.16);
+  pointer-events:none; white-space:nowrap; user-select:none;
+}
+@media(max-width:700px){
+  .game-watermark{ font-size:8px; bottom:6px; right:8px; letter-spacing:1px; }
+}
 
 /* BUILD SELECTOR */
 .build-selector{position:absolute;bottom:0;left:0;right:0;background:#070a0fee;border-top:1px solid var(--border);padding:6px 10px;display:flex;gap:6px;overflow-x:auto;align-items:center;}
@@ -386,13 +396,13 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 
 /* BASE RESOURCE BUILDINGS */
 .base-res-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;padding:5px 0;}
-.base-b-card{background:var(--panel2);border:1px solid var(--border);padding:5px 7px;transition:border-color .2s;}
+.base-b-card{background:var(--panel2);border:1px solid var(--border);padding:5px 7px;transition:border-color .2s;display:flex;flex-direction:column;}
 .base-b-card.active-bld{border-color:var(--green);}
 .base-b-card.active-bld::before{content:'';display:block;height:2px;background:linear-gradient(90deg,var(--green),var(--teal));margin:-5px -7px 4px;}
 .base-b-card.boosted{border-color:var(--gold);}
 .base-b-card.boosted::before{background:linear-gradient(90deg,var(--gold),var(--orange));}
 .boost-btn{
-  width:100%;margin-top:4px;
+  width:100%;margin-top:auto;padding-top:0;
   font-family:var(--font);font-size:9px;padding:5px 4px;
   background:transparent;border:1px solid var(--teal);color:var(--teal);
   cursor:pointer;transition:all .15s;
@@ -507,7 +517,6 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     gap: 4px !important;
     overflow: hidden;
   }
-  .logo { font-size: 7px !important; flex-shrink: 0; }
   .epoch-info { gap: 4px; min-width: 0; }
   .epoch-name { font-size: 10px !important; white-space: nowrap; }
   .hstats { gap: 4px; margin-left: auto !important; flex-wrap: nowrap !important; }
@@ -581,16 +590,18 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     justify-content: center;
   }
   .click-btn {
-    min-width: 72px !important;
-    min-height: 60px !important;
+    width: 76px !important;
+    min-width: 76px !important;
+    min-height: 64px !important;
     flex-direction: column !important;
     gap: 2px !important;
     font-size: 10px !important;
-    padding: 8px 10px !important;
+    padding: 8px 6px !important;
     align-items: center !important;
     justify-content: center !important;
   }
   .click-btn .cb-emoji { font-size: 24px !important; }
+  .click-btn .cb-name { font-size: 9px !important; text-align: center !important; max-width: 100%; }
   .click-btn .cb-amt { position: static !important; font-size: 9px !important; }
   .click-btn .cb-ac { position: static !important; font-size: 8px !important; }
 
@@ -642,8 +653,9 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     overflow-y: auto; overflow-x: hidden;
     padding-bottom: calc(var(--nav-h) + 16px) !important;
   }
-  .click-btn { min-width: 80px !important; min-height: 72px !important; flex-direction: column !important; gap: 3px !important; font-size: 10px !important; padding: 10px !important; align-items: center !important; justify-content: center !important; }
+  .click-btn { width: 84px !important; min-width: 84px !important; min-height: 72px !important; flex-direction: column !important; gap: 3px !important; font-size: 10px !important; padding: 10px 6px !important; align-items: center !important; justify-content: center !important; }
   .click-btn .cb-emoji { font-size: 28px !important; }
+  .click-btn .cb-name { font-size: 9px !important; text-align: center !important; max-width: 100%; white-space: normal !important; line-height: 1.2; }
   .center-area.mob-clicker-mode { overflow: hidden !important; padding: 0 !important; }
   .center-area.mob-map-mode { padding: 0 !important; padding-bottom: calc(var(--nav-h)) !important; }
   .center-area.mob-map-mode .clicker-strip,
@@ -668,10 +680,10 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   .mob-nav-btn {
     flex: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse;
     align-items: center;
     justify-content: center;
-    gap: 1px;
+    gap: 2px;
     background: transparent;
     border: none;
     border-top: 2px solid transparent;
@@ -842,7 +854,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 @media(max-width:700px){
   #mob-nav {
     border-top: 2px solid var(--gold) !important;
-    background: linear-gradient(180deg, #0a0c10 0%, #070a0f 100%) !important;
+    background: linear-gradient(180deg, var(--panel) 0%, var(--bg) 100%) !important;
   }
   .mob-nav-btn {
     font-size: 8px !important;
@@ -873,9 +885,6 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     <span class="nav-icon">🛡️</span><span class="nav-label">ЗАХИСТ</span>
   </button>
   <button class="mob-nav-btn" id="nav-4" onclick="mobNav(4)">
-    <span class="nav-icon">🔬</span><span class="nav-label">ТЕХНО</span>
-  </button>
-  <button class="mob-nav-btn" id="nav-5" onclick="mobNav(5)">
     <span class="nav-icon">📦</span><span class="nav-label">РЕСУРСИ</span>
   </button>
 </div>
@@ -908,7 +917,6 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 
 <div class="app">
 <header>
-  <div class="logo">⚒ КУБ.ЕВО</div>
   <div class="epoch-info">
     <div>
       <div class="epoch-label">ЕПОХА <span id="ep-num" style="color:var(--gold)">1</span></div>
@@ -950,12 +958,10 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 <div class="left-panel">
   <div class="panel-tabs">
     <button class="ptab active" onclick="switchTab('resources')" id="tab-btn-resources">📦 РЕСУРСИ</button>
-    <button class="ptab" onclick="switchTab('tech')">🔬 ТЕХНО</button>
     <button class="ptab" onclick="switchTab('research')">🧬 НАУКА</button>
     <button class="ptab" onclick="switchTab('exchange')">⚗️ БІРЖА</button>
     <button class="ptab" onclick="switchTab('binds')">⚡ ІНСТР.</button>
     <button class="ptab" onclick="switchTab('defense')" id="tab-btn-defense">🛡 ЗАХИСТ</button>
-    <button class="ptab" onclick="switchTab('hero')">⚔️ ГЕРОЙ</button>
     <button class="ptab" onclick="switchTab('quests')" id="tab-btn-quests">📜 КВЕСТИ</button>
     <button class="ptab" onclick="switchTab('achievements')" id="tab-btn-ach">🏆 АЧІВКИ</button>
     <button class="ptab" onclick="switchTab('stats')">📊 СТАТ.</button>
@@ -964,8 +970,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
     <div class="sh">📦 РЕСУРСИ ЕПОХИ <span id="res-ep-label" class="sh-badge">1</span></div>
     <button onclick="confirmResetGame()" style="margin:6px 8px 0;width:calc(100% - 16px);font-family:var(--font);font-size:10px;padding:6px;border:1px solid var(--red);background:transparent;color:var(--red);cursor:pointer;letter-spacing:1px;" title="Скинути весь прогрес і почати заново">🔄 ПОЧАТИ З ПОЧАТКУ</button>
     <div class="res-grid" id="ui-resources"></div>
-  </div>
-  <div class="tab-content" id="tab-tech">
+    <div class="sh" style="margin-top:10px;">🔬 ДЕРЕВО ТЕХНОЛОГІЙ</div>
     <div id="ui-tech-tree"></div>
   </div>
   <div class="tab-content" id="tab-exchange">
@@ -977,6 +982,8 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   </div>
   <div class="tab-content" id="tab-defense">
     <div id="ui-defense"></div>
+    <div class="sh" style="margin-top:10px;">⚔️ ГЕРОЇ МІСТА</div>
+    <div id="tab-hero-content" style="width:100%;"></div>
   </div>
   <div class="tab-content" id="tab-quests">
     <div id="ui-quests"></div>
@@ -986,9 +993,6 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   </div>
   <div class="tab-content" id="tab-research">
     <div id="tab-research-content" style="width:100%;"></div>
-  </div>
-  <div class="tab-content" id="tab-hero">
-    <div id="tab-hero-content" style="width:100%;"></div>
   </div>
   <div class="tab-content" id="tab-stats">
     <div id="tab-stats-content" style="width:100%;"></div>
@@ -1007,6 +1011,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
   </div>
   <div class="map-area" id="map-area-wrap">
     <canvas id="isoCanvas" style="display:block;width:100%;height:100%;"></canvas>
+    <div class="game-watermark">⚒ КУБІЧНА ЕВОЛЮЦІЯ</div>
     <div style="position:absolute;top:8px;left:10px;font-size:10px;color:var(--dim);">🗺 Еп.<span id="map-epoch" style="color:var(--gold)">1</span></div>
     <div class="map-stats-overlay">
       <div class="map-stat-chip">🏗 <span id="map-bld-count">0</span> споруд</div>
@@ -2708,14 +2713,13 @@ function switchTab(t){
   document.querySelectorAll('.ptab').forEach(el=>el.classList.remove('active'));
   let tabEl=document.getElementById('tab-'+t);
   if(tabEl){ tabEl.classList.add('active'); tabEl.dataset.needsRender='1'; }
-  let tabs=['resources','tech','research','exchange','binds','defense','hero','quests','achievements','stats'];
+  let tabs=['resources','research','exchange','binds','defense','quests','achievements','stats'];
   let idx=tabs.indexOf(t);
   document.querySelectorAll('.ptab')[idx]?.classList.add('active');
-  if(t==='defense')     renderDefenseTab();
+  if(t==='defense')     { renderDefenseTab(); renderHeroTab(); }
   if(t==='quests')      renderQuestsTab();
   if(t==='achievements')renderAchievementsTab();
   if(t==='research')    renderResearchTab();
-  if(t==='hero')        renderHeroTab();
   if(t==='stats')       renderStatsTab();
   if(t==='exchange')    renderExchange();
 }
@@ -3063,7 +3067,7 @@ function renderUI(){
     let ttip=`${RES[res].n} (Еп.${RES[res].ep}) · +${amt} за клік${acRes?' · 🤖 AC активний':''}`;
     cDiv.innerHTML+=`<button class="click-btn${isCur?' cur-epoch':''}" onclick="clickGather('${res}',event)" title="${ttip}">
       <span class="cb-emoji">${RES[res].e}</span>
-      <span>${RES[res].n}</span>
+      <span class="cb-name">${RES[res].n}</span>
       <span class="cb-amt">+${amt}</span>
       ${acRes&&isCur?`<span class="cb-ac">🤖</span>`:''}
     </button>`;
@@ -3139,11 +3143,10 @@ function renderUI(){
 
   // Active tab renders
   let activeTab = document.querySelector('.tab-content.active')?.id;
-  if(activeTab==='tab-defense') renderDefenseTab();
+  if(activeTab==='tab-defense') { renderDefenseTab(); renderHeroTab(); }
   if(activeTab==='tab-quests') renderQuestsTab();
   if(activeTab==='tab-achievements') renderAchievementsTab();
   if(activeTab==='tab-research') renderResearchTab();
-  if(activeTab==='tab-hero') renderHeroTab();
   if(activeTab==='tab-stats') renderStatsTab();
 }
 
@@ -6030,7 +6033,6 @@ function renderHeroTab(){
   let purchasedCount = Object.values(heroRoster).filter(h=>h.purchased).length;
 
   let html = `<div style="padding:6px 0 2px;">
-    <div class="sh" style="margin-bottom:4px;">⚔️ ГЕРОЇ МІСТА</div>
     <div style="font-size:10px;color:var(--dim);margin-bottom:8px;line-height:1.5;">
       Активні герої (до 5): <b style="color:var(--gold)">1 Головний ×150%</b> бонусу,
       <b style="color:var(--green)">4 Обраних ×100%</b>, решта придбаних героїв дають <b style="color:var(--dim)">×10%</b> пасивно.
@@ -6368,11 +6370,11 @@ const _origProcessBuildings = typeof processBuildings === 'function' ? processBu
 function isMobile() { return window.innerWidth <= 700; }
 
 // Підпанелі для мобільного:
-// 0 = РЕСУРСИ (left-panel, sub=resources)
-// 1 = КЛІКЕР  (center-area, ховаємо карту, показуємо клікер)
+// 0 = КЛІКЕР  (center-area, ховаємо карту, показуємо клікер)
+// 1 = СПОРУДИ (right-panel, без логу)
 // 2 = МІСТО   (center-area, показуємо карту)
-// 3 = СПОРУДИ (right-panel, без логу)
-// 4 = УПРАВЛ. (left-panel, sub=tech/quests/defense)
+// 3 = ЗАХИСТ  (left-panel, sub=defense+герої)
+// 4 = РЕСУРСИ (left-panel, sub=resources+техно)
 
 function mobNav(idx) {
   if (!isMobile()) return;
@@ -6413,12 +6415,7 @@ function mobNav(idx) {
     switchTab('defense');
 
   } else if (idx === 4) {
-    // ТЕХНО — ліва панель, вкладка tech
-    leftPanel && leftPanel.classList.add('mob-active');
-    switchTab('tech');
-
-  } else if (idx === 5) {
-    // РЕСУРСИ — ліва панель, вкладка resources
+    // РЕСУРСИ — ліва панель, вкладка resources (включно з деревом технологій)
     leftPanel && leftPanel.classList.add('mob-active');
     switchTab('resources');
   }
