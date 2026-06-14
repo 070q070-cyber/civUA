@@ -6552,9 +6552,12 @@ initTutorial();
 <script>
   // Запускаємо після завантаження map.js та expansions.js,
   // щоб patchSaveSystem спрацював до cloudLoad/deserializeGameState
-  initMap();
-  syncAllBuildingsToMap();
-  init(); // тепер expansions вже пропатчені — save/load працює коректно
+  (async () => {
+    initMap();
+    syncAllBuildingsToMap();
+    await init(); // expansions вже пропатчені — save/load працює коректно
+    initExpansions(); // UI вкладок, моб.навігація, ресурси — після завантаження збережень
+  })();
 </script>
 </body>
 </html>
