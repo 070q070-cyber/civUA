@@ -5175,7 +5175,7 @@ async function openLeaderboard() {
 // ============================================================
 // STARTUP — завантажуємо хмарний прогрес
 // ============================================================
-(async function init() {
+async function init() {
   // Ініціалізуємо карту та UI
   // initMap() викликається після завантаження map.js (нижче)
   recalcDefenseStats();
@@ -5195,7 +5195,7 @@ async function openLeaderboard() {
 
   checkOfflineEarnings(); // перевіряємо офлайн заробіток
   addLog('☁️ Синхронізація з хмарою активна. Прогрес зберігається автоматично!', true);
-})();
+}
 
 
 
@@ -6549,6 +6549,12 @@ initTutorial();
 <!-- ═══ ІЗОМЕТРИЧНА МАПА — окремий файл ═══ -->
 <script src="map.js"></script>
 <script src="expansions.js"></script>
-<script>initMap(); syncAllBuildingsToMap();</script>
+<script>
+  // Запускаємо після завантаження map.js та expansions.js,
+  // щоб patchSaveSystem спрацював до cloudLoad/deserializeGameState
+  initMap();
+  syncAllBuildingsToMap();
+  init(); // тепер expansions вже пропатчені — save/load працює коректно
+</script>
 </body>
 </html>
