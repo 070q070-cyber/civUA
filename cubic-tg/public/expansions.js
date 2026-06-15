@@ -71,6 +71,255 @@ function injectResources(){
 injectResources();
 
 // ============================================================
+// СИСТЕМА КОЛЕКЦІОНУВАННЯ
+// ============================================================
+// Кожна побічна активність (душі/мисливство/рибалка/гриби/трави/геологія)
+// видає ТІЛЬКИ колекційні предмети (не сирі ресурси).
+// Кожен унікальний предмет дає невеликий пасивний бонус до виробництва.
+// Повний набір (сет) дає значний бонус.
+// Різні предмети здобуваються РІЗНИМИ методами (конкретна локація/трофей/
+// місце рибалки/гриб/трава/родовище) — це й є "методики добування".
+
+const COLLECTIBLE_SETS = {
+  souls: {
+    name: 'Фрагменти Вічності', icon: '👻', color: 'var(--purple)',
+    desc: 'Уламки душ стародавніх істот, що зберігають їхню пам\'ять.',
+    setBonus: { globalResMult: 0.05, label: '+5% до всього виробництва' },
+    items: [
+      { id:'soul_shard_ruins',    name:'Уламок з Руїн',        icon:'🏚', method:'ruins',     methodLabel:'Руїни',             chance:0.12, itemBonus:0.005 },
+      { id:'soul_shard_grave',    name:'Кістяний амулет',      icon:'⚰️', method:'graveyard', methodLabel:'Цвинтар',           chance:0.14, itemBonus:0.005 },
+      { id:'soul_shard_cave',     name:'Світний кристал',      icon:'🕳', method:'cave',      methodLabel:'Печера',            chance:0.16, itemBonus:0.005 },
+      { id:'soul_shard_altar',    name:'Печатка вівтаря',      icon:'🗿', method:'altar',     methodLabel:'Стародавній вівтар', chance:0.18, itemBonus:0.01  },
+      { id:'soul_shard_abyss',    name:'Серце Безодні',        icon:'🌑', method:'abyss',     methodLabel:'Безодня',           chance:0.20, itemBonus:0.015 },
+    ]
+  },
+  hunting: {
+    name: 'Мисливські трофеї', icon: '🏹', color: 'var(--orange)',
+    desc: 'Рідкісні частини здобутих тварин — лапи, ікла, перо легендарних звірів.',
+    setBonus: { globalResMult: 0.05, label: '+5% до всього виробництва' },
+    items: [
+      { id:'trophy_rabbit', name:'Кролячий хвостик-талісман', icon:'🐰', method:'rabbit', methodLabel:'Кролик',  chance:0.15, itemBonus:0.005 },
+      { id:'trophy_deer',   name:'Оленячі роги',              icon:'🦌', method:'deer',   methodLabel:'Олень',   chance:0.15, itemBonus:0.005 },
+      { id:'trophy_boar',   name:'Бивень вепра',              icon:'🐗', method:'boar',   methodLabel:'Вепр',    chance:0.13, itemBonus:0.008 },
+      { id:'trophy_wolf',   name:'Вовчий ікол',               icon:'🐺', method:'wolf',   methodLabel:'Вовк',    chance:0.12, itemBonus:0.01  },
+      { id:'trophy_bear',   name:'Медвежий кіготь',           icon:'🐻', method:'bear',   methodLabel:'Ведмідь', chance:0.10, itemBonus:0.012 },
+      { id:'trophy_eagle',  name:'Перо орла-вожака',          icon:'🦅', method:'eagle',  methodLabel:'Орел',    chance:0.08, itemBonus:0.015 },
+    ]
+  },
+  fishing: {
+    name: 'Скарби глибин', icon: '🎣', color: 'var(--blue)',
+    desc: 'Дивні артефакти та луска незвичайних риб, знайдені у воді.',
+    setBonus: { globalResMult: 0.05, label: '+5% до всього виробництва' },
+    items: [
+      { id:'treasure_stream',  name:'Гладкий камінець',     icon:'💧', method:'stream',  methodLabel:'Струмок',      chance:0.15, itemBonus:0.005 },
+      { id:'treasure_lake',    name:'Перлина озера',        icon:'🏞', method:'lake',    methodLabel:'Озеро',        chance:0.13, itemBonus:0.007 },
+      { id:'treasure_river',   name:'Стара монета',         icon:'🌊', method:'river',   methodLabel:'Ріка',         chance:0.12, itemBonus:0.009 },
+      { id:'treasure_sea',     name:'Мушля-спіраль',        icon:'🐚', method:'sea',     methodLabel:'Море',         chance:0.10, itemBonus:0.012 },
+      { id:'treasure_deepsea', name:'Бляшка левіафана',     icon:'🔵', method:'deep_sea',methodLabel:'Глибоке море', chance:0.08, itemBonus:0.015 },
+    ]
+  },
+  mushroom: {
+    name: 'Грибний гербарій', icon: '🍄', color: 'var(--green)',
+    desc: 'Засушені зразки рідкісних грибів для колекції травника.',
+    setBonus: { globalResMult: 0.05, label: '+5% до всього виробництва' },
+    items: [
+      { id:'spec_common',      name:'Зразок: звичайний гриб', icon:'🍄', method:'common',     methodLabel:'Звичайні гриби', chance:0.18, itemBonus:0.005 },
+      { id:'spec_forest',      name:'Зразок: лісовий гриб',   icon:'🌲', method:'forest',     methodLabel:'Лісові гриби',   chance:0.15, itemBonus:0.005 },
+      { id:'spec_chanterelle', name:'Зразок: лисичка',        icon:'🟡', method:'chanterelle',methodLabel:'Лисички',        chance:0.12, itemBonus:0.008 },
+      { id:'spec_porcini',     name:'Зразок: білий гриб',     icon:'🟫', method:'porcini',    methodLabel:'Білі гриби',     chance:0.10, itemBonus:0.01  },
+      { id:'spec_truffle',     name:'Зразок: трюфель',        icon:'⚫', method:'truffle',    methodLabel:'Трюфель',        chance:0.06, itemBonus:0.015 },
+    ]
+  },
+  herb: {
+    name: 'Гербарій трав', icon: '🌿', color: 'var(--teal)',
+    desc: 'Засушені рідкісні трави для алхімічної колекції.',
+    setBonus: { globalResMult: 0.05, label: '+5% до всього виробництва' },
+    items: [
+      { id:'press_nettle',    name:'Пресована кропива',  icon:'🌿', method:'nettle',    methodLabel:'Кропива',   chance:0.18, itemBonus:0.004 },
+      { id:'press_mint',      name:'Пресована м\'ята',    icon:'🌱', method:'mint',      methodLabel:'М\'ята',     chance:0.16, itemBonus:0.004 },
+      { id:'press_lavender',  name:'Пресована лаванда',  icon:'💜', method:'lavender',  methodLabel:'Лаванда',   chance:0.13, itemBonus:0.006 },
+      { id:'press_chamomile', name:'Пресована ромашка',  icon:'🌼', method:'chamomile', methodLabel:'Ромашка',   chance:0.13, itemBonus:0.006 },
+      { id:'press_valerian',  name:'Пресована рідкісна трава', icon:'🌸', method:'valerian', methodLabel:'Рідкісна трава', chance:0.08, itemBonus:0.01 },
+      { id:'press_mandrake',  name:'Корінь мандрагори',  icon:'🌺', method:'mandrake',  methodLabel:'Мандрагора', chance:0.05, itemBonus:0.015 },
+    ]
+  },
+  geology: {
+    name: 'Мінералогічна колекція', icon: '⛏️', color: 'var(--gold)',
+    desc: 'Зразки рідкісних мінералів та копалин з кожного типу родовищ.',
+    setBonus: { globalResMult: 0.08, label: '+8% до всього виробництва' },
+    items: [
+      { id:'mineral_coal',    name:'Зразок вугілля',       icon:'🕳', method:'coal_vein',   methodLabel:'Вугільна жила',     chance:0.14, itemBonus:0.005 },
+      { id:'mineral_iron',    name:'Зразок залізної руди', icon:'🔩', method:'iron_vein',   methodLabel:'Залізна жила',      chance:0.12, itemBonus:0.007 },
+      { id:'mineral_copper',  name:'Зразок мідної руди',   icon:'🟤', method:'copper_ore',  methodLabel:'Мідна руда',        chance:0.12, itemBonus:0.007 },
+      { id:'mineral_gem',     name:'Огранений самоцвіт',   icon:'💎', method:'gem_deposit', methodLabel:'Коштовне каміння',  chance:0.08, itemBonus:0.012 },
+      { id:'mineral_oil',     name:'Флакон нафти',         icon:'🛢', method:'oil_pocket',  methodLabel:'Нафтова кишеня',    chance:0.07, itemBonus:0.012 },
+      { id:'mineral_crystal', name:'Сяючий кристал',       icon:'🔮', method:'crystal_cave',methodLabel:'Кристальна печера', chance:0.06, itemBonus:0.015 },
+      { id:'mineral_fossil',  name:'Скам\'яніла мушля',     icon:'🦴', method:'fossil_site', methodLabel:'Скам\'янілості',    chance:0.10, itemBonus:0.008 },
+      { id:'mineral_silicon', name:'Силіконовий зливок',   icon:'💎', method:'silicon_vein',methodLabel:'Кремнієва жила',    chance:0.05, itemBonus:0.015 },
+    ]
+  },
+};
+
+const COLLECTION_SYSTEM = {
+  owned: {}, // { itemId: count }
+
+  isOwned(itemId){ return (this.owned[itemId]||0) > 0; },
+  count(itemId){ return this.owned[itemId]||0; },
+
+  // Чи зібраний повний сет
+  isSetComplete(setId){
+    let set = COLLECTIBLE_SETS[setId];
+    if(!set) return false;
+    return set.items.every(it=>this.isOwned(it.id));
+  },
+
+  // Кількість зібраних унікальних предметів у сеті
+  setProgress(setId){
+    let set = COLLECTIBLE_SETS[setId];
+    if(!set) return {owned:0, total:0};
+    return { owned: set.items.filter(it=>this.isOwned(it.id)).length, total: set.items.length };
+  },
+
+  // Сумарний бонус до глобального виробництва від УСІХ зібраних предметів + завершених сетів
+  getGlobalResMult(){
+    let total = 0;
+    Object.entries(COLLECTIBLE_SETS).forEach(([setId, set])=>{
+      set.items.forEach(it=>{
+        if(this.isOwned(it.id)) total += it.itemBonus||0;
+      });
+      if(this.isSetComplete(setId)) total += set.setBonus.globalResMult||0;
+    });
+    return total;
+  },
+
+  // Бонус конкретно для однієї активності (сума itemBonus тільки цього сету + setBonus якщо завершено)
+  getActivityMult(setId){
+    let set = COLLECTIBLE_SETS[setId];
+    if(!set) return 1;
+    let bonus = 0;
+    set.items.forEach(it=>{ if(this.isOwned(it.id)) bonus += (it.itemBonus||0); });
+    if(this.isSetComplete(setId)) bonus += (set.setBonus.globalResMult||0);
+    return 1 + bonus;
+  },
+};
+
+// Спроба здобути колекційний предмет за результатами активності.
+// setId — який набір (souls/hunting/fishing/mushroom/herb/geology)
+// methodId — конкретний метод (locationId/preyId/spotId/типId/depositId)
+// extraChanceBonus — додатковий шанс від прокачок (0..1)
+// Повертає предмет (об'єкт) якщо здобуто, інакше null.
+function rollCollectible(setId, methodId, extraChanceBonus=0){
+  let set = COLLECTIBLE_SETS[setId];
+  if(!set) return null;
+  let item = set.items.find(it=>it.method===methodId);
+  if(!item) return null;
+  let chance = item.chance + (extraChanceBonus||0);
+  if(Math.random() >= chance) return null;
+
+  let wasNew = !COLLECTION_SYSTEM.isOwned(item.id);
+  COLLECTION_SYSTEM.owned[item.id] = (COLLECTION_SYSTEM.owned[item.id]||0) + 1;
+
+  if(wasNew){
+    if(typeof addLog==='function') addLog(`📚 НОВИЙ ПРЕДМЕТ КОЛЕКЦІЇ: ${item.icon} ${item.name}!`, true);
+    showExpToast(`📚 Колекція: ${item.icon} ${item.name}!`);
+    // Перевірка завершення сету
+    if(COLLECTION_SYSTEM.isSetComplete(setId)){
+      if(typeof addLog==='function') addLog(`🏅 НАБІР ЗАВЕРШЕНО: «${set.name}»! ${set.setBonus.label}`, true);
+      showExpToast(`🏅 Набір «${set.name}» завершено!`);
+    }
+  } else {
+    if(typeof addLog==='function') addLog(`📚 Дублікат: ${item.icon} ${item.name} (×${COLLECTION_SYSTEM.owned[item.id]})`);
+  }
+  return item;
+}
+
+// Компактний віджет прогресу колекції для вкладки активності
+function renderCollectionMiniWidget(setId){
+  let set = COLLECTIBLE_SETS[setId];
+  if(!set) return '';
+  let p = COLLECTION_SYSTEM.setProgress(setId);
+  let done = COLLECTION_SYSTEM.isSetComplete(setId);
+  let bonus = ((COLLECTION_SYSTEM.getActivityMult(setId)-1)*100).toFixed(1);
+  return `<div style="background:var(--panel2);border:1px solid ${done?set.color:'var(--border)'};padding:6px 8px;margin-bottom:6px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <span style="font-size:11px;color:${set.color}">${set.icon} ${set.name}</span>
+      <span style="font-size:10px;color:${done?'var(--gold)':'var(--dim)'}">${p.owned}/${p.total}${done?' 🏅':''}</span>
+    </div>
+    <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:3px;">
+    ${set.items.map(it=>{
+      let owned = COLLECTION_SYSTEM.isOwned(it.id);
+      let cnt = COLLECTION_SYSTEM.count(it.id);
+      return `<div title="${it.name} (${it.methodLabel})" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;background:${owned?'rgba(232,184,75,.08)':'#0a0a0a'};border:1px solid ${owned?set.color:'#1a1a1a'};opacity:${owned?1:.25};position:relative;">
+        ${it.icon}${cnt>1?`<span style="position:absolute;bottom:-2px;right:-1px;font-size:6px;color:var(--gold);">×${cnt}</span>`:''}
+      </div>`;
+    }).join('')}
+    </div>
+    <div style="font-size:9px;color:var(--teal)">✨ Бонус від колекції: +${bonus}% до шансів та виробництва</div>
+  </div>`;
+}
+
+// Рендер вкладки колекції
+function renderCollectionTab(){
+  let div = document.getElementById('tab-collection-content');
+  if(!div) return;
+
+  let totalBonus = (COLLECTION_SYSTEM.getGlobalResMult()*100).toFixed(1);
+  let totalItems = 0, totalOwned = 0, totalSets = 0, totalSetsDone = 0;
+  Object.keys(COLLECTIBLE_SETS).forEach(setId=>{
+    let p = COLLECTION_SYSTEM.setProgress(setId);
+    totalItems += p.total; totalOwned += p.owned; totalSets++;
+    if(COLLECTION_SYSTEM.isSetComplete(setId)) totalSetsDone++;
+  });
+
+  let html = `<div style="padding:4px;">
+    <div class="sh">📚 КОЛЕКЦІЯ</div>
+    <div style="background:#0a0a1a;border:1px solid var(--gold);padding:8px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+        <span>📦 Предметів: <b style="color:var(--gold)">${totalOwned}</b> / ${totalItems}</span>
+        <span>🏅 Наборів: <b style="color:var(--gold)">${totalSetsDone}</b> / ${totalSets}</span>
+      </div>
+      <div style="font-size:11px;color:var(--teal);">✨ Загальний бонус до виробництва: <b>+${totalBonus}%</b></div>
+    </div>`;
+
+  Object.entries(COLLECTIBLE_SETS).forEach(([setId, set])=>{
+    let p = COLLECTION_SYSTEM.setProgress(setId);
+    let done = COLLECTION_SYSTEM.isSetComplete(setId);
+    html += `<div style="background:var(--panel2);border:1px solid ${done?set.color:'var(--border)'};padding:8px;margin-bottom:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+        <span style="font-size:12px;color:${set.color}">${set.icon} ${set.name}</span>
+        <span style="font-size:10px;color:${done?'var(--gold)':'var(--dim)'}">${p.owned}/${p.total}${done?' ✅':''}</span>
+      </div>
+      <div style="font-size:9px;color:var(--dim);margin-bottom:5px;">${set.desc}</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px;">
+      ${set.items.map(it=>{
+        let owned = COLLECTION_SYSTEM.isOwned(it.id);
+        let cnt = COLLECTION_SYSTEM.count(it.id);
+        return `<div title="${it.name} (${it.methodLabel}) — ${owned?'+'+(it.itemBonus*100).toFixed(1)+'%':'не знайдено'}"
+          style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;
+          background:${owned?'rgba(232,184,75,.08)':'#0a0a0a'};border:1px solid ${owned?set.color:'#1a1a1a'};
+          opacity:${owned?1:.25};position:relative;">
+          ${it.icon}
+          ${cnt>1?`<span style="position:absolute;bottom:-1px;right:-1px;font-size:8px;color:var(--gold);background:#000;padding:0 2px;">×${cnt}</span>`:''}
+        </div>`;
+      }).join('')}
+      </div>
+      <div style="font-size:9px;color:${done?'var(--teal)':'var(--dim)'};">
+        ${done?`🏅 Сет завершено: ${set.setBonus.label}`:`Зберіть усі предмети для бонусу: ${set.setBonus.label}`}
+      </div>
+    </div>`;
+  });
+
+  html += `<div style="font-size:10px;color:var(--dim);border:1px solid var(--border);padding:6px;">
+    💡 Кожна побічна активність (душі/мисливство/рибалка/гриби/трави/геологія) має власний набір унікальних предметів.
+    Конкретний метод видобутку (локація/трофей/місце/тип/родовище) визначає, який предмет можна отримати.
+    Дублікати показуються лічильником ×N, але бонус дають лише унікальні предмети та завершені набори.
+  </div></div>`;
+
+  div.innerHTML = html;
+}
+
+
+// ============================================================
 // 1. ПОШУК ДУШ
 // ============================================================
 const SOUL_SYSTEM = {
@@ -162,6 +411,9 @@ function finishSoulSearch(){
   if(typeof addLog === 'function') addLog(logMsg, found && roll < loc.rareChance);
   if(found) showExpToast(logMsg);
 
+  // Шанс отримати колекційний предмет (незалежно від результату пошуку душі)
+  rollCollectible('souls', loc.id, COLLECTION_SYSTEM.getActivityMult('souls')-1);
+
   // Перевірка перемоги
   if(sys.totalFound >= sys.totalTarget){
     if(typeof addLog === 'function') addLog('🏆 ПЕРЕМОЖЕЦЬ! Зібрано 100 Душ Стародавніх! Шлях Синтезу відкритий!', true);
@@ -197,11 +449,14 @@ function renderSoulTab(){
       <div style="font-size:10px;color:var(--teal);">✨ Бонус виробництва від Душ: +${passBonus}%</div>
     </div>
 
+    ${renderCollectionMiniWidget('souls')}
+
     <div class="sh">📍 ЛОКАЦІЯ ПОШУКУ</div>
     <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;">
     ${sys.locations.map(l=>{
       let avail = typeof epoch === 'undefined' || epoch >= l.minEp;
       let sel = sys.activeLocation === l.id;
+      let item = COLLECTIBLE_SETS.souls.items.find(it=>it.method===l.id);
       return `<div style="background:${sel?'#0d0a1a':'var(--panel2)'};border:1px solid ${sel?'var(--purple)':avail?'var(--border)':'#1a1a1a'};padding:7px;cursor:${avail?'pointer':'not-allowed'};opacity:${avail?1:.4};"
         onclick="${avail?`setSoulLocation('${l.id}')`:''}">
         <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -215,6 +470,7 @@ function renderSoulTab(){
         <div style="font-size:10px;color:var(--teal);margin-top:2px;">
           Шанс: ${Math.round(l.chance*100)}% · 👻 ${l.reward.soul[0]}-${l.reward.soul[1]}
           <span style="color:var(--gold)"> · Рідко: ${Math.round(l.rareChance*100)}% → ${l.rareReward.soul[0]}-${l.rareReward.soul[1]}</span>
+          ${item?` · ${item.icon} Колекція: ${Math.round(item.chance*100)}%`:''}
         </div>
       </div>`;
     }).join('')}
@@ -235,7 +491,7 @@ function renderSoulTab(){
     </div>
 
     <div style="font-size:10px;color:var(--dim);border:1px solid var(--border);padding:6px;">
-      💡 Душі Стародавніх потрібні для Перемоги. Кожні 10 душ дають +1% до виробництва. Пошук займає ${sys.searchDuration}с. Перезарядка: ${sys.cooldown}с.
+      💡 Душі Стародавніх потрібні для Перемоги. Кожна локація також дає шанс на унікальний колекційний предмет. Пошук займає ${sys.searchDuration}с. Перезарядка: ${sys.cooldown}с.
     </div>
   </div>`;
   div.innerHTML = html;
@@ -330,23 +586,18 @@ function finishHunt(){
     return;
   }
 
-  // Беремо найкращий трофей
-  let prey = caught.sort((a,b)=>(b.meat[1]-a.meat[1]))[0];
+  // Беремо найкращий трофей (за рідкістю)
+  let prey = caught.sort((a,b)=>(b.rare?1:0)-(a.rare?1:0))[0];
   sys.lastPrey = prey;
 
-  let meat = rndRange(prey.meat[0], prey.meat[1]);
-  let hide = rndRange(prey.hide[0], prey.hide[1]);
-  let feather = rndRange(prey.feather[0], prey.feather[1]);
-
-  if(typeof storage !== 'undefined'){
-    storage.game_meat = (storage.game_meat||0) + meat;
-    storage.hide = (storage.hide||0) + hide;
-    if(feather) storage.feather = (storage.feather||0) + feather;
-  }
-
-  let msg = `🏹 ${prey.name} здобутий! +${meat}🍖 ${hide?`+${hide}🦊`:''}${feather?` +${feather}🪶`:''}`;
+  let msg = `🏹 ${prey.name} здобутий!`;
   if(typeof addLog === 'function') addLog(msg, prey.rare);
   showExpToast(msg);
+
+  // Колекційний предмет залежить від конкретного трофея (методу полювання)
+  let scopeBonus = sys.upgrades.scope.lvl * 0.02;
+  rollCollectible('hunting', prey.id, scopeBonus + (COLLECTION_SYSTEM.getActivityMult('hunting')-1));
+
   if(typeof markDirty === 'function') markDirty('full');
   renderHuntingTab();
 }
@@ -379,20 +630,15 @@ function renderHuntingTab(){
   let cdRem = Math.max(0, Math.ceil(cd - (now - sys.lastHunt)));
   let trapP = sys.trapPassive;
   let meat = typeof storage !== 'undefined' ? (storage.game_meat||0) : 0;
-  let hide = typeof storage !== 'undefined' ? (storage.hide||0) : 0;
 
   let html = `<div style="padding:4px;">
     <div class="sh">🏹 МИСЛИВСТВО</div>
+    ${renderCollectionMiniWidget('hunting')}
     <div style="display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
       <div style="background:var(--panel2);border:1px solid var(--border);padding:6px 10px;flex:1;text-align:center;">
         <div style="font-size:18px;">🍖</div>
         <div style="font-size:13px;color:var(--text)">${fmt2(meat)}</div>
-        <div style="font-size:10px;color:var(--dim)">М'ясо дичини</div>
-      </div>
-      <div style="background:var(--panel2);border:1px solid var(--border);padding:6px 10px;flex:1;text-align:center;">
-        <div style="font-size:18px;">🦊</div>
-        <div style="font-size:13px;color:var(--text)">${fmt2(hide)}</div>
-        <div style="font-size:10px;color:var(--dim)">Шкури</div>
+        <div style="font-size:10px;color:var(--dim)">М'ясо (з пасток)</div>
       </div>
       <div style="background:var(--panel2);border:1px solid var(--border);padding:6px 10px;flex:1;text-align:center;">
         <div style="font-size:18px;">🏹</div>
@@ -400,7 +646,7 @@ function renderHuntingTab(){
         <div style="font-size:10px;color:var(--dim)">Полювань</div>
       </div>
     </div>
-    ${trapP > 0 ? `<div style="font-size:11px;color:var(--green);border:1px solid #1a3520;padding:5px 8px;margin-bottom:6px;">🪤 Пастки приносять +${(trapP*60).toFixed(1)} 🍖/хв пасивно</div>` : ''}
+    ${trapP > 0 ? `<div style="font-size:11px;color:var(--green);border:1px solid #1a3520;padding:5px 8px;margin-bottom:6px;">🪤 Пастки приносять +${(trapP*60).toFixed(1)} 🍖/хв пасивно (для гарнізону)</div>` : ''}
     ${sys.hunting ? `
       <div style="font-size:11px;color:var(--orange);margin-bottom:4px;">🏹 Полювання...</div>
       <div style="height:8px;background:#070a0f;border:1px solid var(--orange);margin-bottom:8px;">
@@ -436,7 +682,7 @@ function renderHuntingTab(){
     </div>
 
     <div style="font-size:10px;color:var(--dim);border:1px solid var(--border);padding:6px;margin-top:6px;">
-      💡 Дичина дає 🍖 та 🦊 для крафту. М'ясо живить воїнів гарнізону.
+      💡 Кожне успішне полювання дає шанс на унікальний трофей у колекцію. Конкретна тварина визначає, який трофей можливий. Пастки пасивно годують гарнізон.
     </div>
   </div>`;
   div.innerHTML = html;
@@ -493,24 +739,20 @@ function finishFishing(){
   sys.fishing = false; sys.fishProgress = 0; sys.lastFish = Date.now()/1000;
   let spot = sys.spots.find(s=>s.id===sys.activeSpot);
   if(!spot){ renderFishingTab(); return; }
-  let netBonus = sys.upgrades.net.lvl * 2;
+  let netBonus = sys.upgrades.net.lvl * 0.02;
   let boatBonus = sys.upgrades.boat.lvl * 0.1;
-  if(Math.random() > spot.chance - boatBonus){ 
+  if(Math.random() > spot.chance - boatBonus){
     if(typeof addLog==='function') addLog('🎣 Риба не клює...');
     renderFishingTab(); return;
   }
-  let [min,max] = spot.fish;
-  let amt = rndRange(min, max + netBonus);
-  sys.fishedTotal += amt; sys.fishCount++;
-  if(typeof storage!=='undefined') storage.fish = (storage.fish||0) + amt;
-  let rareAmt = 0;
-  if(spot.rareFish && Math.random() < 0.15){
-    rareAmt = rndRange(1,3);
-    if(typeof storage!=='undefined') storage.rare_fish = (storage.rare_fish||0) + rareAmt;
-  }
-  let msg = `🎣 +${amt}🐟${rareAmt?` +${rareAmt}🐠 (рідкісна!)`:''}`;
-  if(typeof addLog==='function') addLog(msg, rareAmt > 0);
+  sys.fishedTotal++; sys.fishCount++;
+  let msg = `🎣 Улов у "${spot.name}"!`;
+  if(typeof addLog==='function') addLog(msg);
   showExpToast(msg);
+
+  // Колекційний предмет залежить від конкретного місця рибалки (методу)
+  rollCollectible('fishing', spot.id, netBonus + (COLLECTION_SYSTEM.getActivityMult('fishing')-1));
+
   if(typeof markDirty==='function') markDirty('full');
   renderFishingTab();
 }
@@ -537,21 +779,19 @@ function renderFishingTab(){
   let cd = sys.cooldown - sys.upgrades.bait.lvl * 3;
   let now = Date.now()/1000;
   let cdRem = Math.max(0,Math.ceil(cd-(now-sys.lastFish)));
-  let fish = typeof storage!=='undefined'?(storage.fish||0):0;
-  let rare = typeof storage!=='undefined'?(storage.rare_fish||0):0;
   let html = `<div style="padding:4px;">
     <div class="sh">🎣 РИБАЛКА</div>
+    ${renderCollectionMiniWidget('fishing')}
     <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
-      <div style="background:var(--panel2);border:1px solid var(--border);padding:6px;flex:1;text-align:center;"><div>🐟</div><b style="color:var(--blue)">${fmt2(fish)}</b><div style="font-size:9px;color:var(--dim)">Риба</div></div>
-      <div style="background:var(--panel2);border:1px solid var(--border);padding:6px;flex:1;text-align:center;"><div>🐠</div><b style="color:var(--purple)">${fmt2(rare)}</b><div style="font-size:9px;color:var(--dim)">Рідкісна</div></div>
       <div style="background:var(--panel2);border:1px solid var(--border);padding:6px;flex:1;text-align:center;"><div>🎣</div><b>${sys.fishCount}</b><div style="font-size:9px;color:var(--dim)">Уловів</div></div>
     </div>
     <div class="sh">📍 МІСЦЕ РИБАЛКИ</div>
     <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:6px;">
     ${sys.spots.map(s=>{ let av=ep>=s.minEp; let sel=sys.activeSpot===s.id;
+      let item=COLLECTIBLE_SETS.fishing.items.find(it=>it.method===s.id);
       return `<div onclick="${av?`setFishSpot('${s.id}')`:''}" style="padding:5px 8px;border:1px solid ${sel?'var(--blue)':av?'var(--border)':'#0d0d0d'};background:${sel?'#0a0a20':'var(--panel2)'};cursor:${av?'pointer':'default'};opacity:${av?1:.4};display:flex;justify-content:space-between;">
         <span style="font-size:11px">${s.name} ${sel?'◀':''}</span>
-        <span style="font-size:10px;color:var(--dim)">🐟 ${s.fish[0]}-${s.fish[1]+sys.upgrades.net.lvl*2} · Еп.${s.minEp}</span>
+        <span style="font-size:10px;color:var(--dim)">${item?.icon||''} Шанс: ${Math.round(s.chance*100)}% · Еп.${s.minEp}</span>
       </div>`;
     }).join('')}
     </div>
@@ -578,7 +818,7 @@ function renderFishingTab(){
       </div>`;
     }).join('')}
     </div>
-    <div style="font-size:10px;color:var(--dim);border:1px solid var(--border);padding:5px;margin-top:5px;">💡 Риба — їжа для воїнів і ресурс для торгівлі. Рідкісна риба дає бонуси до досліджень.</div>
+    <div style="font-size:10px;color:var(--dim);border:1px solid var(--border);padding:5px;margin-top:5px;">💡 Кожне місце рибалки дає шанс на свій унікальний скарб у колекцію. Спорядження підвищує шанс улову та зменшує час.</div>
   </div>`;
   div.innerHTML = html;
 }
@@ -629,19 +869,19 @@ function finishMushroomGather(){
   let ep=typeof epoch!=='undefined'?epoch:1;
   let available=sys.types.filter(t=>ep>=t.minEp);
   let knowledgeBonus = sys.knowledgeLvl * 0.03;
-  let basketBonus = sys.basketLvl;
-  let totalMush=0, totalTruffle=0;
+  let basketBonus = sys.basketLvl * 0.01;
+  let found=[];
   available.forEach(t=>{
     if(Math.random()<t.chance+knowledgeBonus){
-      let amt=rndRange(t.amt[0],t.amt[1]+basketBonus);
-      if(t.truffle){ totalTruffle+=amt; if(typeof storage!=='undefined') storage.truffle=(storage.truffle||0)+amt; }
-      else { totalMush+=amt; if(typeof storage!=='undefined') storage.mushroom=(storage.mushroom||0)+amt; }
+      found.push(t);
+      // Колекційний предмет залежить від конкретного типу гриба (методу)
+      rollCollectible('mushroom', t.id, basketBonus + (COLLECTION_SYSTEM.getActivityMult('mushroom')-1));
     }
   });
-  sys.gatheredTotal += totalMush + totalTruffle;
-  let msg = totalMush||totalTruffle ? `🍄 +${totalMush}🍄${totalTruffle?` +${totalTruffle}⚫ Трюфель!`:''}` : '🍄 Нічого не знайдено';
-  if(typeof addLog==='function') addLog(msg, totalTruffle>0);
-  if(totalMush||totalTruffle) showExpToast(msg);
+  sys.gatheredTotal += found.length;
+  let msg = found.length ? `🍄 Знайдено: ${found.map(t=>t.name).join(', ')}` : '🍄 Нічого не знайдено';
+  if(typeof addLog==='function') addLog(msg, found.some(t=>t.truffle));
+  if(found.length) showExpToast(msg);
   if(typeof markDirty==='function') markDirty('full');
   renderMushroomTab();
 }
@@ -679,36 +919,33 @@ function renderMushroomTab(){
   let sys=MUSHROOM_SYSTEM;
   let now=Date.now()/1000;
   let cdRem=Math.max(0,Math.ceil(sys.cooldown-(now-sys.lastGather)));
-  let mush=typeof storage!=='undefined'?(storage.mushroom||0):0;
-  let truf=typeof storage!=='undefined'?(storage.truffle||0):0;
   let bCost={logs:Math.floor(20*Math.pow(1.6,sys.basketLvl)),fiber:Math.floor(15*Math.pow(1.6,sys.basketLvl))};
   let kCost={books:Math.floor(10*Math.pow(1.8,sys.knowledgeLvl)),paper:Math.floor(8*Math.pow(1.8,sys.knowledgeLvl))};
   let canB=typeof storage==='undefined'||Object.keys(bCost).every(k=>(storage[k]||0)>=bCost[k]);
   let canK=typeof storage==='undefined'||Object.keys(kCost).every(k=>(storage[k]||0)>=kCost[k]);
   let html=`<div style="padding:4px;">
     <div class="sh">🍄 ГРИБНИЦТВО</div>
+    ${renderCollectionMiniWidget('mushroom')}
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <div style="background:var(--panel2);border:1px solid var(--border);padding:6px;flex:1;text-align:center;"><div>🍄</div><b style="color:var(--green)">${fmt2(mush)}</b><div style="font-size:9px;color:var(--dim)">Гриби</div></div>
-      <div style="background:var(--panel2);border:1px solid var(--border);padding:6px;flex:1;text-align:center;"><div>⚫</div><b style="color:var(--purple)">${fmt2(truf)}</b><div style="font-size:9px;color:var(--dim)">Трюфелі</div></div>
-      <div style="background:var(--panel2);border:1px solid var(--border);padding:6px;flex:1;text-align:center;"><div>🍄</div><b>${sys.gatheredTotal}</b><div style="font-size:9px;color:var(--dim)">Всього</div></div>
+      <div style="background:var(--panel2);border:1px solid var(--border);padding:6px;flex:1;text-align:center;"><div>🍄</div><b>${sys.gatheredTotal}</b><div style="font-size:9px;color:var(--dim)">Знахідок</div></div>
     </div>
     ${sys.gathering?`<div style="height:6px;background:#070a0f;border:1px solid var(--green);margin-bottom:6px;"><div id="mush-progress-bar" style="height:100%;background:var(--green);width:${sys.gatherProgress}%;transition:width 1s;"></div></div>`
     :`<button onclick="startMushroomGather()" ${cdRem>0?'disabled':''} style="width:100%;font-family:var(--font);font-size:12px;padding:9px;border:1px solid ${cdRem>0?'var(--border)':'var(--green)'};background:rgba(78,203,113,.1);color:${cdRem>0?'var(--dim)':'var(--green)'};cursor:${cdRem>0?'not-allowed':'pointer'};margin-bottom:6px;">${cdRem>0?`⏳ ${cdRem}с`:'🍄 ЗБИРАТИ ГРИБИ'}</button>`}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px;">
       <div style="background:var(--panel2);border:1px solid var(--border);padding:7px;">
         <div style="font-size:11px;margin-bottom:3px;">🧺 Кошик Рів.${sys.basketLvl}/${sys.basketMax}</div>
-        <div style="font-size:10px;color:var(--teal);margin-bottom:4px;">+${sys.basketLvl} до кількості</div>
+        <div style="font-size:10px;color:var(--teal);margin-bottom:4px;">+${sys.basketLvl}% до шансу колекційних</div>
         ${sys.basketLvl<sys.basketMax?`<div style="font-size:10px;color:var(--orange)">${Object.entries(bCost).map(([k,v])=>v+(typeof RES!=='undefined'?RES[k]?.e||k:k)).join(' ')}</div>
         <button onclick="upgradeMushroomBasket()" ${!canB?'disabled':''} style="width:100%;font-family:var(--font);font-size:10px;padding:4px;border:1px solid ${canB?'var(--green)':'var(--border)'};background:transparent;color:${canB?'var(--green)':'var(--dim)'};cursor:${canB?'pointer':'not-allowed'};margin-top:4px;">⬆ ПОКРАЩИТИ</button>`:'<div style="font-size:10px;color:var(--gold)">✅ МАКСИМУМ</div>'}
       </div>
       <div style="background:var(--panel2);border:1px solid var(--border);padding:7px;">
         <div style="font-size:11px;margin-bottom:3px;">📚 Знання Рів.${sys.knowledgeLvl}/${sys.knowledgeMax}</div>
-        <div style="font-size:10px;color:var(--teal);margin-bottom:4px;">+${(sys.knowledgeLvl*3)}% рідкісних</div>
+        <div style="font-size:10px;color:var(--teal);margin-bottom:4px;">+${(sys.knowledgeLvl*3)}% до шансу знахідок</div>
         ${sys.knowledgeLvl<sys.knowledgeMax?`<div style="font-size:10px;color:var(--orange)">${Object.entries(kCost).map(([k,v])=>v+(typeof RES!=='undefined'?RES[k]?.e||k:k)).join(' ')}</div>
         <button onclick="upgradeMushroomKnowledge()" ${!canK?'disabled':''} style="width:100%;font-family:var(--font);font-size:10px;padding:4px;border:1px solid ${canK?'var(--blue)':'var(--border)'};background:transparent;color:${canK?'var(--blue)':'var(--dim)'};cursor:${canK?'pointer':'not-allowed'};margin-top:4px;">⬆ ВЧИТИСЬ</button>`:'<div style="font-size:10px;color:var(--gold)">✅ МАКСИМУМ</div>'}
       </div>
     </div>
-    <div style="font-size:10px;color:var(--dim);border:1px solid var(--border);padding:5px;">💡 Гриби — їжа та інгредієнт для зілля. Трюфелі — рідкісний делікатес, +5% до Синтезу за 1 трюфель.</div>
+    <div style="font-size:10px;color:var(--dim);border:1px solid var(--border);padding:5px;">💡 Кожен знайдений вид гриба дає шанс на унікальний зразок у колекцію. Трюфель — найрідкісніший зразок.</div>
   </div>`;
   div.innerHTML = html;
 }
@@ -757,19 +994,19 @@ function finishHerbHarvest(){
   sys.harvesting=false; sys.harvestProgress=0; sys.lastHarvest=Date.now()/1000;
   let ep=typeof epoch!=='undefined'?epoch:1;
   let alchBonus=sys.alchemyLvl*0.04;
-  let rackBonus=sys.dryingRackLvl;
-  let totalHerb=0, totalRare=0;
+  let rackBonus=sys.dryingRackLvl*0.01;
+  let found=[];
   sys.herbs.filter(h=>ep>=h.minEp).forEach(h=>{
     if(Math.random()<h.chance+alchBonus){
-      let amt=rndRange(h.amt[0],h.amt[1]+rackBonus);
-      if(h.rare){ totalRare+=amt; if(typeof storage!=='undefined') storage.rare_herb=(storage.rare_herb||0)+amt; }
-      else { totalHerb+=amt; if(typeof storage!=='undefined') storage.herb=(storage.herb||0)+amt; }
+      found.push(h);
+      // Колекційний предмет залежить від конкретного виду трави (методу)
+      rollCollectible('herb', h.id, rackBonus + (COLLECTION_SYSTEM.getActivityMult('herb')-1));
     }
   });
-  sys.harvestedTotal+=totalHerb+totalRare;
-  let msg=totalHerb||totalRare?`🌿 +${totalHerb}🌿${totalRare?` +${totalRare}🌸 Рідкісна!`:''}`:'🌿 Нічого не знайдено';
-  if(typeof addLog==='function') addLog(msg,totalRare>0);
-  if(totalHerb||totalRare) showExpToast(msg);
+  sys.harvestedTotal += found.length;
+  let msg = found.length ? `🌿 Знайдено: ${found.map(h=>h.name).join(', ')}` : '🌿 Нічого не знайдено';
+  if(typeof addLog==='function') addLog(msg, found.some(h=>h.rare));
+  if(found.length) showExpToast(msg);
   if(typeof markDirty==='function') markDirty('full');
   renderHerbTab();
 }
@@ -796,34 +1033,33 @@ function renderHerbTab(){
   let div=document.getElementById('tab-herb-content'); if(!div) return;
   let sys=HERB_SYSTEM;
   let now=Date.now()/1000; let cdRem=Math.max(0,Math.ceil(sys.cooldown-(now-sys.lastHarvest)));
-  let herb=typeof storage!=='undefined'?(storage.herb||0):0;
-  let rare=typeof storage!=='undefined'?(storage.rare_herb||0):0;
   let dCost={wood:Math.floor(15*Math.pow(1.5,sys.dryingRackLvl)),fiber:Math.floor(20*Math.pow(1.5,sys.dryingRackLvl))};
   let aCost={books:Math.floor(15*Math.pow(1.7,sys.alchemyLvl)),paper:Math.floor(10*Math.pow(1.7,sys.alchemyLvl))};
   let canD=typeof storage==='undefined'||Object.keys(dCost).every(k=>(storage[k]||0)>=dCost[k]);
   let canA=typeof storage==='undefined'||Object.keys(aCost).every(k=>(storage[k]||0)>=aCost[k]);
   let html=`<div style="padding:4px;">
     <div class="sh">🌿 ТРАВНИЦТВО</div>
+    ${renderCollectionMiniWidget('herb')}
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <div style="background:var(--panel2);border:1px solid var(--border);padding:6px;flex:1;text-align:center;"><div>🌿</div><b style="color:var(--green)">${fmt2(herb)}</b><div style="font-size:9px;color:var(--dim)">Трави</div></div>
-      <div style="background:var(--panel2);border:1px solid var(--border);padding:6px;flex:1;text-align:center;"><div>🌸</div><b style="color:var(--purple)">${fmt2(rare)}</b><div style="font-size:9px;color:var(--dim)">Рідкісні</div></div>
-      <div style="background:var(--panel2);border:1px solid var(--border);padding:6px;flex:1;text-align:center;"><div>🌿</div><b>${sys.harvestedTotal}</b><div style="font-size:9px;color:var(--dim)">Всього</div></div>
+      <div style="background:var(--panel2);border:1px solid var(--border);padding:6px;flex:1;text-align:center;"><div>🌿</div><b>${sys.harvestedTotal}</b><div style="font-size:9px;color:var(--dim)">Знахідок</div></div>
     </div>
     ${sys.harvesting?`<div style="height:6px;background:#070a0f;border:1px solid var(--teal);margin-bottom:6px;"><div id="herb-progress-bar" style="height:100%;background:var(--teal);width:${sys.harvestProgress}%;transition:width 1s;"></div></div>`
     :`<button onclick="startHerbHarvest()" ${cdRem>0?'disabled':''} style="width:100%;font-family:var(--font);font-size:12px;padding:9px;border:1px solid ${cdRem>0?'var(--border)':'var(--teal)'};background:rgba(74,184,160,.1);color:${cdRem>0?'var(--dim)':'var(--teal)'};cursor:${cdRem>0?'not-allowed':'pointer'};margin-bottom:6px;">${cdRem>0?`⏳ ${cdRem}с`:'🌿 ЗБИРАТИ ТРАВИ'}</button>`}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px;">
       <div style="background:var(--panel2);border:1px solid var(--border);padding:7px;">
         <div style="font-size:11px;margin-bottom:3px;">🌿 Сушарка Рів.${sys.dryingRackLvl}/${sys.dryingMax}</div>
+        <div style="font-size:10px;color:var(--teal);margin-bottom:4px;">+${sys.dryingRackLvl}% до шансу колекційних</div>
         ${sys.dryingRackLvl<sys.dryingMax?`<div style="font-size:10px;color:var(--orange)">${Object.entries(dCost).map(([k,v])=>v+(typeof RES!=='undefined'?RES[k]?.e||k:k)).join(' ')}</div>
         <button onclick="upgradeHerbDrying()" ${!canD?'disabled':''} style="width:100%;font-family:var(--font);font-size:9px;padding:4px;border:1px solid ${canD?'var(--teal)':'var(--border)'};background:transparent;color:${canD?'var(--teal)':'var(--dim)'};cursor:${canD?'pointer':'not-allowed'};margin-top:4px;">⬆</button>`:'<div style="font-size:10px;color:var(--gold)">MAX</div>'}
       </div>
       <div style="background:var(--panel2);border:1px solid var(--border);padding:7px;">
         <div style="font-size:11px;margin-bottom:3px;">⚗️ Алхімія Рів.${sys.alchemyLvl}/${sys.alchemyMax}</div>
+        <div style="font-size:10px;color:var(--teal);margin-bottom:4px;">+${(sys.alchemyLvl*4)}% до шансу знахідок</div>
         ${sys.alchemyLvl<sys.alchemyMax?`<div style="font-size:10px;color:var(--orange)">${Object.entries(aCost).map(([k,v])=>v+(typeof RES!=='undefined'?RES[k]?.e||k:k)).join(' ')}</div>
         <button onclick="upgradeHerbAlchemy()" ${!canA?'disabled':''} style="width:100%;font-family:var(--font);font-size:9px;padding:4px;border:1px solid ${canA?'var(--purple)':'var(--border)'};background:transparent;color:${canA?'var(--purple)':'var(--dim)'};cursor:${canA?'pointer':'not-allowed'};margin-top:4px;">⬆</button>`:'<div style="font-size:10px;color:var(--gold)">MAX</div>'}
       </div>
     </div>
-    <div style="font-size:10px;color:var(--dim);border:1px solid var(--border);padding:5px;">💡 Трави використовуються в алхімії та медицині. Рідкісні трави дають бонуси до HP воїнів.</div>
+    <div style="font-size:10px;color:var(--dim);border:1px solid var(--border);padding:5px;">💡 Кожен зібраний вид трави дає шанс на унікальний пресований зразок у колекцію. Мандрагора — найрідкісніший зразок.</div>
   </div>`;
   div.innerHTML = html;
 }
@@ -885,7 +1121,7 @@ function finishGeologyExpedition(){
   let found=available.filter(d=>Math.random()<d.chance+eqBonus);
   if(!found.length){ if(typeof addLog==='function') addLog('🔍 Нічого не знайдено. Продовжуйте дослідження!'); renderGeologyTab(); return; }
   found.forEach(d=>{
-    sys.discoveredDeposits.push({...d, mined:0, totalReserve:rndRange(d.min*10, d.max*20)});
+    sys.discoveredDeposits.push({...d, mined:0, totalReserve:rndRange(10, 30)});
     if(typeof addLog==='function') addLog(`⛏️ ЗНАЙДЕНО: ${d.name} (${d.rarity})!`, true);
     showExpToast(`⛏️ ${d.name}!`);
   });
@@ -898,17 +1134,14 @@ function mineGeologyDeposit(idx){
   let dep=sys.discoveredDeposits[idx]; if(!dep) return;
   let now=Date.now()/1000;
   if(now-sys.lastMined<sys.miningCooldown){ showExpToast(`⏳ ${Math.ceil(sys.miningCooldown-(now-sys.lastMined))}с`); return; }
-  let ep=typeof epoch!=='undefined'?epoch:1;
-  let toolBonus=1+sys.equipLvl*0.1;
-  let amt=Math.floor(rndRange(dep.min,dep.max)*toolBonus);
-  amt=Math.min(amt, dep.totalReserve-dep.mined);
-  if(amt<=0){ showExpToast('🪨 Родовище вичерпано!'); return; }
-  dep.mined+=amt; sys.lastMined=now;
-  if(typeof storage!=='undefined') storage[dep.resource]=(storage[dep.resource]||0)+amt;
-  let resName=typeof RES!=='undefined'?RES[dep.resource]?.n||dep.resource:dep.resource;
-  let resEmoji=typeof RES!=='undefined'?RES[dep.resource]?.e||'📦':'📦';
-  if(typeof addLog==='function') addLog(`⛏️ ${dep.name}: +${amt} ${resEmoji}`);
-  showExpToast(`⛏️ +${amt} ${resEmoji}`);
+  if(dep.mined>=dep.totalReserve){ showExpToast('🪨 Родовище вичерпано!'); return; }
+  let toolBonus=sys.equipLvl*0.01;
+  dep.mined+=1; sys.lastMined=now;
+  if(typeof addLog==='function') addLog(`⛏️ Видобуток у "${dep.name}"...`);
+
+  // Колекційний предмет залежить від конкретного типу родовища (методу)
+  rollCollectible('geology', dep.id, toolBonus + (COLLECTION_SYSTEM.getActivityMult('geology')-1));
+
   if(dep.mined>=dep.totalReserve){ if(typeof addLog==='function') addLog(`🪨 ${dep.name} — вичерпано!`); }
   if(typeof markDirty==='function') markDirty('full');
   renderGeologyTab();
@@ -960,7 +1193,7 @@ function renderGeologyTab(){
     ${sys.discoveredDeposits.map((dep,i)=>{
       let pct=Math.min(100,(dep.mined/dep.totalReserve*100));
       let exhausted=dep.mined>=dep.totalReserve;
-      let res=typeof RES!=='undefined'?RES[dep.resource]:null;
+      let collectibleItem=COLLECTIBLE_SETS.geology.items.find(it=>it.method===dep.id);
       return `<div style="background:var(--panel2);border:1px solid ${exhausted?'var(--dim)':'var(--border)'};padding:7px;opacity:${exhausted?.5:1};">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
           <span style="font-size:11px;">${dep.name}</span>
@@ -970,7 +1203,7 @@ function renderGeologyTab(){
           <div style="height:100%;background:${exhausted?'var(--dim)':'var(--gold)'};width:${100-pct}%;"></div>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:10px;color:var(--dim)">${res?.e||'📦'} Залишок: ${dep.totalReserve-dep.mined}</span>
+          <span style="font-size:10px;color:var(--dim)">${collectibleItem?.icon||'📦'} Спроб лишилось: ${dep.totalReserve-dep.mined}</span>
           <button onclick="mineGeologyDeposit(${i})" ${exhausted||mineCd>0?'disabled':''} style="font-family:var(--font);font-size:9px;padding:3px 8px;border:1px solid ${exhausted?'var(--dim)':mineCd>0?'var(--border)':'var(--orange)'};background:transparent;color:${exhausted?'var(--dim)':mineCd>0?'var(--dim)':'var(--orange)'};cursor:${exhausted||mineCd>0?'not-allowed':'pointer'};">${exhausted?'ВИЧЕРПАНО':'⛏️ КОПАТИ'}</button>
         </div>
       </div>`;
@@ -1446,7 +1679,8 @@ setInterval(()=>{
   window.getCityProductionMult=function(){
     let base=_orig();
     let soulBonus=1+SOUL_SYSTEM.passiveBonus;
-    return base*soulBonus;
+    let collectionBonus=1+COLLECTION_SYSTEM.getGlobalResMult();
+    return base*soulBonus*collectionBonus;
   };
 })();
 
@@ -1459,15 +1693,16 @@ function initExpansionTabs(){
   if(!tabsEl) return;
 
   const newTabs=[
-    { id:'lore',    label:'📖 ЛОР',      fn:'renderLoreTab' },
-    { id:'souls',   label:'👻 ДУШІ',     fn:'renderSoulTab' },
-    { id:'hunting', label:'🏹 МИСЛ.',    fn:'renderHuntingTab' },
-    { id:'fishing', label:'🎣 РИБА',     fn:'renderFishingTab' },
-    { id:'mushroom',label:'🍄 ГРИБИ',    fn:'renderMushroomTab' },
-    { id:'herb',    label:'🌿 ТРАВИ',    fn:'renderHerbTab' },
-    { id:'geology', label:'⛏️ ГЕО',      fn:'renderGeologyTab' },
-    { id:'raids',   label:'⚔️ РЕЙДИ',    fn:'renderRaidTab' },
-    { id:'troops',  label:'🎖 АРМІЯ',    fn:'renderTroopTab' },
+    { id:'lore',       label:'📖 ЛОР',      fn:'renderLoreTab' },
+    { id:'collection', label:'📚 КОЛЕКЦІЯ', fn:'renderCollectionTab' },
+    { id:'souls',      label:'👻 ДУШІ',     fn:'renderSoulTab' },
+    { id:'hunting',    label:'🏹 МИСЛ.',    fn:'renderHuntingTab' },
+    { id:'fishing',    label:'🎣 РИБА',     fn:'renderFishingTab' },
+    { id:'mushroom',   label:'🍄 ГРИБИ',    fn:'renderMushroomTab' },
+    { id:'herb',       label:'🌿 ТРАВИ',    fn:'renderHerbTab' },
+    { id:'geology',    label:'⛏️ ГЕО',      fn:'renderGeologyTab' },
+    { id:'raids',      label:'⚔️ РЕЙДИ',    fn:'renderRaidTab' },
+    { id:'troops',     label:'🎖 АРМІЯ',    fn:'renderTroopTab' },
   ];
 
   newTabs.forEach(t=>{
@@ -1504,15 +1739,16 @@ function initExpansionTabs(){
       _origSwitch&&_origSwitch(name);
     }
     switch(name){
-      case 'lore':     renderLoreTab();     break;
-      case 'souls':    renderSoulTab();     break;
-      case 'hunting':  renderHuntingTab();  break;
-      case 'fishing':  renderFishingTab();  break;
-      case 'mushroom': renderMushroomTab(); break;
-      case 'herb':     renderHerbTab();     break;
-      case 'geology':  renderGeologyTab();  break;
-      case 'raids':    renderRaidTab();     break;
-      case 'troops':   renderTroopTab();    break;
+      case 'lore':       renderLoreTab();       break;
+      case 'collection': renderCollectionTab(); break;
+      case 'souls':      renderSoulTab();       break;
+      case 'hunting':    renderHuntingTab();    break;
+      case 'fishing':    renderFishingTab();    break;
+      case 'mushroom':   renderMushroomTab();   break;
+      case 'herb':       renderHerbTab();       break;
+      case 'geology':    renderGeologyTab();    break;
+      case 'raids':      renderRaidTab();       break;
+      case 'troops':     renderTroopTab();      break;
     }
   };
 }
@@ -1530,6 +1766,7 @@ function serializeExpansions(){
     geology: { expeditionsTotal:GEOLOGY_SYSTEM.expeditionsTotal, lastExpedition:GEOLOGY_SYSTEM.lastExpedition, expeditionLvl:GEOLOGY_SYSTEM.expeditionLvl, equipLvl:GEOLOGY_SYSTEM.equipLvl, discoveredDeposits:GEOLOGY_SYSTEM.discoveredDeposits, lastMined:GEOLOGY_SYSTEM.lastMined },
     raids: { raidsTotal:RAID_SYSTEM.raidsTotal, lastRaid:RAID_SYSTEM.lastRaid, raidLevel:RAID_SYSTEM.raidLevel, victories:RAID_SYSTEM.victories, defeats:RAID_SYSTEM.defeats, activeTarget:RAID_SYSTEM.activeTarget },
     troops: { garrison:{...TROOP_SYSTEM.garrison}, xp:TROOP_SYSTEM.xp, morale:TROOP_SYSTEM.morale, lastFed:TROOP_SYSTEM.lastFed, barracks:TROOP_SYSTEM.barracks.lvl, academy:TROOP_SYSTEM.academy.lvl, armory:TROOP_SYSTEM.armory.lvl },
+    collection: { owned: {...COLLECTION_SYSTEM.owned} },
   };
 }
 
@@ -1543,6 +1780,7 @@ function deserializeExpansions(data){
   if(data.geology){ GEOLOGY_SYSTEM.expeditionsTotal=data.geology.expeditionsTotal||0; GEOLOGY_SYSTEM.lastExpedition=data.geology.lastExpedition||0; GEOLOGY_SYSTEM.expeditionLvl=data.geology.expeditionLvl||0; GEOLOGY_SYSTEM.equipLvl=data.geology.equipLvl||0; GEOLOGY_SYSTEM.discoveredDeposits=data.geology.discoveredDeposits||[]; GEOLOGY_SYSTEM.lastMined=data.geology.lastMined||0; }
   if(data.raids){ RAID_SYSTEM.raidsTotal=data.raids.raidsTotal||0; RAID_SYSTEM.lastRaid=data.raids.lastRaid||0; RAID_SYSTEM.raidLevel=data.raids.raidLevel||0; RAID_SYSTEM.victories=data.raids.victories||0; RAID_SYSTEM.defeats=data.raids.defeats||0; RAID_SYSTEM.activeTarget=data.raids.activeTarget||'goblin_camp'; }
   if(data.troops){ Object.assign(TROOP_SYSTEM.garrison,data.troops.garrison||{}); TROOP_SYSTEM.xp=data.troops.xp||0; TROOP_SYSTEM.morale=data.troops.morale||100; TROOP_SYSTEM.lastFed=data.troops.lastFed||Date.now()/1000; TROOP_SYSTEM.barracks.lvl=data.troops.barracks||0; TROOP_SYSTEM.academy.lvl=data.troops.academy||0; TROOP_SYSTEM.armory.lvl=data.troops.armory||0; }
+  if(data.collection){ COLLECTION_SYSTEM.owned = {...(data.collection.owned||{})}; }
 }
 
 // Патчуємо серіалізацію/десеріалізацію основної гри
@@ -1597,6 +1835,8 @@ function expMobNav(){
 // ПАТЧ ПЕРЕРОДЖЕННЯ — скидаємо прогрес розширень при prestige
 // ============================================================
 function resetExpansionSystems(){
+  // ПРИМІТКА: COLLECTION_SYSTEM.owned НЕ скидається при переродженні —
+  // колекція є постійним meta-прогресом, як ачівки.
   SOUL_SYSTEM.totalFound=0; SOUL_SYSTEM.lastSearch=0; SOUL_SYSTEM.searching=false; SOUL_SYSTEM.searchProgress=0;
   HUNTING_SYSTEM.huntsTotal=0; HUNTING_SYSTEM.lastHunt=0; HUNTING_SYSTEM.hunting=false;
   Object.values(HUNTING_SYSTEM.upgrades).forEach(u=>u.lvl=0);
