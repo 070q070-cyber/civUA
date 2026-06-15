@@ -433,6 +433,7 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .group-subitems{border:1px dashed var(--border);background:#070a0f;padding:6px;margin-bottom:7px;}
 .group-subitems-label{font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
 .base-b-card.sub-item{border-left:2px solid var(--teal);}
+.group-action-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-left:3px;vertical-align:middle;animation:questpulse 1.5s ease-in-out infinite;}
 
 /* EPOCH RESOURCE BAR — always visible above map */
 .epoch-res-bar{flex-shrink:0;background:#07090e;border-bottom:1px solid var(--border);padding:5px 10px;display:flex;gap:5px;align-items:center;overflow-x:auto;flex-wrap:nowrap;}
@@ -3703,7 +3704,7 @@ function renderBaseCard(id, isSub){
   let boostCost=_boostCost(b);
   let canBoost=Object.keys(boostCost).every(k=>(storage[k]||0)>=boostCost[k]);
   let boostCostStr=Object.entries(boostCost).map(([k,v])=>`${RES[k]?.e||''}${fmt(v)}`).join(' ');
-  return `<div class="base-b-card ${b.lvl>0?'active-bld':''} ${boost>0?'boosted':''} ${isSub?'sub-item':''}" title="${tipText}">
+  let html=`<div class="base-b-card ${b.lvl>0?'active-bld':''} ${boost>0?'boosted':''} ${isSub?'sub-item':''}" title="${tipText}">
     <div class="base-b-head">
       <div class="base-b-name">${b.name}</div>
       ${b.lvl>0?`<div class="base-b-lvl">рів.${b.lvl}</div>`:''}
@@ -3727,6 +3728,7 @@ function renderBaseCard(id, isSub){
         : `⚡ БУСТ ×3 · 30с · ${boostCostStr}`}
     </button>`:''}
   </div>`;
+  return {html, action: canAfford};
 }
 
 // ── Картка виробничої споруди гілки (ep1..ep12) ──
@@ -3755,11 +3757,13 @@ function renderBuildingCard(id){
   else if(AC_NODES['bld_b2'].unlocked){acCostRes='iron';acCostAmt=30;}
 
   let instHtml='';
+  let anyCanUp=false;
   let showInst=b.instances.slice(0,5);
   showInst.forEach((inst,idx)=>{
     let upScale=Math.max(1, inst.lvl*2 * (1 + b.epoch*0.3));
     let upCost=Object.keys(b.cost).map(r=>`${fmt(Math.ceil(b.cost[r]*upScale))}${RES[r]?.e||''}`).join('+');
     let canUp=inst.lvl<999&&Object.keys(b.cost).every(r=>(storage[r]||0)>=Math.ceil(b.cost[r]*upScale));
+    if(canUp) anyCanUp=true;
     let canAC=!!topBld&&!inst.autoClicker&&(storage[acCostRes]||0)>=acCostAmt;
     let bldMult=inst.autoClicker?getBuildingACMult():1;
     let effProd=inst.lvl*prodMult*bldMult;
@@ -3790,6 +3794,12 @@ function renderBuildingCard(id){
   });
   if(b.instances.length>5){
     instHtml+=`<div style="font-size:10px;color:var(--dim);padding:3px 5px;border-left:2px solid var(--border);">...ще ${b.instances.length-5} споруд</div>`;
+    if(!anyCanUp){
+      anyCanUp=b.instances.slice(5).some(inst=>{
+        let upScale=Math.max(1, inst.lvl*2 * (1 + b.epoch*0.3));
+        return inst.lvl<999&&Object.keys(b.cost).every(r=>(storage[r]||0)>=Math.ceil(b.cost[r]*upScale));
+      });
+    }
   }
 
   let slotDots='';
@@ -3802,7 +3812,7 @@ function renderBuildingCard(id){
   let costDesc=Object.keys(b.cost).map(r=>`${b.cost[r]} ${RES[r]?.n}`).join(', ');
   let cardTip=`${b.name}\nЕпоха: ${b.epoch} | Збудовано: ${count}\nВхід: ${inDesc}\nВихід: ${outDesc}\nВартість: ${costDesc}`;
 
-  return `<div class="b-card ${count>0?'on-map':''}" title="${cardTip}">
+  let html=`<div class="b-card ${count>0?'on-map':''}" title="${cardTip}">
     <div class="b-header">
       <div>
         <div class="b-title">${b.name}</div>
@@ -3820,6 +3830,7 @@ function renderBuildingCard(id){
     </div>
     ${instHtml}
   </div>`;
+  return {html, action: canBuild||anyCanUp};
 }
 
 // ── Згортання/розгортання групи в списку будівель ──
@@ -3843,12 +3854,15 @@ function renderBuildings(){
 
     // Підпункти групи — базові видобувні споруди цієї сировини
     let subHtml='';
+    let groupHasAction=false;
     (GROUP_BASE_MAP[bIdx]||[]).forEach(baseId=>{
       let b=BASE_RES_BUILDINGS[baseId];
       if(!b||epoch<b.ep_req) return;
       if(buildStatusFilter==='built'&&b.lvl===0) return;
       if(buildStatusFilter==='notbuilt'&&b.lvl>0) return;
-      subHtml+=renderBaseCard(baseId,true);
+      let r=renderBaseCard(baseId,true);
+      subHtml+=r.html;
+      if(r.action) groupHasAction=true;
     });
 
     // Ланцюжок виробничих споруд гілки
@@ -3864,7 +3878,9 @@ function renderBuildings(){
       if(buildStatusFilter==='notbuilt'&&b.instances.length>0) continue;
       totalCount++;
       if(b.instances.length>0) builtCount++;
-      chainHtml+=renderBuildingCard(id);
+      let r=renderBuildingCard(id);
+      chainHtml+=r.html;
+      if(r.action) groupHasAction=true;
     }
 
     if(!subHtml && !chainHtml) return; // у групи немає, що показати при поточних фільтрах
@@ -3878,7 +3894,7 @@ function renderBuildings(){
 
     html+=`<div class="group-card ${collapsed?'collapsed':''}">
       <div class="group-header" onclick="toggleGroup(${bIdx})">
-        <span class="group-title">${BR_EMOJI[bIdx]} ${branchName}</span>
+        <span class="group-title">${BR_EMOJI[bIdx]} ${branchName}${groupHasAction?` <span class="group-action-dot" title="Є доступні покращення"></span>`:''}</span>
         <span class="group-meta">${builtCount}/${totalCount} споруд${subHtml?' · є підпункти':''}</span>
         <span class="group-toggle">${collapsed?'▸':'▾'}</span>
       </div>
