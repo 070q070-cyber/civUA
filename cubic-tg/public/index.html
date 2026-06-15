@@ -422,6 +422,18 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .base-b-btn.can:hover{background:var(--green);color:#000;}
 .base-b-btn:disabled{opacity:.3;cursor:not-allowed;}
 
+/* BUILDING GROUPS — будівлі згруповані за сировиною, базові споруди як підпункти */
+.group-card{border:1px solid var(--border);margin-bottom:7px;background:var(--panel2);}
+.group-header{display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:pointer;background:var(--panel);user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent;border-bottom:1px solid var(--border);}
+.group-card.collapsed .group-header{border-bottom:none;}
+.group-title{font-size:11px;color:var(--gold);letter-spacing:.5px;white-space:nowrap;}
+.group-meta{font-size:9px;color:var(--dim);margin-left:auto;white-space:nowrap;}
+.group-toggle{font-size:9px;color:var(--dim);width:12px;text-align:center;flex-shrink:0;}
+.group-body{padding:7px;}
+.group-subitems{border:1px dashed var(--border);background:#070a0f;padding:6px;margin-bottom:7px;}
+.group-subitems-label{font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.base-b-card.sub-item{border-left:2px solid var(--teal);}
+
 /* EPOCH RESOURCE BAR — always visible above map */
 .epoch-res-bar{flex-shrink:0;background:#07090e;border-bottom:1px solid var(--border);padding:5px 10px;display:flex;gap:5px;align-items:center;overflow-x:auto;flex-wrap:nowrap;}
 .epoch-res-bar::-webkit-scrollbar{height:2px;}
@@ -1987,6 +1999,27 @@ const BASE_RES_BUILDINGS = {
   bsi: {name:"💎 Кремнієва ферма", res:"silicon",   costBase:{electricity:100,steel:150},prodBase:0.15,ep_req:11,lvl:0,maxLvl:999,costMult:1.17},
 };
 
+// ============================================================
+// GROUP_BASE_MAP — групування будівель за сировиною.
+// Кожна гілка (BRANCHES[i]) — це "група", а вказані базові видобувні
+// споруди стають її підпунктами (рівень 0), оскільки саме ця гілка
+// є головним споживачем/переробником цієї сировини.
+// ============================================================
+const GROUP_BASE_MAP = {
+  0: ['bw','bl'],          // Лісова: Лісозаготівля (деревина), Лісопилка (колоди)
+  1: ['bs','bo','bcu','bir','boi'], // Гірнича: камінь, руда, мідь, залізо, нафта
+  2: ['bv','bwh','bba'],   // Аграрна: рослинність, пшениця, ячмінь
+  3: ['bc'],               // Ковальська: глина
+  4: [],                   // Металургійна
+  5: [],                   // Харчова
+  6: [],                   // Текстильна
+  7: ['bch'],              // Хімічна: деревне вугілля
+  8: ['bwa','bel'],        // Енергетична: вода, енергія
+  9: ['bsi'],              // Електронна: кремній
+  10: [],                  // Робототехнічна
+  11: [],                  // Наукова
+};
+
 let baseResMultiplier = 1; // from tech upgrades
 
 function maxBuyBaseResBuilding(id){
@@ -2150,6 +2183,7 @@ let buildCount = 0;
 let totalClicks = 0;
 let activeFilter = "all";
 let buildStatusFilter = 'all'; // 'all' | 'built' | 'notbuilt'
+let groupCollapsed = {}; // bIdx -> bool, чи згорнута група будівель у списку
 let storage = {};
 let psCounters = {};
 Object.keys(RES).forEach(k=>{storage[k]=0;psCounters[k]=0;});
@@ -3653,166 +3687,212 @@ function buyFromSynth(){
   _exchBuyRes=res; _doBuy(amt);
 }
 
+// ── Картка базової видобувної споруди (може бути "підпунктом" групи) ──
+function renderBaseCard(id, isSub){
+  let b=BASE_RES_BUILDINGS[id];
+  let scale=Math.pow(b.costMult,b.lvl);
+  let cost={};
+  Object.keys(b.costBase).forEach(k=>cost[k]=Math.floor(b.costBase[k]*scale));
+  let canAfford=Object.keys(cost).every(k=>(storage[k]||0)>=cost[k]);
+  let prod=(b.prodBase*Math.max(1,b.lvl)*baseResMultiplier).toFixed(2);
+  let costStr=Object.keys(cost).map(k=>`${RES[k]?.e||''}${fmt(cost[k])} ${RES[k]?.n}`).join(' + ');
+  let res=RES[b.res];
+  let tipText=`${b.name}\nВидобуває: ${res?.n||b.res} (${res?.e||''})\nВиробництво: +${prod}/с (рів.×${b.prodBase})\nВартість: ${costStr}\nЕпоха: ${b.ep_req}`;
+  let boost=b.boost||0; // секунд буст залишилось
+  let boostedProd=boost>0?(b.prodBase*Math.max(1,b.lvl)*baseResMultiplier*3).toFixed(2):null;
+  let boostCost=_boostCost(b);
+  let canBoost=Object.keys(boostCost).every(k=>(storage[k]||0)>=boostCost[k]);
+  let boostCostStr=Object.entries(boostCost).map(([k,v])=>`${RES[k]?.e||''}${fmt(v)}`).join(' ');
+  return `<div class="base-b-card ${b.lvl>0?'active-bld':''} ${boost>0?'boosted':''} ${isSub?'sub-item':''}" title="${tipText}">
+    <div class="base-b-head">
+      <div class="base-b-name">${b.name}</div>
+      ${b.lvl>0?`<div class="base-b-lvl">рів.${b.lvl}</div>`:''}
+    </div>
+    ${b.lvl>0
+      ? boost>0
+        ? `<div class="base-b-out" style="color:var(--gold)">⚡ +${boostedProd} ${res?.e||''}/с <span style="color:var(--orange);font-size:9px">${_fmtTime(boost)}</span></div>`
+        : `<div class="base-b-out">+${prod} ${res?.e||''} ${res?.n||b.res}/с</div>`
+      : `<div style="font-size:9px;color:var(--dim)">+${b.prodBase} ${res?.e||''}/с за рів.</div>`}
+    <div class="base-b-cost">${costStr}</div>
+    <div style="display:flex;gap:3px;margin-top:4px;">
+      <button class="base-b-btn ${canAfford?'can':''}" onclick="buyBaseResBuilding('${id}')" ${!canAfford?'disabled':''} style="flex:1;margin-top:0;">
+        ${b.lvl===0?'🏗 БУДУВАТИ':'+РІВ'}
+      </button>
+      ${b.lvl>0?`<button class="base-b-btn can" style="border-color:var(--gold);color:var(--gold);flex:0 0 28px;margin-top:0;" onclick="maxBuyBaseResBuilding('${id}')" ${!canAfford?'disabled':''}>МАХ</button>`:''}
+    </div>
+    ${b.lvl>0?`<button class="boost-btn ${boost>0?'active':''} ${!canBoost&&!boost?'disabled':''}"
+      onclick="activateBoost('${id}')" ${boost>0?'disabled':''}>
+      ${boost>0
+        ? `⚡ БУСТ: ${_fmtTime(boost)}`
+        : `⚡ БУСТ ×3 · 30с · ${boostCostStr}`}
+    </button>`:''}
+  </div>`;
+}
+
+// ── Картка виробничої споруди гілки (ep1..ep12) ──
+function renderBuildingCard(id){
+  let b=buildings[id];
+  let count=b.instances.length;
+
+  let costItems=Object.keys(b.cost).map(r=>{
+    let have=storage[r]||0;
+    let need=b.cost[r];
+    let cls=have>=need?'can-afford':'cant-afford';
+    return `<span class="b-cost-item ${cls}">${RES[r]?.e||''}${need}<span style="font-size:9px;color:var(--dim)"> ${RES[r]?.n}</span></span>`;
+  }).join('');
+
+  let inItems=Object.keys(b.inputs).map(r=>`<span class="b-io-item input-item"><span class="io-val">${b.inputs[r]}</span><span style="font-size:14px">${RES[r]?.e||''}</span><span class="io-name">${RES[r]?.n}</span></span>`).join('');
+  let outItems=Object.keys(b.outputs).map(r=>`<span class="b-io-item output-item"><span class="io-val">+${b.outputs[r]}</span><span style="font-size:14px">${RES[r]?.e||''}</span><span class="io-name">${RES[r]?.n}</span></span>`).join('');
+
+  let canBuild=count<999&&Object.keys(b.cost).every(r=>(storage[r]||0)>=b.cost[r]);
+
+  // AC node info
+  let bldNodes=['bld_b4','bld_b3','bld_b2','bld_b1'];
+  let topBld=bldNodes.find(nid=>AC_NODES[nid]?.unlocked);
+  let acCostRes='bronze',acCostAmt=20;
+  if(AC_NODES['bld_b4'].unlocked){acCostRes='chips';acCostAmt=30;}
+  else if(AC_NODES['bld_b3'].unlocked){acCostRes='steel';acCostAmt=40;}
+  else if(AC_NODES['bld_b2'].unlocked){acCostRes='iron';acCostAmt=30;}
+
+  let instHtml='';
+  let showInst=b.instances.slice(0,5);
+  showInst.forEach((inst,idx)=>{
+    let upScale=Math.max(1, inst.lvl*2 * (1 + b.epoch*0.3));
+    let upCost=Object.keys(b.cost).map(r=>`${fmt(Math.ceil(b.cost[r]*upScale))}${RES[r]?.e||''}`).join('+');
+    let canUp=inst.lvl<999&&Object.keys(b.cost).every(r=>(storage[r]||0)>=Math.ceil(b.cost[r]*upScale));
+    let canAC=!!topBld&&!inst.autoClicker&&(storage[acCostRes]||0)>=acCostAmt;
+    let bldMult=inst.autoClicker?getBuildingACMult():1;
+    let effProd=inst.lvl*prodMult*bldMult;
+    let psOut=Object.keys(b.outputs).map(r=>`+${(b.outputs[r]*effProd*0.5).toFixed(1)}${RES[r]?.e||''}/с`).join(' ');
+    let upTip=`Апгрейд рів.${inst.lvl}→${inst.lvl+1}\nВартість: ${Object.keys(b.cost).map(r=>`${Math.ceil(b.cost[r]*upScale)} ${RES[r]?.n}`).join(', ')}\n(Коеф. епохи ×${(1+b.epoch*0.3).toFixed(1)})`;
+    let acTip=inst.autoClicker?'Зняти автоклікер (звільнити)':`Призначити автоклікер: ${acCostAmt} ${RES[acCostRes]?.n}`;
+
+    instHtml+=`<div class="inst-row" style="${inst.disabled?'opacity:0.45;':''}">
+      <div class="inst-row-top">
+        <span class="inst-lvl">${inst.disabled?'⏸ ':''}Рів.${inst.lvl}/999</span>
+        <span class="inst-ps">${psOut}${inst.autoClicker?` <span style="color:var(--synth)">🤖×${bldMult.toFixed(1)}</span>`:''}</span>
+      </div>
+      <div class="inst-row-btns">
+        <button class="inst-boost-btn" onclick="boostInstance(event,'${id}',${idx})" title="Разовий буст: витратити ресурси та отримати велику кількість продукції">⚡ БУСТ</button>
+        <button class="inst-btn ${canUp?'can':''}" onclick="upgradeInstance(event,'${id}',${idx})" ${!canUp?'disabled':''} title="${upTip}">⬆ ${upCost}</button>
+        <button class="inst-btn can" style="border-color:var(--gold);color:var(--gold);padding:4px 6px;font-size:10px;" onclick="maxUpgradeInstance(event,'${id}',${idx})" ${!canUp?'disabled':''} title="Максимально підвищити рівень на наявні ресурси">МАХ</button>
+        <button class="inst-ac-btn ${inst.autoClicker?'active':''}" onclick="toggleACOnBuilding(event,'${id}',${idx})" ${!canAC&&!inst.autoClicker?'disabled':''} title="${acTip}">
+          ${inst.autoClicker?'🤖 ЗНЯТИ':`🤖 ${acCostAmt}${RES[acCostRes]?.e}`}
+        </button>
+        <button class="inst-btn" style="border-color:var(--orange);color:var(--orange);" onclick="toggleBuildingActive(event,'${id}',${idx})" title="${inst.disabled?'Увімкнути споруду':'Вимкнути споруду (не споживає ресурси)'}">
+          ${inst.disabled?'▶ УВІМК':'⏸ ВИМК'}
+        </button>
+        <button class="inst-btn" style="border-color:var(--red);color:var(--red);" onclick="destroyBuilding(event,'${id}',${idx})" title="Знести споруду (повернути 50% ресурсів)">
+          🗑 ЗНЕСТИ
+        </button>
+      </div>
+    </div>`;
+  });
+  if(b.instances.length>5){
+    instHtml+=`<div style="font-size:10px;color:var(--dim);padding:3px 5px;border-left:2px solid var(--border);">...ще ${b.instances.length-5} споруд</div>`;
+  }
+
+  let slotDots='';
+  for(let i=0;i<Math.min(count,10);i++) slotDots+=`<div class="b-slot filled"></div>`;
+  if(count>10) slotDots+=`<span style="font-size:9px;color:var(--green)">+${count-10}</span>`;
+
+  // Build tooltip
+  let inDesc=Object.keys(b.inputs).map(r=>`${b.inputs[r]} ${RES[r]?.n}`).join(', ');
+  let outDesc=Object.keys(b.outputs).map(r=>`+${b.outputs[r]} ${RES[r]?.n}`).join(', ');
+  let costDesc=Object.keys(b.cost).map(r=>`${b.cost[r]} ${RES[r]?.n}`).join(', ');
+  let cardTip=`${b.name}\nЕпоха: ${b.epoch} | Збудовано: ${count}\nВхід: ${inDesc}\nВихід: ${outDesc}\nВартість: ${costDesc}`;
+
+  return `<div class="b-card ${count>0?'on-map':''}" title="${cardTip}">
+    <div class="b-header">
+      <div>
+        <div class="b-title">${b.name}</div>
+        <span class="b-epoch-tag">Еп.${b.epoch} · ${count} шт</span>
+      </div>
+      <div class="b-slots">${slotDots}</div>
+    </div>
+    <div class="b-io-block">
+      <div class="b-io-row"><span class="b-io-label" style="color:var(--red)">⬇ ВХ:</span><div class="b-io-items">${inItems}</div></div>
+      <div class="b-io-row"><span class="b-io-label" style="color:var(--green)">⬆ ВИХ:</span><div class="b-io-items">${outItems}</div></div>
+    </div>
+    <div class="b-cost-block">💰 Ціна: ${costItems}</div>
+    <div class="b-actions">
+      <button class="b-build-btn" onclick="buildBuilding('${id}')" ${!canBuild?'disabled':''} title="${canBuild?'Побудувати нову споруду':'Недостатньо ресурсів'}">➕ БУДУВАТИ${count>0?` (${count})`:''}</button>
+    </div>
+    ${instHtml}
+  </div>`;
+}
+
+// ── Згортання/розгортання групи в списку будівель ──
+function toggleGroup(bIdx){
+  groupCollapsed[bIdx]=!groupCollapsed[bIdx];
+  renderBuildings();
+}
+
+// ── Головний рендер списку будівель: групи за сировиною ──
+// Кожна гілка (BRANCHES[i]) — окрема група. Базові видобувні споруди
+// з GROUP_BASE_MAP показуються як "підпункти" (рівень 0) усередині
+// групи, а далі йде звичний ланцюжок виробничих споруд гілки (Еп.1..12).
 function renderBuildings(){
   let blDiv=document.getElementById('ui-buildings');
   let html='';
+  let anyVisible=false;
 
-  // ── SECTION 1: BASE RESOURCE BUILDINGS ────────────────────────
-  let hasBase=false;
-  let baseHtml='';
-  Object.keys(BASE_RES_BUILDINGS).forEach(id=>{
-    let b=BASE_RES_BUILDINGS[id];
-    if(epoch<b.ep_req) return;
-    hasBase=true;
-    let scale=Math.pow(b.costMult,b.lvl);
-    let cost={};
-    Object.keys(b.costBase).forEach(k=>cost[k]=Math.floor(b.costBase[k]*scale));
-    let canAfford=Object.keys(cost).every(k=>(storage[k]||0)>=cost[k]);
-    let prod=(b.prodBase*Math.max(1,b.lvl)*baseResMultiplier).toFixed(2);
-    let costStr=Object.keys(cost).map(k=>`${RES[k]?.e||''}${fmt(cost[k])} ${RES[k]?.n}`).join(' + ');
-    let res=RES[b.res];
-    let tipText=`${b.name}\nВидобуває: ${res?.n||b.res} (${res?.e||''})\nВиробництво: +${prod}/с (рів.×${b.prodBase})\nВартість: ${costStr}\nЕпоха: ${b.ep_req}`;
-    let boost=b.boost||0; // секунд буст залишилось
-    let boostedProd=boost>0?(b.prodBase*Math.max(1,b.lvl)*baseResMultiplier*3).toFixed(2):null;
-    let boostCost=_boostCost(b);
-    let canBoost=Object.keys(boostCost).every(k=>(storage[k]||0)>=boostCost[k]);
-    let boostCostStr=Object.entries(boostCost).map(([k,v])=>`${RES[k]?.e||''}${fmt(v)}`).join(' ');
-    baseHtml+=`<div class="base-b-card ${b.lvl>0?'active-bld':''} ${boost>0?'boosted':''}" title="${tipText}">
-      <div class="base-b-head">
-        <div class="base-b-name">${b.name}</div>
-        ${b.lvl>0?`<div class="base-b-lvl">рів.${b.lvl}</div>`:''}
-      </div>
-      ${b.lvl>0
-        ? boost>0
-          ? `<div class="base-b-out" style="color:var(--gold)">⚡ +${boostedProd} ${res?.e||''}/с <span style="color:var(--orange);font-size:9px">${_fmtTime(boost)}</span></div>`
-          : `<div class="base-b-out">+${prod} ${res?.e||''} ${res?.n||b.res}/с</div>`
-        : `<div style="font-size:9px;color:var(--dim)">+${b.prodBase} ${res?.e||''}/с за рів.</div>`}
-      <div class="base-b-cost">${costStr}</div>
-      <div style="display:flex;gap:3px;margin-top:4px;">
-        <button class="base-b-btn ${canAfford?'can':''}" onclick="buyBaseResBuilding('${id}')" ${!canAfford?'disabled':''} style="flex:1;margin-top:0;">
-          ${b.lvl===0?'🏗 БУДУВАТИ':'+РІВ'}
-        </button>
-        ${b.lvl>0?`<button class="base-b-btn can" style="border-color:var(--gold);color:var(--gold);flex:0 0 28px;margin-top:0;" onclick="maxBuyBaseResBuilding('${id}')" ${!canAfford?'disabled':''}>МАХ</button>`:''}
-      </div>
-      ${b.lvl>0?`<button class="boost-btn ${boost>0?'active':''} ${!canBoost&&!boost?'disabled':''}"
-        onclick="activateBoost('${id}')" ${boost>0?'disabled':''}>
-        ${boost>0
-          ? `⚡ БУСТ: ${_fmtTime(boost)}`
-          : `⚡ БУСТ ×3 · 30с · ${boostCostStr}`}
-      </button>`:''}
-    </div>`;
-  });
-  if(hasBase){
-    html+=`<div class="sh" style="margin-bottom:4px;">🪨 БАЗОВІ СПОРУДИ <span class="sh-badge">Автовидобуток</span></div>
-    <div class="base-res-grid">${baseHtml}</div>
-    <div class="sh" style="margin:8px 0 4px;">🏭 ВИРОБНИЧІ СПОРУДИ <span class="sh-badge">Еп.${epoch}</span></div>`;
-  }
+  BRANCHES.forEach((branchName,bIdx)=>{
+    if(bIdx>11) return;
+    if(activeFilter!=='all' && activeFilter!==branchName) return;
 
-  // ── SECTION 2: PRODUCTION BUILDINGS ────────────────────────────
-  let bldCount=0;
-  Object.keys(buildings).forEach(id=>{
-    let b=buildings[id];
-    // Показуємо: або ця епоха доступна, або вже є збудовані екземпляри
-    if(b.epoch>epoch && b.instances.length===0) return;
-    if(activeFilter!=='all'&&b.branch!==activeFilter) return;
-    if(buildStatusFilter==='built'&&b.instances.length===0) return;
-    if(buildStatusFilter==='notbuilt'&&b.instances.length>0) return;
-    bldCount++;
-
-    let count=b.instances.length;
-
-    let costItems=Object.keys(b.cost).map(r=>{
-      let have=storage[r]||0;
-      let need=b.cost[r];
-      let cls=have>=need?'can-afford':'cant-afford';
-      return `<span class="b-cost-item ${cls}">${RES[r]?.e||''}${need}<span style="font-size:9px;color:var(--dim)"> ${RES[r]?.n}</span></span>`;
-    }).join('');
-
-    let inItems=Object.keys(b.inputs).map(r=>`<span class="b-io-item input-item"><span class="io-val">${b.inputs[r]}</span><span style="font-size:14px">${RES[r]?.e||''}</span><span class="io-name">${RES[r]?.n}</span></span>`).join('');
-    let outItems=Object.keys(b.outputs).map(r=>`<span class="b-io-item output-item"><span class="io-val">+${b.outputs[r]}</span><span style="font-size:14px">${RES[r]?.e||''}</span><span class="io-name">${RES[r]?.n}</span></span>`).join('');
-
-    let canBuild=count<999&&Object.keys(b.cost).every(r=>(storage[r]||0)>=b.cost[r]);
-
-    // AC node info
-    let bldNodes=['bld_b4','bld_b3','bld_b2','bld_b1'];
-    let topBld=bldNodes.find(nid=>AC_NODES[nid]?.unlocked);
-    let acCostRes='bronze',acCostAmt=20;
-    if(AC_NODES['bld_b4'].unlocked){acCostRes='chips';acCostAmt=30;}
-    else if(AC_NODES['bld_b3'].unlocked){acCostRes='steel';acCostAmt=40;}
-    else if(AC_NODES['bld_b2'].unlocked){acCostRes='iron';acCostAmt=30;}
-
-    let instHtml='';
-    let showInst=b.instances.slice(0,5);
-    showInst.forEach((inst,idx)=>{
-      let upScale=Math.max(1, inst.lvl*2 * (1 + b.epoch*0.3));
-      let upCost=Object.keys(b.cost).map(r=>`${fmt(Math.ceil(b.cost[r]*upScale))}${RES[r]?.e||''}`).join('+');
-      let canUp=inst.lvl<999&&Object.keys(b.cost).every(r=>(storage[r]||0)>=Math.ceil(b.cost[r]*upScale));
-      let canAC=!!topBld&&!inst.autoClicker&&(storage[acCostRes]||0)>=acCostAmt;
-      let bldMult=inst.autoClicker?getBuildingACMult():1;
-      let effProd=inst.lvl*prodMult*bldMult;
-      let psOut=Object.keys(b.outputs).map(r=>`+${(b.outputs[r]*effProd*0.5).toFixed(1)}${RES[r]?.e||''}/с`).join(' ');
-      let upTip=`Апгрейд рів.${inst.lvl}→${inst.lvl+1}\nВартість: ${Object.keys(b.cost).map(r=>`${Math.ceil(b.cost[r]*upScale)} ${RES[r]?.n}`).join(', ')}\n(Коеф. епохи ×${(1+b.epoch*0.3).toFixed(1)})`;
-      let acTip=inst.autoClicker?'Зняти автоклікер (звільнити)':`Призначити автоклікер: ${acCostAmt} ${RES[acCostRes]?.n}`;
-
-      instHtml+=`<div class="inst-row" style="${inst.disabled?'opacity:0.45;':''}">
-        <div class="inst-row-top">
-          <span class="inst-lvl">${inst.disabled?'⏸ ':''}Рів.${inst.lvl}/999</span>
-          <span class="inst-ps">${psOut}${inst.autoClicker?` <span style="color:var(--synth)">🤖×${bldMult.toFixed(1)}</span>`:''}</span>
-        </div>
-        <div class="inst-row-btns">
-          <button class="inst-boost-btn" onclick="boostInstance(event,'${id}',${idx})" title="Разовий буст: витратити ресурси та отримати велику кількість продукції">⚡ БУСТ</button>
-          <button class="inst-btn ${canUp?'can':''}" onclick="upgradeInstance(event,'${id}',${idx})" ${!canUp?'disabled':''} title="${upTip}">⬆ ${upCost}</button>
-          <button class="inst-btn can" style="border-color:var(--gold);color:var(--gold);padding:4px 6px;font-size:10px;" onclick="maxUpgradeInstance(event,'${id}',${idx})" ${!canUp?'disabled':''} title="Максимально підвищити рівень на наявні ресурси">МАХ</button>
-          <button class="inst-ac-btn ${inst.autoClicker?'active':''}" onclick="toggleACOnBuilding(event,'${id}',${idx})" ${!canAC&&!inst.autoClicker?'disabled':''} title="${acTip}">
-            ${inst.autoClicker?'🤖 ЗНЯТИ':`🤖 ${acCostAmt}${RES[acCostRes]?.e}`}
-          </button>
-          <button class="inst-btn" style="border-color:var(--orange);color:var(--orange);" onclick="toggleBuildingActive(event,'${id}',${idx})" title="${inst.disabled?'Увімкнути споруду':'Вимкнути споруду (не споживає ресурси)'}">
-            ${inst.disabled?'▶ УВІМК':'⏸ ВИМК'}
-          </button>
-          <button class="inst-btn" style="border-color:var(--red);color:var(--red);" onclick="destroyBuilding(event,'${id}',${idx})" title="Знести споруду (повернути 50% ресурсів)">
-            🗑 ЗНЕСТИ
-          </button>
-        </div>
-      </div>`;
+    // Підпункти групи — базові видобувні споруди цієї сировини
+    let subHtml='';
+    (GROUP_BASE_MAP[bIdx]||[]).forEach(baseId=>{
+      let b=BASE_RES_BUILDINGS[baseId];
+      if(!b||epoch<b.ep_req) return;
+      if(buildStatusFilter==='built'&&b.lvl===0) return;
+      if(buildStatusFilter==='notbuilt'&&b.lvl>0) return;
+      subHtml+=renderBaseCard(baseId,true);
     });
-    if(b.instances.length>5){
-      instHtml+=`<div style="font-size:10px;color:var(--dim);padding:3px 5px;border-left:2px solid var(--border);">...ще ${b.instances.length-5} споруд</div>`;
+
+    // Ланцюжок виробничих споруд гілки
+    let chainHtml='';
+    let builtCount=0, totalCount=0;
+    for(let ep=1;ep<=12;ep++){
+      let id=`b${bIdx}_${ep}`;
+      let b=buildings[id];
+      if(!b) continue;
+      // Показуємо: або ця епоха доступна, або вже є збудовані екземпляри
+      if(b.epoch>epoch && b.instances.length===0) continue;
+      if(buildStatusFilter==='built'&&b.instances.length===0) continue;
+      if(buildStatusFilter==='notbuilt'&&b.instances.length>0) continue;
+      totalCount++;
+      if(b.instances.length>0) builtCount++;
+      chainHtml+=renderBuildingCard(id);
     }
 
-    let slotDots='';
-    for(let i=0;i<Math.min(count,10);i++) slotDots+=`<div class="b-slot filled"></div>`;
-    if(count>10) slotDots+=`<span style="font-size:9px;color:var(--green)">+${count-10}</span>`;
+    if(!subHtml && !chainHtml) return; // у групи немає, що показати при поточних фільтрах
+    anyVisible=true;
 
-    // Build tooltip
-    let inDesc=Object.keys(b.inputs).map(r=>`${b.inputs[r]} ${RES[r]?.n}`).join(', ');
-    let outDesc=Object.keys(b.outputs).map(r=>`+${b.outputs[r]} ${RES[r]?.n}`).join(', ');
-    let costDesc=Object.keys(b.cost).map(r=>`${b.cost[r]} ${RES[r]?.n}`).join(', ');
-    let cardTip=`${b.name}\nЕпоха: ${b.epoch} | Збудовано: ${count}\nВхід: ${inDesc}\nВихід: ${outDesc}\nВартість: ${costDesc}`;
+    if(groupCollapsed[bIdx]===undefined){
+      let hasBuiltBase=(GROUP_BASE_MAP[bIdx]||[]).some(bi=>BASE_RES_BUILDINGS[bi]?.lvl>0);
+      groupCollapsed[bIdx]=!(builtCount>0||hasBuiltBase);
+    }
+    let collapsed=activeFilter==='all'&&groupCollapsed[bIdx];
 
-    html+=`<div class="b-card ${count>0?'on-map':''}" title="${cardTip}">
-      <div class="b-header">
-        <div>
-          <div class="b-title">${b.name}</div>
-          <span class="b-epoch-tag">Еп.${b.epoch} · ${count} шт</span>
-        </div>
-        <div class="b-slots">${slotDots}</div>
+    html+=`<div class="group-card ${collapsed?'collapsed':''}">
+      <div class="group-header" onclick="toggleGroup(${bIdx})">
+        <span class="group-title">${BR_EMOJI[bIdx]} ${branchName}</span>
+        <span class="group-meta">${builtCount}/${totalCount} споруд${subHtml?' · є підпункти':''}</span>
+        <span class="group-toggle">${collapsed?'▸':'▾'}</span>
       </div>
-      <div class="b-io-block">
-        <div class="b-io-row"><span class="b-io-label" style="color:var(--red)">⬇ ВХ:</span><div class="b-io-items">${inItems}</div></div>
-        <div class="b-io-row"><span class="b-io-label" style="color:var(--green)">⬆ ВИХ:</span><div class="b-io-items">${outItems}</div></div>
+      <div class="group-body" style="${collapsed?'display:none':''}">
+        ${subHtml?`<div class="group-subitems"><div class="group-subitems-label">🪨 Підпункти · базова сировина</div><div class="base-res-grid">${subHtml}</div></div>`:''}
+        ${chainHtml}
       </div>
-      <div class="b-cost-block">💰 Ціна: ${costItems}</div>
-      <div class="b-actions">
-        <button class="b-build-btn" onclick="buildBuilding('${id}')" ${!canBuild?'disabled':''} title="${canBuild?'Побудувати нову споруду':'Недостатньо ресурсів'}">➕ БУДУВАТИ${count>0?` (${count})`:''}</button>
-      </div>
-      ${instHtml}
     </div>`;
   });
 
-  if(!hasBase&&bldCount===0){
-    html=`<div style="padding:20px;color:var(--dim);font-size:12px;">Немає будівель. Обери фільтр або розвинь епоху.</div>`;
-  } else if(bldCount===0 && activeFilter!=='all'){
-    html+=`<div style="padding:10px;color:var(--dim);font-size:11px;">Немає споруд для фільтру «${activeFilter}»</div>`;
+  if(!anyVisible){
+    html = activeFilter!=='all'
+      ? `<div style="padding:10px;color:var(--dim);font-size:11px;">Немає споруд для фільтру «${activeFilter}»</div>`
+      : `<div style="padding:20px;color:var(--dim);font-size:12px;">Немає будівель. Обери фільтр або розвинь епоху.</div>`;
   }
   blDiv.innerHTML=html;
 }
