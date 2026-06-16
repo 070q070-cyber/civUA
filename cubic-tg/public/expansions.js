@@ -95,69 +95,453 @@ const COLLECTIBLE_SETS = {
   },
   hunting: {
     name: 'Мисливські трофеї', icon: '🏹', color: 'var(--orange)',
-    desc: 'Рідкісні частини здобутих тварин — лапи, ікла, перо легендарних звірів.',
-    setBonus: { globalResMult: 0.05, label: '+5% до всього виробництва' },
+    desc: 'Кожна здобута тварина може залишити унікальний трофей у колекцію.',
+    setBonus: { globalResMult: 0.1, label: '+10% до всього виробництва' },
     items: [
-      { id:'trophy_rabbit', name:'Кролячий хвостик-талісман', icon:'🐰', method:'rabbit', methodLabel:'Кролик',  chance:0.15, itemBonus:0.005 },
-      { id:'trophy_deer',   name:'Оленячі роги',              icon:'🦌', method:'deer',   methodLabel:'Олень',   chance:0.15, itemBonus:0.005 },
-      { id:'trophy_boar',   name:'Бивень вепра',              icon:'🐗', method:'boar',   methodLabel:'Вепр',    chance:0.13, itemBonus:0.008 },
-      { id:'trophy_wolf',   name:'Вовчий ікол',               icon:'🐺', method:'wolf',   methodLabel:'Вовк',    chance:0.12, itemBonus:0.01  },
-      { id:'trophy_bear',   name:'Медвежий кіготь',           icon:'🐻', method:'bear',   methodLabel:'Ведмідь', chance:0.10, itemBonus:0.012 },
-      { id:'trophy_eagle',  name:'Перо орла-вожака',          icon:'🦅', method:'eagle',  methodLabel:'Орел',    chance:0.08, itemBonus:0.015 },
+      // 🟢 (common)
+      { id:'hunt_001', name:'Заєць-русак', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_002', name:'Кріль дикий', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_003', name:'Перепілка звичайна', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_004', name:'Качка-крижень', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_005', name:'Фазан звичайний', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_006', name:'Лисиця руда', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_007', name:'Куріпка сіра', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_008', name:'Бабак степовий', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_009', name:'Тхір лісовий', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_010', name:'Ондатра', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_011', name:'Голуб-припутень', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_012', name:'Куниця кам\'яна', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_013', name:'Ласка звичайна', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_014', name:'Дика гуска', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_015', name:'Нутрія', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_016', name:'Лиска (водяна курка)', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_017', name:'Білка руда', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_018', name:'Хом\'як звичайний', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_019', name:'Полівка лугова', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_020', name:'Ховрах плямистий', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_021', name:'Єнот-полоскун', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_022', name:'Бурундук', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_023', name:'Ондатра прибережна', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_024', name:'Вальдшнеп (лісовий кулик)', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'hunt_025', name:'Дикий індик', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      // 🔵 (rare)
+      { id:'hunt_026', name:'Козуля європейська', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_027', name:'Кабан дикий (вепр)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_028', name:'Вовк сірий', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_029', name:'Борсук європейський', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_030', name:'Шакал золотистий', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_031', name:'Бобер річковий', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_032', name:'Глушець (глухар)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_033', name:'Тетерук', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_034', name:'Чапля сіра', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_035', name:'Олень плямистий', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_036', name:'Лань', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_037', name:'Корсак (степова лисиця)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_038', name:'Шакал чепрачний', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_039', name:'Койот', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_040', name:'Видра річкова', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_041', name:'Муфлон європейський', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_042', name:'Опосум', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_043', name:'Дикобраз хохлатий', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_044', name:'Кріт європейський', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_045', name:'Чорний заєць', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_046', name:'Дикий кіт (лісовий)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_047', name:'Лебідь-шипун', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_048', name:'Дрохва', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_049', name:'Норка американська', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'hunt_050', name:'Песець (полярна лисиця)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      // 🟣 (epic)
+      { id:'hunt_051', name:'Ведмідь бурий', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_052', name:'Лось європейський', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_053', name:'Благородний олень', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_054', name:'Рись євразійська', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_055', name:'Зубр (європейський бізон)', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_056', name:'Росомаха', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_057', name:'Пума (кугуар)', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_058', name:'Леопард (пантера)', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_059', name:'Сніговий барс (ірбіс)', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_060', name:'Смугаста гієна', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_061', name:'Кенгуру гігантський', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_062', name:'Беркут (королівський орел)', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_063', name:'Алігатор міссісіпський', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_064', name:'Гімалайський ведмідь', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_065', name:'Чорний вовк (альфа-самець)', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_066', name:'Анаконда зелена', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_067', name:'Гриф-ягнятник', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_068', name:'Сніжний баран', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_069', name:'Антилопа гну', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'hunt_070', name:'Оцелот', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      // 🟡 (legendary)
+      { id:'hunt_071', name:'Ведмідь-гризлі', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'hunt_072', name:'Білий ведмідь (полярний гігант)', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'hunt_073', name:'Бенгальський тигр', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'hunt_074', name:'Лев африканський', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'hunt_075', name:'Саванний слон', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'hunt_076', name:'Чорний носоріг', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'hunt_077', name:'Овцебик (мускусний бик)', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'hunt_078', name:'Гігантський лісовий кабан', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'hunt_079', name:'Комодський варан', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'hunt_080', name:'Крокодил нільський', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'hunt_081', name:'Гриф-кондор андійський', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'hunt_082', name:'Олень-альбінос', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'hunt_083', name:'Панда гігантська', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'hunt_084', name:'Ягуар чорний', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'hunt_085', name:'Гігантський лінивець', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      // 🔮 (mythic)
+      { id:'hunt_086', name:'Срібний Єдиноріг', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'hunt_087', name:'Огненний Фенікс', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'hunt_088', name:'Тіньовий Пантер', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'hunt_089', name:'Смарагдова Гідра', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'hunt_090', name:'Крижаний Лютововк', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'hunt_091', name:'Золоторогий Олень', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'hunt_092', name:'Пекельний Гончак', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'hunt_093', name:'Громовий Птах', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'hunt_094', name:'Скритний Гриффон', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'hunt_095', name:'Туманний Стриж', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'hunt_096', name:'Хрустальний Скорпіон', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'hunt_097', name:'Лунний Заєць', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'hunt_098', name:'Залізошкірий Вепр', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'hunt_099', name:'Лісовий Дух-Обережник', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'hunt_100', name:'Хроно-Сфінкс', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
     ]
   },
   fishing: {
     name: 'Скарби глибин', icon: '🎣', color: 'var(--blue)',
-    desc: 'Дивні артефакти та луска незвичайних риб, знайдені у воді.',
-    setBonus: { globalResMult: 0.05, label: '+5% до всього виробництва' },
+    desc: 'Кожна виловлена риба — це шанс на рідкісний експонат.',
+    setBonus: { globalResMult: 0.1, label: '+10% до всього виробництва' },
     items: [
-      { id:'treasure_stream',  name:'Гладкий камінець',     icon:'💧', method:'stream',  methodLabel:'Струмок',      chance:0.15, itemBonus:0.005 },
-      { id:'treasure_lake',    name:'Перлина озера',        icon:'🏞', method:'lake',    methodLabel:'Озеро',        chance:0.13, itemBonus:0.007 },
-      { id:'treasure_river',   name:'Стара монета',         icon:'🌊', method:'river',   methodLabel:'Ріка',         chance:0.12, itemBonus:0.009 },
-      { id:'treasure_sea',     name:'Мушля-спіраль',        icon:'🐚', method:'sea',     methodLabel:'Море',         chance:0.10, itemBonus:0.012 },
-      { id:'treasure_deepsea', name:'Бляшка левіафана',     icon:'🔵', method:'deep_sea',methodLabel:'Глибоке море', chance:0.08, itemBonus:0.015 },
+      // 🟢 (common)
+      { id:'fish_001', name:'Карась сріблястий', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_002', name:'Карась золотий', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_003', name:'Плітка звичайна', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_004', name:'Окунь річковий', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_005', name:'Верховодка (уклейка)', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_006', name:'Краснопірка', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_007', name:'Йорж звичайний', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_008', name:'Лин', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_009', name:'Густера', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_010', name:'Бичок-кругляк', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_011', name:'Бичок-пісочник', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_012', name:'Тріска атлантична', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_013', name:'Оселедець балтійський', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_014', name:'Сардина європейська', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_015', name:'Скумбрія атлантична', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_016', name:'Ставрида', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_017', name:'Камбала річкова', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_018', name:'Клець (ялець)', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_019', name:'Чехоня', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_020', name:'Тюлька', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_021', name:'Гольян річковий', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_022', name:'Сріблянка', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_023', name:'Барабуля (султанка)', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_024', name:'Кефаль-сингіль', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'fish_025', name:'Сарган', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      // 🔵 (rare)
+      { id:'fish_026', name:'Короп дзеркальний', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_027', name:'Короп лускатий (сазан)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_028', name:'Щука звичайна', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_029', name:'Судак звичайний', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_030', name:'Голавль (клен)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_031', name:'Жерех (білизна)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_032', name:'Лящ річковий', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_033', name:'Білий амур', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_034', name:'Товстолобик плямистий', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_035', name:'Минь річковий', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_036', name:'Сом європейський', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_037', name:'Харіус європейський', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_038', name:'Форель струмкова', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_039', name:'Форель радужна', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_040', name:'Камбала-калкан', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_041', name:'Дорадо', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_042', name:'Лаврак', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_043', name:'Луфар', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_044', name:'Морський окунь', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_045', name:'Сиг озерний', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_046', name:'Вугор річковий', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_047', name:'Вугор морський (конгер)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_048', name:'Палія арктична', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_049', name:'Сніток', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'fish_050', name:'Риба-папуга', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      // 🟣 (epic)
+      { id:'fish_051', name:'Щука-маскінонг', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_052', name:'Таймень сибірський', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_053', name:'Лосось атлантичний (сьомга)', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_054', name:'Кумжа', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_055', name:'Стерлядь', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_056', name:'Чорний амур', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_057', name:'Тунець жовтоперий', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_058', name:'Тунець блакитний', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_059', name:'Риба-меч', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_060', name:'Вітрильник', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_061', name:'Марлін синій', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_062', name:'Арапаїма', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_063', name:'Риба-тигр', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_064', name:'Панцирник міссісіпський', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_065', name:'Камбала-палтус', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_066', name:'Скат-хвостокол', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_067', name:'Риба-крапля', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_068', name:'Риба-вудильник', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_069', name:'Мурена плямиста', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'fish_070', name:'Баракуда велика', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      // 🟡 (legendary)
+      { id:'fish_071', name:'Осетр руський', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'fish_072', name:'Білуга', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'fish_073', name:'Севрюга', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'fish_074', name:'Веслоніс', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'fish_075', name:'Короп Кої', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'fish_076', name:'Королівський лосось (Чавича)', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'fish_077', name:'Риба-луна (Мола-мола)', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'fish_078', name:'Риба-ремінь', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'fish_079', name:'Велика біла акула', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'fish_080', name:'Акула-молот', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'fish_081', name:'Китова акула', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'fish_082', name:'Целакант', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'fish_083', name:'Електричний вугор', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'fish_084', name:'Риба-пилка', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'fish_085', name:'Гігантський кальмар', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      // 🔮 (mythic)
+      { id:'fish_086', name:'Золота Рибка', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'fish_087', name:'Примарний Окунь', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'fish_088', name:'Вулканічний Магма-салмон', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'fish_089', name:'Небесний Скат', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'fish_090', name:'Смарагдовий Короп', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'fish_091', name:'Місячний Неон', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'fish_092', name:'Глибоководний Левіафанчик', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'fish_093', name:'Бездонний Глотач', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'fish_094', name:'Шепочуща Сирена', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'fish_095', name:'Хрустальний Плавниковець', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'fish_096', name:'Рунічний В\'юн', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'fish_097', name:'Тіньова Піранья', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'fish_098', name:'Хроно-риба', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'fish_099', name:'Кораловий Дракончик', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'fish_100', name:'Серце Океану', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
     ]
   },
   mushroom: {
     name: 'Грибний гербарій', icon: '🍄', color: 'var(--green)',
-    desc: 'Засушені зразки рідкісних грибів для колекції травника.',
-    setBonus: { globalResMult: 0.05, label: '+5% до всього виробництва' },
+    desc: 'Засушені зразки всіх видів грибів від звичайних до легендарних.',
+    setBonus: { globalResMult: 0.1, label: '+10% до всього виробництва' },
     items: [
-      { id:'spec_common',      name:'Зразок: звичайний гриб', icon:'🍄', method:'common',     methodLabel:'Звичайні гриби', chance:0.18, itemBonus:0.005 },
-      { id:'spec_forest',      name:'Зразок: лісовий гриб',   icon:'🌲', method:'forest',     methodLabel:'Лісові гриби',   chance:0.15, itemBonus:0.005 },
-      { id:'spec_chanterelle', name:'Зразок: лисичка',        icon:'🟡', method:'chanterelle',methodLabel:'Лисички',        chance:0.12, itemBonus:0.008 },
-      { id:'spec_porcini',     name:'Зразок: білий гриб',     icon:'🟫', method:'porcini',    methodLabel:'Білі гриби',     chance:0.10, itemBonus:0.01  },
-      { id:'spec_truffle',     name:'Зразок: трюфель',        icon:'⚫', method:'truffle',    methodLabel:'Трюфель',        chance:0.06, itemBonus:0.015 },
-    ]
-  },
-  herb: {
-    name: 'Гербарій трав', icon: '🌿', color: 'var(--teal)',
-    desc: 'Засушені рідкісні трави для алхімічної колекції.',
-    setBonus: { globalResMult: 0.05, label: '+5% до всього виробництва' },
-    items: [
-      { id:'press_nettle',    name:'Пресована кропива',  icon:'🌿', method:'nettle',    methodLabel:'Кропива',   chance:0.18, itemBonus:0.004 },
-      { id:'press_mint',      name:'Пресована м\'ята',    icon:'🌱', method:'mint',      methodLabel:'М\'ята',     chance:0.16, itemBonus:0.004 },
-      { id:'press_lavender',  name:'Пресована лаванда',  icon:'💜', method:'lavender',  methodLabel:'Лаванда',   chance:0.13, itemBonus:0.006 },
-      { id:'press_chamomile', name:'Пресована ромашка',  icon:'🌼', method:'chamomile', methodLabel:'Ромашка',   chance:0.13, itemBonus:0.006 },
-      { id:'press_valerian',  name:'Пресована рідкісна трава', icon:'🌸', method:'valerian', methodLabel:'Рідкісна трава', chance:0.08, itemBonus:0.01 },
-      { id:'press_mandrake',  name:'Корінь мандрагори',  icon:'🌺', method:'mandrake',  methodLabel:'Мандрагора', chance:0.05, itemBonus:0.015 },
+      // 🟢 (common)
+      { id:'mush_001', name:'Печериця звичайна', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_002', name:'Сироїжка зелена', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_003', name:'Сироїжка світло-жовта', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_004', name:'Опеньок осінній', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_005', name:'Опеньок літній', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_006', name:'Маслюк звичайний', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_007', name:'Маслюк зернистий', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_008', name:'Лисичка справжня', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_009', name:'Дощовик їстівний', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_010', name:'Свинушка тонка', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_011', name:'Гнойовик білий', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_012', name:'Глива звичайна', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_013', name:'Глива легенева', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_014', name:'Підберезовик', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_015', name:'Підосичник сірий', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_016', name:'Рядовка травнева', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_017', name:'Рядовка фіолетова', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_018', name:'Моховик зелений', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_019', name:'Моховик тріщинуватий', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_020', name:'Хрящ-перцевець', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_021', name:'Трутовик лускатий', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_022', name:'Трутовик сірчано-жовтий', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_023', name:'Вовнянка рожева', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_024', name:'Сморж конічний', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'mush_025', name:'Сморжова шапочка', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      // 🔵 (rare)
+      { id:'mush_026', name:'Боровик (Білий гриб дубовий)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_027', name:'Боровик боровий', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_028', name:'Лисичка трубчаста', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_029', name:'Лисичка аметистова', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_030', name:'Рижик смачний (сосновий)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_031', name:'Рижик ялиновий', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_032', name:'Гігрофор ранній', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_033', name:'Парасолька строката', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_034', name:'Парасолька дівоча', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_035', name:'Польський гриб', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_036', name:'Хрящ-молочник справжній (Груздь)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_037', name:'Груздь чорний', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_038', name:'Польовик ранній', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_039', name:'Клітоцибе підігнутий', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_040', name:'Кораловий гриб (Рамарія золотиста)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_041', name:'Ежовик жовтий (Гіднум)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_042', name:'Павутинник фіолетовий', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_043', name:'Печіночниця звичайна', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_044', name:'Гіропор каштановий', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_045', name:'Гіропор синіючий (Синяк)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_046', name:'Строчок звичайний', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_047', name:'Лепіота щитоподібна', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_048', name:'Чешуйчатка ворсиста', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_049', name:'Панеолус', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'mush_050', name:'Вороночник ріжкоподібний', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      // 🟣 (epic)
+      { id:'mush_051', name:'Мухомор червоний', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_052', name:'Мухомор пантерний', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_053', name:'Бліда поганка', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_054', name:'Клітоцибе помаранчево-червоний', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_055', name:'Білий гриб сітчастий', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_056', name:'Трюфель літній (чорний)', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_057', name:'Клаварія блідо-бузкова', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_058', name:'Трутовик лакований (Гриб Рейші)', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_059', name:'Веселка звичайна', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_060', name:'Зірочник бахромистий', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_061', name:'Стробілюрус шпагатоногий', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_062', name:'Келишок смугастий', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_063', name:'Саркосцифа яскраво-червона', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_064', name:'Траметес різнокольоровий', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_065', name:'Герицій коралоподібний', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_066', name:'Кордицепс однобокий', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_067', name:'Опеньок темний', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_068', name:'Свинушка товста', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_069', name:'Волоконниця патуйяра', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'mush_070', name:'Грифола кучерява', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      // 🟡 (legendary)
+      { id:'mush_071', name:'Трюфель білий (італійський)', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'mush_072', name:'Гриб Мацутаке', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'mush_073', name:'Мухомор Цезаря', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'mush_074', name:'Кровоточивий зуб', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'mush_075', name:'Гігроцибе пунцова', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'mush_076', name:'Світлоносний гриб', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'mush_077', name:'Синій гриб', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'mush_078', name:'Рожевий пухирник', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'mush_079', name:'Дама з вуаллю', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'mush_080', name:'Фавулас пористий', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'mush_081', name:'Хрящ-молочник блакитний', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'mush_082', name:'Золотавий боровик', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'mush_083', name:'Аметистовий обманщик', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'mush_084', name:'Гриб-восьминіг', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'mush_085', name:'Чага', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      // 🔮 (mythic)
+      { id:'mush_086', name:'Ефірний Світляк', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'mush_087', name:'Пекельний Попіряник', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'mush_088', name:'Тіньова Споровиця', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'mush_089', name:'Крижаний Кристальник', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'mush_090', name:'Шепіт Шамана', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'mush_091', name:'Око Дракона', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'mush_092', name:'Місячний Сморовик', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'mush_093', name:'Пустотний Кордицепс', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'mush_094', name:'Смарагдовий Дріадовець', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'mush_095', name:'Гнилобород Абаддона', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'mush_096', name:'Золотоносний Міцелій', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'mush_097', name:'Туманний Сновидець', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'mush_098', name:'Залізошкірий Трутовик', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'mush_099', name:'Кров Німфи', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'mush_100', name:'Серце Лісу', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
     ]
   },
   geology: {
     name: 'Мінералогічна колекція', icon: '⛏️', color: 'var(--gold)',
-    desc: 'Зразки рідкісних мінералів та копалин з кожного типу родовищ.',
-    setBonus: { globalResMult: 0.08, label: '+8% до всього виробництва' },
+    desc: 'Зразки порід, руд та мінералів від базальту до Філософського Каменю.',
+    setBonus: { globalResMult: 0.15, label: '+15% до всього виробництва' },
     items: [
-      { id:'mineral_coal',    name:'Зразок вугілля',       icon:'🕳', method:'coal_vein',   methodLabel:'Вугільна жила',     chance:0.14, itemBonus:0.005 },
-      { id:'mineral_iron',    name:'Зразок залізної руди', icon:'🔩', method:'iron_vein',   methodLabel:'Залізна жила',      chance:0.12, itemBonus:0.007 },
-      { id:'mineral_copper',  name:'Зразок мідної руди',   icon:'🟤', method:'copper_ore',  methodLabel:'Мідна руда',        chance:0.12, itemBonus:0.007 },
-      { id:'mineral_gem',     name:'Огранений самоцвіт',   icon:'💎', method:'gem_deposit', methodLabel:'Коштовне каміння',  chance:0.08, itemBonus:0.012 },
-      { id:'mineral_oil',     name:'Флакон нафти',         icon:'🛢', method:'oil_pocket',  methodLabel:'Нафтова кишеня',    chance:0.07, itemBonus:0.012 },
-      { id:'mineral_crystal', name:'Сяючий кристал',       icon:'🔮', method:'crystal_cave',methodLabel:'Кристальна печера', chance:0.06, itemBonus:0.015 },
-      { id:'mineral_fossil',  name:'Скам\'яніла мушля',     icon:'🦴', method:'fossil_site', methodLabel:'Скам\'янілості',    chance:0.10, itemBonus:0.008 },
-      { id:'mineral_silicon', name:'Силіконовий зливок',   icon:'💎', method:'silicon_vein',methodLabel:'Кремнієва жила',    chance:0.05, itemBonus:0.015 },
+      // 🟢 (common)
+      { id:'geo_001', name:'Граніт сірий', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_002', name:'Базальт', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_003', name:'Вапняк', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_004', name:'Пісковик', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_005', name:'Мармур білий', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_006', name:'Глина вогнетривка', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_007', name:'Сланцева порода', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_008', name:'Кремній (іскра-камінь)', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_009', name:'Кам\'яне вугілля', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_010', name:'Буре вугілля', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_011', name:'Залізна руда (гематит)', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_012', name:'Боксит', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_013', name:'Мідна руда (халькопірит)', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_014', name:'Кварц жильний', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_015', name:'Гіпс', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_016', name:'Польовий шпат', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_017', name:'Доломіт', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_018', name:'Туф вулканічний', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_019', name:'Гравій річковий', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_020', name:'Обсидіан', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_021', name:'Пемза', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_022', name:'Мергель', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_023', name:'Серпентиніт (змійовик)', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_024', name:'Галька яшмова', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      { id:'geo_025', name:'Дикун', icon:'🟢', rarity:'common', chance:0.35, itemBonus:0.001 },
+      // 🔵 (rare)
+      { id:'geo_026', name:'Олово (каситерит)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_027', name:'Свинцева руда (галеніт)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_028', name:'Цинкова руда (сфалерит)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_029', name:'Нікелева руда', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_030', name:'Малахіт', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_031', name:'Лазурит', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_032', name:'Нефрит', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_033', name:'Агат моховий', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_034', name:'Аметист', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_035', name:'Опал благородний', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_036', name:'Сердолік', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_037', name:'Онікс чорний', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_038', name:'Бірюза', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_039', name:'Хризоліт', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_040', name:'Топаз блакитний', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_041', name:'Гірський кришталь', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_042', name:'Цитрин', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_043', name:'Бурштин', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_044', name:'Яшма кривава (геліотроп)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_045', name:'Флюорит', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_046', name:'Чароїт', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_047', name:'Родоніт', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_048', name:'Лабрадорит', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_049', name:'Слюда (мусковіт)', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      { id:'geo_050', name:'Гранат піроп', icon:'🔵', rarity:'rare', chance:0.18, itemBonus:0.002 },
+      // 🟣 (epic)
+      { id:'geo_051', name:'Самородне Золото', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_052', name:'Самородне Срібло', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_053', name:'Ртутна руда (кіновар)', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_054', name:'Титанова руда (ільменіт)', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_055', name:'Уранініт', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_056', name:'Кобальтин', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_057', name:'Рубін іскристий', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_058', name:'Сапфір волошковий', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_059', name:'Смарагд чистий', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_060', name:'Олександрит', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_061', name:'Чорний опал', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_062', name:'Рожевий кварц мадагаскарський', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_063', name:'Аквамарин морський', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_064', name:'Турмалін кавуновий', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_065', name:'Шпінель благородна', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_066', name:'Кунцит', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_067', name:'Танзаніт', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_068', name:'Метеоритне залізо', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_069', name:'Вісмут', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      { id:'geo_070', name:'Пірит', icon:'🟣', rarity:'epic', chance:0.09, itemBonus:0.004 },
+      // 🟡 (legendary)
+      { id:'geo_071', name:'Платиновий самородок', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'geo_072', name:'Алмаз необроблений', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'geo_073', name:'Чорний Алмаз (Карбонадо)', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'geo_074', name:'Червоний Діамант', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'geo_075', name:'Вольфраміт', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'geo_076', name:'Султаніт', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'geo_077', name:'Пейніт', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'geo_078', name:'Тааффеїт', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'geo_079', name:'Паладій', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'geo_080', name:'Іридій', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'geo_081', name:'Родій', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'geo_082', name:'Муасаніт', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'geo_083', name:'Грандидьєрит', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'geo_084', name:'Кеммерерит', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      { id:'geo_085', name:'Окаменіле серце дерева', icon:'🟡', rarity:'legendary', chance:0.04, itemBonus:0.008 },
+      // 🔮 (mythic)
+      { id:'geo_086', name:'Мітрилова жила', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'geo_087', name:'Оріхалк', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'geo_088', name:'Кристал Мани', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'geo_089', name:'Вулканічний Магматит', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'geo_090', name:'Ефірний Кварц', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'geo_091', name:'Пустотний Сланець', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'geo_092', name:'Астральний Метеорит', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'geo_093', name:'Руда Крові', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'geo_094', name:'Хроно-кінетичний кристал', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'geo_095', name:'Глушильний Сланець', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'geo_096', name:'Ельфійський Смарагд', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'geo_097', name:'Тіньова ртуть', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'geo_098', name:'Кристал сонячного спалаху', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'geo_099', name:'Душа Голема', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
+      { id:'geo_100', name:'Філософський Камінь', icon:'🔮', rarity:'mythic', chance:0.02, itemBonus:0.016 },
     ]
   },
+
 };
 
 const COLLECTION_SYSTEM = {
@@ -204,33 +588,60 @@ const COLLECTION_SYSTEM = {
 };
 
 // Спроба здобути колекційний предмет за результатами активності.
-// setId — який набір (souls/hunting/fishing/mushroom/herb/geology)
-// methodId — конкретний метод (locationId/preyId/spotId/типId/depositId)
-// extraChanceBonus — додатковий шанс від прокачок (0..1)
-// Повертає предмет (об'єкт) якщо здобуто, інакше null.
-function rollCollectible(setId, methodId, extraChanceBonus=0){
+// setId      — який набір (souls/hunting/fishing/mushroom/herb/geology)
+// itemId     — конкретний id предмета, який "випав" від активності
+// equipBonus — додатковий шанс від спорядження (0..1)
+// Повертає предмет якщо здобуто, інакше null.
+// Механіка дублікатів: кожен дублікат підвищує рівень, який збільшує шанс на
+// наступне відкриття (але бонус до виробництва дає лише перший унікальний).
+function rollCollectible(setId, itemId, equipBonus=0){
   let set = COLLECTIBLE_SETS[setId];
   if(!set) return null;
-  let item = set.items.find(it=>it.method===methodId);
+  let item = set.items.find(it=>it.id===itemId);
   if(!item) return null;
-  let chance = item.chance + (extraChanceBonus||0);
+
+  // Рівень предмета (кількість дублікатів вже зібраних) збільшує шанс
+  let lvl = COLLECTION_SYSTEM.count(item.id);
+  let lvlBonus = lvl * 0.03; // +3% за кожен рівень
+  let chance = Math.min(0.95, item.chance + equipBonus + lvlBonus);
   if(Math.random() >= chance) return null;
 
   let wasNew = !COLLECTION_SYSTEM.isOwned(item.id);
   COLLECTION_SYSTEM.owned[item.id] = (COLLECTION_SYSTEM.owned[item.id]||0) + 1;
+  let newLvl = COLLECTION_SYSTEM.owned[item.id];
 
   if(wasNew){
-    if(typeof addLog==='function') addLog(`📚 НОВИЙ ПРЕДМЕТ КОЛЕКЦІЇ: ${item.icon} ${item.name}!`, true);
-    showExpToast(`📚 Колекція: ${item.icon} ${item.name}!`);
-    // Перевірка завершення сету
+    if(typeof addLog==='function') addLog(`📚 НОВИЙ: ${item.icon} ${item.name} [${item.rarity}]!`, true);
+    showExpToast(`📚 ${item.icon} ${item.name}!`);
     if(COLLECTION_SYSTEM.isSetComplete(setId)){
-      if(typeof addLog==='function') addLog(`🏅 НАБІР ЗАВЕРШЕНО: «${set.name}»! ${set.setBonus.label}`, true);
+      if(typeof addLog==='function') addLog(`🏅 НАБІР «${set.name}» ЗАВЕРШЕНО! ${set.setBonus.label}`, true);
       showExpToast(`🏅 Набір «${set.name}» завершено!`);
     }
   } else {
-    if(typeof addLog==='function') addLog(`📚 Дублікат: ${item.icon} ${item.name} (×${COLLECTION_SYSTEM.owned[item.id]})`);
+    if(typeof addLog==='function') addLog(`📚 ${item.icon} ${item.name} ×${newLvl} (+${(lvlBonus*100).toFixed(0)}% до шансу)`);
   }
   return item;
+}
+
+// Випадковий вибір предмета з набору за рідкістю (для активностей без фіксованої здобичі)
+// Повертає id предмета або null якщо ймовірність не спрацювала
+function pickCollectible(setId, rarityWeights, equipBonus=0){
+  let set = COLLECTIBLE_SETS[setId];
+  if(!set) return null;
+  // Фільтруємо предмети за вагою рідкості
+  let weights = rarityWeights || {common:1,rare:0.5,epic:0.2,legendary:0.08,mythic:0.03};
+  let pool = set.items.filter(it=>!COLLECTION_SYSTEM.isOwned(it.id)); // спочатку не-відкриті
+  if(!pool.length) pool = set.items; // якщо всі відкриті — повтори
+  // Зважений вибір
+  let total = pool.reduce((s,it)=>s+(weights[it.rarity]||0),0);
+  if(!total) return null;
+  let r = Math.random()*total;
+  let cum=0;
+  for(let it of pool){
+    cum += weights[it.rarity]||0;
+    if(r<cum) return it.id;
+  }
+  return pool[pool.length-1].id;
 }
 
 // Компактний віджет прогресу колекції для вкладки активності
@@ -259,60 +670,114 @@ function renderCollectionMiniWidget(setId){
 }
 
 // Рендер вкладки колекції
+// Стан фільтра колекції (зберігається між перерендерами)
+let _collTabFilter = {}; // setId -> rarity | 'all' | 'owned' | 'new'
+
 function renderCollectionTab(){
   let div = document.getElementById('tab-collection-content');
   if(!div) return;
 
-  let totalBonus = (COLLECTION_SYSTEM.getGlobalResMult()*100).toFixed(1);
-  let totalItems = 0, totalOwned = 0, totalSets = 0, totalSetsDone = 0;
+  const RARITY_ORDER = ['common','rare','epic','legendary','mythic'];
+  const RARITY_LABEL = {common:'🟢 Звичайні',rare:'🔵 Рідкісні',epic:'🟣 Епічні',legendary:'🟡 Легендарні',mythic:'🔮 Міфічні'};
+  const RARITY_COLOR = {common:'var(--green)',rare:'var(--blue)',epic:'var(--purple)',legendary:'var(--gold)',mythic:'var(--synth)'};
+
+  let totalItems=0, totalOwned=0, totalSets=0, totalSetsDone=0;
   Object.keys(COLLECTIBLE_SETS).forEach(setId=>{
-    let p = COLLECTION_SYSTEM.setProgress(setId);
-    totalItems += p.total; totalOwned += p.owned; totalSets++;
+    let p=COLLECTION_SYSTEM.setProgress(setId);
+    totalItems+=p.total; totalOwned+=p.owned; totalSets++;
     if(COLLECTION_SYSTEM.isSetComplete(setId)) totalSetsDone++;
   });
+  let totalBonus = (COLLECTION_SYSTEM.getGlobalResMult()*100).toFixed(1);
 
   let html = `<div style="padding:4px;">
     <div class="sh">📚 КОЛЕКЦІЯ</div>
     <div style="background:#0a0a1a;border:1px solid var(--gold);padding:8px;margin-bottom:8px;">
-      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
-        <span>📦 Предметів: <b style="color:var(--gold)">${totalOwned}</b> / ${totalItems}</span>
-        <span>🏅 Наборів: <b style="color:var(--gold)">${totalSetsDone}</b> / ${totalSets}</span>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:6px;">
+        <div style="text-align:center;background:var(--panel2);padding:5px;">
+          <div style="font-size:18px;">📦</div>
+          <b style="color:var(--gold)">${totalOwned}</b><span style="color:var(--dim)">/${totalItems}</span>
+          <div style="font-size:9px;color:var(--dim)">Унікальних</div>
+        </div>
+        <div style="text-align:center;background:var(--panel2);padding:5px;">
+          <div style="font-size:18px;">🏅</div>
+          <b style="color:var(--gold)">${totalSetsDone}</b><span style="color:var(--dim)">/${totalSets}</span>
+          <div style="font-size:9px;color:var(--dim)">Наборів</div>
+        </div>
+        <div style="text-align:center;background:var(--panel2);padding:5px;">
+          <div style="font-size:18px;">✨</div>
+          <b style="color:var(--teal)">+${totalBonus}%</b>
+          <div style="font-size:9px;color:var(--dim)">Бонус</div>
+        </div>
       </div>
-      <div style="font-size:11px;color:var(--teal);">✨ Загальний бонус до виробництва: <b>+${totalBonus}%</b></div>
     </div>`;
 
   Object.entries(COLLECTIBLE_SETS).forEach(([setId, set])=>{
-    let p = COLLECTION_SYSTEM.setProgress(setId);
-    let done = COLLECTION_SYSTEM.isSetComplete(setId);
+    let p=COLLECTION_SYSTEM.setProgress(setId);
+    let done=COLLECTION_SYSTEM.isSetComplete(setId);
+    let activeF = _collTabFilter[setId] || 'all';
+
+    // Фільтр по рідкості
+    let filterBar = `<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:5px;">
+      ${['all','owned',...RARITY_ORDER].map(f=>{
+        let label = f==='all'?'Всі':f==='owned'?'Знайдені':RARITY_LABEL[f];
+        let active = f===activeF;
+        let col = f==='all'||f==='owned'?'var(--text)':RARITY_COLOR[f];
+        return `<button onclick="_collTabFilter['${setId}']='${f}';renderCollectionTab();"
+          style="font-family:var(--font);font-size:9px;padding:2px 6px;border:1px solid ${active?col:'var(--border)'};
+          background:${active?'rgba(255,255,255,0.05)':'transparent'};color:${active?col:'var(--dim)'};cursor:pointer;">${label}</button>`;
+      }).join('')}
+    </div>`;
+
+    // Предмети з фільтром
+    let filteredItems = set.items.filter(it=>{
+      if(activeF==='all') return true;
+      if(activeF==='owned') return COLLECTION_SYSTEM.isOwned(it.id);
+      return it.rarity===activeF;
+    });
+
+    // Прогрес-бар
+    let pct = p.total>0?Math.round(p.owned/p.total*100):0;
+    let progressBar = `<div style="height:3px;background:#111;margin-bottom:5px;">
+      <div style="height:100%;width:${pct}%;background:${done?'var(--gold)':set.color};transition:width .3s;"></div>
+    </div>`;
+
+    // Сітка предметів
+    let grid = `<div style="display:flex;gap:3px;flex-wrap:wrap;max-height:200px;overflow-y:auto;">
+    ${filteredItems.map(it=>{
+      let owned=COLLECTION_SYSTEM.isOwned(it.id);
+      let cnt=COLLECTION_SYSTEM.count(it.id);
+      let rCol=RARITY_COLOR[it.rarity]||'var(--dim)';
+      let lvlTxt=cnt>1?`×${cnt}`:'';
+      return `<div title="${it.name}\nРідкість: ${RARITY_LABEL[it.rarity]}\n${owned?`Знайдено: ${cnt}×\n+${(it.itemBonus*100).toFixed(1)}% бонус`:'Не знайдено'}"
+        style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:14px;
+        background:${owned?'rgba(255,255,255,.04)':'#080a0f'};border:1px solid ${owned?rCol:'#161a22'};
+        opacity:${owned?1:.2};position:relative;cursor:default;flex-shrink:0;">
+        ${it.icon}
+        ${lvlTxt?`<span style="position:absolute;bottom:-1px;right:-1px;font-size:7px;color:var(--gold);
+          background:#000;padding:0 1px;line-height:1.2;">${lvlTxt}</span>`:''}
+      </div>`;
+    }).join('')}
+    ${!filteredItems.length?`<div style="font-size:10px;color:var(--dim);padding:8px;">Немає предметів</div>`:''}
+    </div>`;
+
     html += `<div style="background:var(--panel2);border:1px solid ${done?set.color:'var(--border)'};padding:8px;margin-bottom:6px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
         <span style="font-size:12px;color:${set.color}">${set.icon} ${set.name}</span>
-        <span style="font-size:10px;color:${done?'var(--gold)':'var(--dim)'}">${p.owned}/${p.total}${done?' ✅':''}</span>
+        <span style="font-size:10px;color:${done?'var(--gold)':'var(--dim)'}">${p.owned}/${p.total} (${pct}%)${done?' ✅':''}</span>
       </div>
-      <div style="font-size:9px;color:var(--dim);margin-bottom:5px;">${set.desc}</div>
-      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px;">
-      ${set.items.map(it=>{
-        let owned = COLLECTION_SYSTEM.isOwned(it.id);
-        let cnt = COLLECTION_SYSTEM.count(it.id);
-        return `<div title="${it.name} (${it.methodLabel}) — ${owned?'+'+(it.itemBonus*100).toFixed(1)+'%':'не знайдено'}"
-          style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;
-          background:${owned?'rgba(232,184,75,.08)':'#0a0a0a'};border:1px solid ${owned?set.color:'#1a1a1a'};
-          opacity:${owned?1:.25};position:relative;">
-          ${it.icon}
-          ${cnt>1?`<span style="position:absolute;bottom:-1px;right:-1px;font-size:8px;color:var(--gold);background:#000;padding:0 2px;">×${cnt}</span>`:''}
-        </div>`;
-      }).join('')}
-      </div>
-      <div style="font-size:9px;color:${done?'var(--teal)':'var(--dim)'};">
-        ${done?`🏅 Сет завершено: ${set.setBonus.label}`:`Зберіть усі предмети для бонусу: ${set.setBonus.label}`}
+      <div style="font-size:9px;color:var(--dim);margin-bottom:4px;">${set.desc}</div>
+      ${progressBar}
+      ${filterBar}
+      ${grid}
+      <div style="font-size:9px;color:${done?'var(--teal)':'var(--dim)'};margin-top:5px;">
+        ${done?`🏅 Сет завершено: ${set.setBonus.label}`:`Бонус за повний набір: ${set.setBonus.label}`}
       </div>
     </div>`;
   });
 
   html += `<div style="font-size:10px;color:var(--dim);border:1px solid var(--border);padding:6px;">
-    💡 Кожна побічна активність (душі/мисливство/рибалка/гриби/трави/геологія) має власний набір унікальних предметів.
-    Конкретний метод видобутку (локація/трофей/місце/тип/родовище) визначає, який предмет можна отримати.
-    Дублікати показуються лічильником ×N, але бонус дають лише унікальні предмети та завершені набори.
+    💡 Дублікати підвищують рівень предмета (×N) і збільшують шанс знайти нові у тій же активності (+3%/рів).
+    Бонус до виробництва дає лише <b>перше відкриття</b>. Рідкісніша здобич → вища ймовірність рідкісних предметів.
   </div></div>`;
 
   div.innerHTML = html;
@@ -594,9 +1059,14 @@ function finishHunt(){
   if(typeof addLog === 'function') addLog(msg, prey.rare);
   showExpToast(msg);
 
-  // Колекційний предмет залежить від конкретного трофея (методу полювання)
+  // Колекційний предмет: вибираємо зі списку за рідкістю відповідно до здобутої дичини
   let scopeBonus = sys.upgrades.scope.lvl * 0.02;
-  rollCollectible('hunting', prey.id, scopeBonus + (COLLECTION_SYSTEM.getActivityMult('hunting')-1));
+  // Вага рідкостей залежить від того, яку дичину здобули (рідша дичина → вища ймовірність рідкісного предмета)
+  let preyRarityWeights = prey.rare
+    ? {common:0.3, rare:0.5, epic:0.3, legendary:0.1, mythic:0.05}
+    : {common:1.0, rare:0.4, epic:0.1, legendary:0.02, mythic:0.005};
+  let collectId = pickCollectible('hunting', preyRarityWeights, scopeBonus + COLLECTION_SYSTEM.getActivityMult('hunting')-1);
+  if(collectId) rollCollectible('hunting', collectId, scopeBonus);
 
   if(typeof markDirty === 'function') markDirty('full');
   renderHuntingTab();
@@ -750,8 +1220,17 @@ function finishFishing(){
   if(typeof addLog==='function') addLog(msg);
   showExpToast(msg);
 
-  // Колекційний предмет залежить від конкретного місця рибалки (методу)
-  rollCollectible('fishing', spot.id, netBonus + (COLLECTION_SYSTEM.getActivityMult('fishing')-1));
+  // Колекційний предмет: вага рідкостей залежить від місця рибалки (глибше = рідкісніше)
+  let spotDepthWeights = {
+    stream:  {common:1.0, rare:0.3, epic:0.05, legendary:0.01, mythic:0.002},
+    lake:    {common:0.8, rare:0.5, epic:0.12, legendary:0.03, mythic:0.005},
+    river:   {common:0.6, rare:0.6, epic:0.20, legendary:0.06, mythic:0.010},
+    sea:     {common:0.3, rare:0.5, epic:0.30, legendary:0.12, mythic:0.030},
+    deep_sea:{common:0.1, rare:0.3, epic:0.35, legendary:0.20, mythic:0.080},
+  };
+  let fw = spotDepthWeights[spot.id] || spotDepthWeights.stream;
+  let fishCollectId = pickCollectible('fishing', fw, netBonus + COLLECTION_SYSTEM.getActivityMult('fishing')-1);
+  if(fishCollectId) rollCollectible('fishing', fishCollectId, netBonus);
 
   if(typeof markDirty==='function') markDirty('full');
   renderFishingTab();
@@ -874,8 +1353,17 @@ function finishMushroomGather(){
   available.forEach(t=>{
     if(Math.random()<t.chance+knowledgeBonus){
       found.push(t);
-      // Колекційний предмет залежить від конкретного типу гриба (методу)
-      rollCollectible('mushroom', t.id, basketBonus + (COLLECTION_SYSTEM.getActivityMult('mushroom')-1));
+      // Вага рідкостей предметів колекції залежить від типу знайденого гриба
+      let mushWeights = {
+        common:     {common:1.0, rare:0.3, epic:0.05, legendary:0.01, mythic:0.002},
+        forest:     {common:0.8, rare:0.5, epic:0.10, legendary:0.02, mythic:0.004},
+        chanterelle:{common:0.5, rare:0.6, epic:0.20, legendary:0.05, mythic:0.010},
+        porcini:    {common:0.3, rare:0.5, epic:0.30, legendary:0.10, mythic:0.025},
+        truffle:    {common:0.1, rare:0.3, epic:0.35, legendary:0.20, mythic:0.080},
+      };
+      let mw = mushWeights[t.id] || mushWeights.common;
+      let mushId = pickCollectible('mushroom', mw, basketBonus + COLLECTION_SYSTEM.getActivityMult('mushroom')-1);
+      if(mushId) rollCollectible('mushroom', mushId, basketBonus);
     }
   });
   sys.gatheredTotal += found.length;
@@ -999,8 +1487,18 @@ function finishHerbHarvest(){
   sys.herbs.filter(h=>ep>=h.minEp).forEach(h=>{
     if(Math.random()<h.chance+alchBonus){
       found.push(h);
-      // Колекційний предмет залежить від конкретного виду трави (методу)
-      rollCollectible('herb', h.id, rackBonus + (COLLECTION_SYSTEM.getActivityMult('herb')-1));
+      // Вага рідкостей залежить від виду зібраної трави
+      let herbWeights = {
+        nettle:   {common:1.0, rare:0.3, epic:0.05, legendary:0.01, mythic:0.002},
+        mint:     {common:0.9, rare:0.4, epic:0.08, legendary:0.02, mythic:0.003},
+        lavender: {common:0.6, rare:0.5, epic:0.18, legendary:0.05, mythic:0.008},
+        chamomile:{common:0.6, rare:0.5, epic:0.18, legendary:0.05, mythic:0.008},
+        valerian: {common:0.3, rare:0.5, epic:0.28, legendary:0.12, mythic:0.030},
+        mandrake: {common:0.1, rare:0.3, epic:0.35, legendary:0.20, mythic:0.080},
+      };
+      let hw = herbWeights[h.id] || herbWeights.nettle;
+      let herbId = pickCollectible('herb', hw, rackBonus + COLLECTION_SYSTEM.getActivityMult('herb')-1);
+      if(herbId) rollCollectible('herb', herbId, rackBonus);
     }
   });
   sys.harvestedTotal += found.length;
@@ -1139,8 +1637,20 @@ function mineGeologyDeposit(idx){
   dep.mined+=1; sys.lastMined=now;
   if(typeof addLog==='function') addLog(`⛏️ Видобуток у "${dep.name}"...`);
 
-  // Колекційний предмет залежить від конкретного типу родовища (методу)
-  rollCollectible('geology', dep.id, toolBonus + (COLLECTION_SYSTEM.getActivityMult('geology')-1));
+  // Вага рідкостей геологічного предмету залежить від типу родовища
+  let geoDepositWeights = {
+    coal_vein:   {common:1.0, rare:0.30, epic:0.06, legendary:0.01, mythic:0.002},
+    iron_vein:   {common:0.7, rare:0.50, epic:0.15, legendary:0.03, mythic:0.005},
+    copper_ore:  {common:0.7, rare:0.50, epic:0.15, legendary:0.03, mythic:0.005},
+    fossil_site: {common:0.8, rare:0.40, epic:0.12, legendary:0.02, mythic:0.004},
+    crystal_cave:{common:0.4, rare:0.50, epic:0.25, legendary:0.08, mythic:0.020},
+    gem_deposit: {common:0.2, rare:0.40, epic:0.30, legendary:0.15, mythic:0.050},
+    oil_pocket:  {common:0.3, rare:0.45, epic:0.22, legendary:0.07, mythic:0.015},
+    silicon_vein:{common:0.2, rare:0.40, epic:0.28, legendary:0.12, mythic:0.040},
+  };
+  let gw = geoDepositWeights[dep.id] || geoDepositWeights.coal_vein;
+  let geoId = pickCollectible('geology', gw, toolBonus + COLLECTION_SYSTEM.getActivityMult('geology')-1);
+  if(geoId) rollCollectible('geology', geoId, toolBonus);
 
   if(dep.mined>=dep.totalReserve){ if(typeof addLog==='function') addLog(`🪨 ${dep.name} — вичерпано!`); }
   if(typeof markDirty==='function') markDirty('full');
