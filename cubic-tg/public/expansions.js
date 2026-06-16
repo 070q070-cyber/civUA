@@ -33,35 +33,44 @@ const GAME_LORE = {
 // ============================================================
 // СПІЛЬНІ РЕСУРСИ РОЗШИРЕНЬ
 // ============================================================
-// Додаємо нові ресурси до RES якщо доступний
+// Лише ресурси, що реально є "будівельними" і мають сенс у вкладці ресурсів.
+// Активності (душі, м'ясо, риба, гриби тощо) — окремий блок, не тут.
 const EXPANSION_RES = {
-  soul:        { n:"Душа Стародавніх", e:"👻", ep:1 },
-  game_meat:   { n:"М'ясо дичини",     e:"🍖", ep:1 },
-  hide:        { n:"Шкура",            e:"🦊", ep:1 },
-  feather:     { n:"Пір'я",            e:"🪶", ep:2 },
-  fish:        { n:"Риба",             e:"🐟", ep:1 },
-  rare_fish:   { n:"Рідкісна риба",    e:"🐠", ep:4 },
-  mushroom:    { n:"Гриби",            e:"🍄", ep:1 },
-  truffle:     { n:"Трюфель",          e:"⚫", ep:5 },
-  herb:        { n:"Трави",            e:"🌿", ep:1 },
-  rare_herb:   { n:"Рідкісна трава",   e:"🌸", ep:3 },
   gem:         { n:"Дорогоцінний камінь", e:"💎", ep:3 },
-  crystal:     { n:"Кристал",          e:"🔮", ep:5 },
-  fossil:      { n:"Скам'янілість",    e:"🦴", ep:6 },
-  goblin_loot: { n:"Трофей гобліна",   e:"🪙", ep:1 },
-  goblin_relic:{ n:"Реліквія гоблінів",e:"🗿", ep:4 },
-  troop_sword: { n:"Мечник",           e:"⚔️", ep:2 },
-  troop_archer:{ n:"Лучник",           e:"🏹", ep:2 },
-  troop_knight:{ n:"Лицар",            e:"🛡", ep:5 },
-  troop_mage:  { n:"Маг",              e:"🧙", ep:6 },
-  troop_elite: { n:"Елітний воїн",     e:"💂", ep:8 },
+  crystal:     { n:"Кристал",             e:"🔮", ep:5 },
+  fossil:      { n:"Скам'янілість",        e:"🦴", ep:6 },
+  troop_knight:{ n:"Лицар",               e:"🛡", ep:5 },
+  troop_mage:  { n:"Маг",                 e:"🧙", ep:6 },
+  troop_elite: { n:"Елітний воїн",        e:"💂", ep:8 },
 };
 
-// Додаємо до глобального RES якщо він є
+// Ресурси активностей — окрема таблиця (НЕ додаються до RES і не видно у вкладці ресурсів)
+const ACTIVITY_RES = {
+  soul:        { n:"Душа Стародавніх", e:"👻" },
+  game_meat:   { n:"М'ясо дичини",     e:"🍖" },
+  hide:        { n:"Шкура",            e:"🦊" },
+  feather:     { n:"Пір'я",            e:"🪶" },
+  fish:        { n:"Риба",             e:"🐟" },
+  rare_fish:   { n:"Рідкісна риба",    e:"🐠" },
+  mushroom:    { n:"Гриби",            e:"🍄" },
+  truffle:     { n:"Трюфель",          e:"⚫" },
+  herb:        { n:"Трави",            e:"🌿" },
+  rare_herb:   { n:"Рідкісна трава",   e:"🌸" },
+  goblin_loot: { n:"Трофей гобліна",   e:"🪙" },
+  goblin_relic:{ n:"Реліквія гоблінів",e:"🗿" },
+  troop_sword: { n:"Мечник",           e:"⚔️" },
+  troop_archer:{ n:"Лучник",           e:"🏹" },
+};
+
+// Додаємо до глобального RES тільки будівельні ресурси (EXPANSION_RES).
+// Ресурси активностей (ACTIVITY_RES) ініціалізуємо у storage, але НЕ в RES.
 function injectResources(){
-  if(typeof RES === 'undefined') return;
-  Object.entries(EXPANSION_RES).forEach(([k,v])=>{ if(!RES[k]) RES[k]=v; });
-  Object.keys(EXPANSION_RES).forEach(k=>{
+  if(typeof RES !== 'undefined'){
+    Object.entries(EXPANSION_RES).forEach(([k,v])=>{ if(!RES[k]) RES[k]={...v, ep:v.ep||1}; });
+  }
+  // storage ініціалізація для ОБОХ таблиць
+  let allKeys = [...Object.keys(EXPANSION_RES), ...Object.keys(ACTIVITY_RES)];
+  allKeys.forEach(k=>{
     if(typeof storage !== 'undefined' && storage[k] === undefined) storage[k] = 0;
     if(typeof psCounters !== 'undefined' && psCounters[k] === undefined) psCounters[k] = 0;
     if(typeof resLifetimeTotal !== 'undefined' && resLifetimeTotal[k] === undefined) resLifetimeTotal[k] = 0;
@@ -623,28 +632,52 @@ function rollCollectible(setId, itemId, equipBonus=0){
   return item;
 }
 
-// Випадковий вибір предмета з набору за рідкістю (для активностей без фіксованої здобичі)
-// Повертає id предмета або null якщо ймовірність не спрацювала
+// Випадковий вибір предмета з набору за рідкістю.
+// Спочатку перевіряє загальний шанс знахідки (baseChance + equipBonus),
+// потім зважено обирає конкретний предмет серед не-знайдених (або повторів).
+// Повертає id предмета або null якщо шанс не спрацював.
 function pickCollectible(setId, rarityWeights, equipBonus=0){
   let set = COLLECTIBLE_SETS[setId];
   if(!set) return null;
-  // Фільтруємо предмети за вагою рідкості
+
+  // Загальний шанс знайти щось за одну дію
+  let baseChance = 0.40;
+  let totalChance = Math.min(0.95, baseChance + (equipBonus||0));
+  if(Math.random() >= totalChance) return null;
+
   let weights = rarityWeights || {common:1,rare:0.5,epic:0.2,legendary:0.08,mythic:0.03};
-  let pool = set.items.filter(it=>!COLLECTION_SYSTEM.isOwned(it.id)); // спочатку не-відкриті
-  if(!pool.length) pool = set.items; // якщо всі відкриті — повтори
-  // Зважений вибір
+  // Пріоритет — не-знайдені предмети; якщо всі є — беремо повтори
+  let pool = set.items.filter(it=>!COLLECTION_SYSTEM.isOwned(it.id));
+  if(!pool.length) pool = set.items;
   let total = pool.reduce((s,it)=>s+(weights[it.rarity]||0),0);
   if(!total) return null;
-  let r = Math.random()*total;
-  let cum=0;
-  for(let it of pool){
-    cum += weights[it.rarity]||0;
-    if(r<cum) return it.id;
-  }
+  let r = Math.random()*total, cum=0;
+  for(let it of pool){ cum += weights[it.rarity]||0; if(r<cum) return it.id; }
   return pool[pool.length-1].id;
 }
 
-// Компактний віджет прогресу колекції для вкладки активності
+// Нарахувати предмет без перевірки шансу (після pickCollectible)
+function awardCollectible(setId, itemId){
+  let set = COLLECTIBLE_SETS[setId];
+  if(!set) return null;
+  let item = set.items.find(it=>it.id===itemId);
+  if(!item) return null;
+  let wasNew = !COLLECTION_SYSTEM.isOwned(item.id);
+  COLLECTION_SYSTEM.owned[item.id] = (COLLECTION_SYSTEM.owned[item.id]||0) + 1;
+  let newLvl = COLLECTION_SYSTEM.owned[item.id];
+  if(wasNew){
+    if(typeof addLog==='function') addLog(`📚 НОВИЙ: ${item.icon} ${item.name} [${item.rarity}]!`, true);
+    showExpToast(`📚 ${item.icon} ${item.name}!`);
+    if(COLLECTION_SYSTEM.isSetComplete(setId)){
+      if(typeof addLog==='function') addLog(`🏅 НАБІР «${set.name}» ЗАВЕРШЕНО! ${set.setBonus.label}`, true);
+      showExpToast(`🏅 Набір «${set.name}» завершено!`);
+    }
+  } else {
+    let lvlBonus = (newLvl-1)*0.03;
+    if(typeof addLog==='function') addLog(`📚 ${item.icon} ${item.name} ×${newLvl} (+${(lvlBonus*100).toFixed(0)}% до шансу)`);
+  }
+  return item;
+}
 function renderCollectionMiniWidget(setId){
   let set = COLLECTIBLE_SETS[setId];
   if(!set) return '';
@@ -1065,8 +1098,9 @@ function finishHunt(){
   let preyRarityWeights = prey.rare
     ? {common:0.3, rare:0.5, epic:0.3, legendary:0.1, mythic:0.05}
     : {common:1.0, rare:0.4, epic:0.1, legendary:0.02, mythic:0.005};
+  // pickCollectible виконує одну перевірку шансу (вага рідкості * equipBonus), awardCollectible зараховує
   let collectId = pickCollectible('hunting', preyRarityWeights, scopeBonus + COLLECTION_SYSTEM.getActivityMult('hunting')-1);
-  if(collectId) rollCollectible('hunting', collectId, scopeBonus);
+  if(collectId) awardCollectible('hunting', collectId);
 
   if(typeof markDirty === 'function') markDirty('full');
   renderHuntingTab();
@@ -1230,7 +1264,7 @@ function finishFishing(){
   };
   let fw = spotDepthWeights[spot.id] || spotDepthWeights.stream;
   let fishCollectId = pickCollectible('fishing', fw, netBonus + COLLECTION_SYSTEM.getActivityMult('fishing')-1);
-  if(fishCollectId) rollCollectible('fishing', fishCollectId, netBonus);
+  if(fishCollectId) awardCollectible('fishing', fishCollectId);
 
   if(typeof markDirty==='function') markDirty('full');
   renderFishingTab();
@@ -1363,7 +1397,7 @@ function finishMushroomGather(){
       };
       let mw = mushWeights[t.id] || mushWeights.common;
       let mushId = pickCollectible('mushroom', mw, basketBonus + COLLECTION_SYSTEM.getActivityMult('mushroom')-1);
-      if(mushId) rollCollectible('mushroom', mushId, basketBonus);
+      if(mushId) awardCollectible('mushroom', mushId);
     }
   });
   sys.gatheredTotal += found.length;
@@ -1498,7 +1532,7 @@ function finishHerbHarvest(){
       };
       let hw = herbWeights[h.id] || herbWeights.nettle;
       let herbId = pickCollectible('herb', hw, rackBonus + COLLECTION_SYSTEM.getActivityMult('herb')-1);
-      if(herbId) rollCollectible('herb', herbId, rackBonus);
+      if(herbId) awardCollectible('herb', herbId);
     }
   });
   sys.harvestedTotal += found.length;
@@ -1650,7 +1684,7 @@ function mineGeologyDeposit(idx){
   };
   let gw = geoDepositWeights[dep.id] || geoDepositWeights.coal_vein;
   let geoId = pickCollectible('geology', gw, toolBonus + COLLECTION_SYSTEM.getActivityMult('geology')-1);
-  if(geoId) rollCollectible('geology', geoId, toolBonus);
+  if(geoId) awardCollectible('geology', geoId);
 
   if(dep.mined>=dep.totalReserve){ if(typeof addLog==='function') addLog(`🪨 ${dep.name} — вичерпано!`); }
   if(typeof markDirty==='function') markDirty('full');
