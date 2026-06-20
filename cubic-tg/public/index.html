@@ -2023,6 +2023,47 @@ const GROUP_BASE_MAP = {
 
 let baseResMultiplier = 1; // from tech upgrades
 
+// ============================================================
+// БАЛАНС БАЗОВИХ СПОРУД: рівневі віхи (milestone-множники)
+// ------------------------------------------------------------
+// Раніше видобуток ріс ЛІНІЙНО (prodBase * lvl), а вартість апгрейду —
+// ЕКСПОНЕНЦІЙНО (costMult^lvl). Через десятки рівнів ціна випереджала
+// користь у рази, тому прогрес "застрягав" на мізерному видобутку.
+//
+// Тепер кожні 10 рівнів виробнича ефективність зростає СТРИБКОМ:
+// рівень 10  → ×2,  рівень 20 → ×3,  рівень 30 → ×4.5,
+// рівень 40  → ×7,  рівень 50 → ×11, і далі кожна наступна віха
+// множить попередню на ~1.55 — це компенсує зростання costMult
+// і дає відчутний "стрибок" прогресу на кожному десятку рівнів.
+// ============================================================
+const BASE_MILESTONE_MULTS = [1, 2, 3.5, 6, 10, 17, 28, 46, 75, 122, 200]; // індекс = lvl/10 (макс. рівень ~110 покритий, далі екстраполюємо)
+
+function getBaseMilestoneMult(lvl){
+  let tier = Math.floor(lvl/10);
+  if(tier < BASE_MILESTONE_MULTS.length) return BASE_MILESTONE_MULTS[tier];
+  // Екстраполяція за межами таблиці: кожна наступна віха ×1.65 від попередньої
+  let last = BASE_MILESTONE_MULTS[BASE_MILESTONE_MULTS.length-1];
+  let extra = tier - (BASE_MILESTONE_MULTS.length-1);
+  return last * Math.pow(1.65, extra);
+}
+
+// Плавний коефіцієнт ВСЕРЕДИНІ десятка (щоб видобуток не "стрибав" різко
+// на самому переході рівня, а наростав поступово до наступної віхи).
+// На lvl=10 множник = milestone(10); на lvl=19 він майже milestone(20).
+function getBaseLevelMult(lvl){
+  let tier = Math.floor(lvl/10);
+  let curMult  = getBaseMilestoneMult(tier*10);
+  let nextMult = getBaseMilestoneMult((tier+1)*10);
+  let progress = (lvl % 10) / 10; // 0..0.9
+  return curMult + (nextMult-curMult)*progress;
+}
+
+// Єдина функція розрахунку видобутку базової споруди за тік (до зовнішніх множників буст/баф)
+function getBaseBuildingProdPerTick(b){
+  if(!b.lvl) return 0;
+  return b.prodBase * b.lvl * getBaseLevelMult(b.lvl);
+}
+
 function maxBuyBaseResBuilding(id){
   let b=BASE_RES_BUILDINGS[id];
   if(!b||epoch<b.ep_req||b.lvl===0) return;
@@ -2877,7 +2918,7 @@ setInterval(()=>{
         markDirty('bld');
       }
     }
-    let gain=b.prodBase*b.lvl*baseResMultiplier*mult*(1+(typeof heroAggBonuses!=='undefined'?heroAggBonuses.globalResMult||0:0));
+    let gain=getBaseBuildingProdPerTick(b)*baseResMultiplier*mult*(1+(typeof heroAggBonuses!=='undefined'?heroAggBonuses.globalResMult||0:0));
     storage[b.res]=(storage[b.res]||0)+gain;
     psCounters[b.res]=(psCounters[b.res]||0)+gain;
     addPoints(Math.ceil(gain*0.05), 'resources');
@@ -3514,7 +3555,7 @@ function renderBaseBuildings(){
     let cost={};
     Object.keys(b.costBase).forEach(k=>cost[k]=Math.floor(b.costBase[k]*scale));
     let canAfford=Object.keys(cost).every(k=>(storage[k]||0)>=cost[k]);
-    let prod=(b.prodBase*Math.max(1,b.lvl)*baseResMultiplier).toFixed(2);
+    let prod=getBaseBuildingProdPerTick(b).toFixed(2);
     let costStr=Object.keys(cost).map(k=>`${RES[k]?.e||''}${fmt(cost[k])}`).join(' ');
     html+=`<div class="base-b-card ${b.lvl>0?'active-bld':''}">
       <div class="base-b-head">
@@ -3695,12 +3736,16 @@ function renderBaseCard(id, isSub){
   let cost={};
   Object.keys(b.costBase).forEach(k=>cost[k]=Math.floor(b.costBase[k]*scale));
   let canAfford=Object.keys(cost).every(k=>(storage[k]||0)>=cost[k]);
-  let prod=(b.prodBase*Math.max(1,b.lvl)*baseResMultiplier).toFixed(2);
+  let prod=(getBaseBuildingProdPerTick(b)*baseResMultiplier).toFixed(2);
   let costStr=Object.keys(cost).map(k=>`${RES[k]?.e||''}${fmt(cost[k])} ${RES[k]?.n}`).join(' + ');
   let res=RES[b.res];
-  let tipText=`${b.name}\nВидобуває: ${res?.n||b.res} (${res?.e||''})\nВиробництво: +${prod}/с (рів.×${b.prodBase})\nВартість: ${costStr}\nЕпоха: ${b.ep_req}`;
+  let curMult=getBaseLevelMult(b.lvl||0).toFixed(2);
+  let nextTierLvl=(Math.floor((b.lvl||0)/10)+1)*10;
+  let lvlToNextTier=nextTierLvl-(b.lvl||0);
+  let milestoneHint=b.lvl>0?`\nЕфективність: ×${curMult} (наступна віха за ${lvlToNextTier} рів. на рів.${nextTierLvl})`:'';
+  let tipText=`${b.name}\nВидобуває: ${res?.n||b.res} (${res?.e||''})\nВиробництво: +${prod}/с${milestoneHint}\nВартість: ${costStr}\nЕпоха: ${b.ep_req}`;
   let boost=b.boost||0; // секунд буст залишилось
-  let boostedProd=boost>0?(b.prodBase*Math.max(1,b.lvl)*baseResMultiplier*3).toFixed(2):null;
+  let boostedProd=boost>0?(getBaseBuildingProdPerTick(b)*baseResMultiplier*3).toFixed(2):null;
   let boostCost=_boostCost(b);
   let canBoost=Object.keys(boostCost).every(k=>(storage[k]||0)>=boostCost[k]);
   let boostCostStr=Object.entries(boostCost).map(([k,v])=>`${RES[k]?.e||''}${fmt(v)}`).join(' ');
@@ -5312,7 +5357,7 @@ function calcOfflineEarnings(secondsOffline) {
   // Base resource buildings
   Object.entries(BASE_RES_BUILDINGS).forEach(([id, b]) => {
     if (!b.lvl || b.ep_req > epoch) return;
-    let prod = b.prodBase * b.lvl * baseResMultiplier * OFFLINE_RATE * capped;
+    let prod = getBaseBuildingProdPerTick(b) * baseResMultiplier * OFFLINE_RATE * capped;
     if (prod > 0.01) earned[b.res] = (earned[b.res] || 0) + prod;
   });
 
