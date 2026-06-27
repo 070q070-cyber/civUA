@@ -684,19 +684,37 @@ function renderCollectionMiniWidget(setId){
   let p = COLLECTION_SYSTEM.setProgress(setId);
   let done = COLLECTION_SYSTEM.isSetComplete(setId);
   let bonus = ((COLLECTION_SYSTEM.getActivityMult(setId)-1)*100).toFixed(1);
+  // Визначаємо чи набір використовує img (як риби) — тоді більші клітинки
+  let hasImg = set.items.some(it=>it.img);
+  let cellSize = hasImg ? 52 : 28;
+  let imgSize  = hasImg ? 48 : 24;
+  let fontSize = hasImg ? 11 : 13;
+  // Показуємо тільки перші N предметів щоб не переповнити (для img - менше)
+  let maxShow  = hasImg ? 40 : 100;
+  let shown = set.items.slice(0, maxShow);
+  let pct = p.total>0?Math.round(p.owned/p.total*100):0;
   return `<div style="background:var(--panel2);border:1px solid ${done?set.color:'var(--border)'};padding:6px 8px;margin-bottom:6px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
       <span style="font-size:11px;color:${set.color}">${set.icon} ${set.name}</span>
       <span style="font-size:10px;color:${done?'var(--gold)':'var(--dim)'}">${p.owned}/${p.total}${done?' 🏅':''}</span>
     </div>
-    <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:3px;">
-    ${set.items.map(it=>{
+    <div style="height:3px;background:#111;margin-bottom:5px;">
+      <div style="height:100%;width:${pct}%;background:${done?'var(--gold)':set.color};transition:width .3s;"></div>
+    </div>
+    <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px;max-height:${hasImg?'165px':'90px'};overflow-y:auto;padding:1px;">
+    ${shown.map(it=>{
       let owned = COLLECTION_SYSTEM.isOwned(it.id);
       let cnt = COLLECTION_SYSTEM.count(it.id);
-      return `<div title="${it.name} (${it.methodLabel})" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;background:${owned?'rgba(232,184,75,.08)':'#0a0a0a'};border:1px solid ${owned?set.color:'#1a1a1a'};opacity:${owned?1:.25};position:relative;">
-        ${it.img?`<img src="${it.img}" style="width:22px;height:22px;object-fit:contain;image-rendering:pixelated;" onerror="this.outerHTML='🐟'">`:(it.icon||'❓')}${cnt>1?`<span style="position:absolute;bottom:-2px;right:-1px;font-size:6px;color:var(--gold);">×${cnt}</span>`:''}
+      let rCol = owned ? set.color : '#1a1a1a';
+      return `<div title="${it.name}${it.rarity?' ['+it.rarity+']':''}" style="width:${cellSize}px;height:${cellSize}px;display:flex;align-items:center;justify-content:center;font-size:${fontSize}px;background:${owned?'rgba(232,184,75,.08)':'#060810'};border:1px solid ${rCol};border-radius:3px;opacity:${owned?1:.2};position:relative;flex-shrink:0;overflow:hidden;">
+        ${it.img
+          ? `<img src="${it.img}" style="width:${imgSize}px;height:${imgSize}px;object-fit:contain;image-rendering:pixelated;" onerror="this.outerHTML='🐟'">`
+          : (it.icon||'❓')}
+        ${cnt>1?`<span style="position:absolute;bottom:0;right:0;font-size:7px;color:var(--gold);background:rgba(0,0,0,.8);padding:0 2px;line-height:1.4;">×${cnt}</span>`:''}
+        ${owned&&it.rarity==='mythic'?`<span style="position:absolute;top:0;left:0;width:100%;height:1px;background:var(--synth);"></span>`:''}
       </div>`;
     }).join('')}
+    ${set.items.length>maxShow?`<div style="font-size:9px;color:var(--dim);width:100%;padding:3px 0;">+${set.items.length-maxShow} ще... (відкрий вкладку Колекція)</div>`:''}
     </div>
     <div style="font-size:9px;color:var(--teal)">✨ Бонус від колекції: +${bonus}% до шансів та виробництва</div>
   </div>`;
@@ -774,20 +792,30 @@ function renderCollectionTab(){
       <div style="height:100%;width:${pct}%;background:${done?'var(--gold)':set.color};transition:width .3s;"></div>
     </div>`;
 
-    // Сітка предметів
-    let grid = `<div style="display:flex;gap:3px;flex-wrap:wrap;max-height:200px;overflow-y:auto;">
+    // Сітка предметів — адаптивний розмір: img=64px, emoji=36px
+    let hasImg = set.items.some(it=>it.img);
+    let cs = hasImg ? 64 : 36;   // cell size
+    let is = hasImg ? 58 : 28;   // img/icon size
+    let fs = hasImg ? 20 : 16;   // font size for emoji
+    let grid = `<div style="display:flex;gap:4px;flex-wrap:wrap;max-height:${hasImg?'280px':'220px'};overflow-y:auto;padding:2px;">
     ${filteredItems.map(it=>{
       let owned=COLLECTION_SYSTEM.isOwned(it.id);
       let cnt=COLLECTION_SYSTEM.count(it.id);
       let rCol=RARITY_COLOR[it.rarity]||'var(--dim)';
       let lvlTxt=cnt>1?`×${cnt}`:'';
-      return `<div title="${it.name}\nРідкість: ${RARITY_LABEL[it.rarity]}\n${owned?`Знайдено: ${cnt}×\n+${(it.itemBonus*100).toFixed(1)}% бонус`:'Не знайдено'}"
-        style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:14px;
-        background:${owned?'rgba(255,255,255,.04)':'#080a0f'};border:1px solid ${owned?rCol:'#161a22'};
-        opacity:${owned?1:.2};position:relative;cursor:default;flex-shrink:0;">
-        ${it.img?`<img src="${it.img}" style="width:28px;height:28px;object-fit:contain;image-rendering:pixelated;" onerror="this.outerHTML='🐟'">`:(it.icon||'❓')}
-        ${lvlTxt?`<span style="position:absolute;bottom:-1px;right:-1px;font-size:7px;color:var(--gold);
-          background:#000;padding:0 1px;line-height:1.2;">${lvlTxt}</span>`:''}
+      let tooltip=`${it.name}&#10;${RARITY_LABEL[it.rarity]||''}&#10;${owned?`Знайдено: ${cnt}×&#10;+${(it.itemBonus*100).toFixed(1)}% бонус`:'Не знайдено'}`;
+      return `<div title="${tooltip}"
+        style="width:${cs}px;height:${cs}px;display:flex;align-items:center;justify-content:center;font-size:${fs}px;
+        background:${owned?'rgba(255,255,255,.05)':'#060810'};border:1px solid ${owned?rCol:'#161a22'};border-radius:4px;
+        opacity:${owned?1:.15};position:relative;cursor:default;flex-shrink:0;overflow:hidden;
+        box-shadow:${owned?`0 0 6px ${rCol}40`:'none'};">
+        ${it.img
+          ? `<img src="${it.img}" style="width:${is}px;height:${is}px;object-fit:contain;image-rendering:pixelated;" onerror="this.outerHTML='🐟'">`
+          : (it.icon||'❓')}
+        ${lvlTxt?`<span style="position:absolute;bottom:0;right:0;font-size:8px;color:var(--gold);
+          background:rgba(0,0,0,.85);padding:0 3px;line-height:1.5;border-radius:2px 0 0 0;">${lvlTxt}</span>`:''}
+        ${owned&&it.rarity==='mythic'?`<span style="position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--synth),transparent);"></span>`:''}
+        ${owned&&it.rarity==='legendary'?`<span style="position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);"></span>`:''}
       </div>`;
     }).join('')}
     ${!filteredItems.length?`<div style="font-size:10px;color:var(--dim);padding:8px;">Немає предметів</div>`:''}
