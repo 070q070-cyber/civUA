@@ -620,14 +620,14 @@ function rollCollectible(setId, itemId, equipBonus=0){
   let newLvl = COLLECTION_SYSTEM.owned[item.id];
 
   if(wasNew){
-    if(typeof addLog==='function') addLog(`📚 НОВИЙ: ${item.icon} ${item.name} [${item.rarity}]!`, true);
-    showExpToast(`📚 ${item.icon} ${item.name}!`);
+    if(typeof addLog==='function') addLog(`📚 НОВИЙ: ${item.icon||'🐟'} ${item.name} [${item.rarity}]!`, true);
+    showExpToast(`📚 ${item.icon||'🐟'} ${item.name}!`);
     if(COLLECTION_SYSTEM.isSetComplete(setId)){
       if(typeof addLog==='function') addLog(`🏅 НАБІР «${set.name}» ЗАВЕРШЕНО! ${set.setBonus.label}`, true);
       showExpToast(`🏅 Набір «${set.name}» завершено!`);
     }
   } else {
-    if(typeof addLog==='function') addLog(`📚 ${item.icon} ${item.name} ×${newLvl} (+${(lvlBonus*100).toFixed(0)}% до шансу)`);
+    if(typeof addLog==='function') addLog(`📚 ${item.icon||'🐟'} ${item.name} ×${newLvl} (+${(lvlBonus*100).toFixed(0)}% до шансу)`);
   }
   return item;
 }
@@ -666,15 +666,15 @@ function awardCollectible(setId, itemId){
   COLLECTION_SYSTEM.owned[item.id] = (COLLECTION_SYSTEM.owned[item.id]||0) + 1;
   let newLvl = COLLECTION_SYSTEM.owned[item.id];
   if(wasNew){
-    if(typeof addLog==='function') addLog(`📚 НОВИЙ: ${item.icon} ${item.name} [${item.rarity}]!`, true);
-    showExpToast(`📚 ${item.icon} ${item.name}!`);
+    if(typeof addLog==='function') addLog(`📚 НОВИЙ: ${item.icon||'🐟'} ${item.name} [${item.rarity}]!`, true);
+    showExpToast(`📚 ${item.icon||'🐟'} ${item.name}!`);
     if(COLLECTION_SYSTEM.isSetComplete(setId)){
       if(typeof addLog==='function') addLog(`🏅 НАБІР «${set.name}» ЗАВЕРШЕНО! ${set.setBonus.label}`, true);
       showExpToast(`🏅 Набір «${set.name}» завершено!`);
     }
   } else {
     let lvlBonus = (newLvl-1)*0.03;
-    if(typeof addLog==='function') addLog(`📚 ${item.icon} ${item.name} ×${newLvl} (+${(lvlBonus*100).toFixed(0)}% до шансу)`);
+    if(typeof addLog==='function') addLog(`📚 ${item.icon||'🐟'} ${item.name} ×${newLvl} (+${(lvlBonus*100).toFixed(0)}% до шансу)`);
   }
   return item;
 }
@@ -694,7 +694,7 @@ function renderCollectionMiniWidget(setId){
       let owned = COLLECTION_SYSTEM.isOwned(it.id);
       let cnt = COLLECTION_SYSTEM.count(it.id);
       return `<div title="${it.name} (${it.methodLabel})" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;background:${owned?'rgba(232,184,75,.08)':'#0a0a0a'};border:1px solid ${owned?set.color:'#1a1a1a'};opacity:${owned?1:.25};position:relative;">
-        ${it.icon}${cnt>1?`<span style="position:absolute;bottom:-2px;right:-1px;font-size:6px;color:var(--gold);">×${cnt}</span>`:''}
+        ${it.img?`<img src="${it.img}" style="width:22px;height:22px;object-fit:contain;image-rendering:pixelated;" onerror="this.outerHTML='🐟'">`:(it.icon||'❓')}${cnt>1?`<span style="position:absolute;bottom:-2px;right:-1px;font-size:6px;color:var(--gold);">×${cnt}</span>`:''}
       </div>`;
     }).join('')}
     </div>
@@ -785,7 +785,7 @@ function renderCollectionTab(){
         style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:14px;
         background:${owned?'rgba(255,255,255,.04)':'#080a0f'};border:1px solid ${owned?rCol:'#161a22'};
         opacity:${owned?1:.2};position:relative;cursor:default;flex-shrink:0;">
-        ${it.icon}
+        ${it.img?`<img src="${it.img}" style="width:28px;height:28px;object-fit:contain;image-rendering:pixelated;" onerror="this.outerHTML='🐟'">`:(it.icon||'❓')}
         ${lvlTxt?`<span style="position:absolute;bottom:-1px;right:-1px;font-size:7px;color:var(--gold);
           background:#000;padding:0 1px;line-height:1.2;">${lvlTxt}</span>`:''}
       </div>`;
