@@ -684,14 +684,13 @@ function renderCollectionMiniWidget(setId){
   let p = COLLECTION_SYSTEM.setProgress(setId);
   let done = COLLECTION_SYSTEM.isSetComplete(setId);
   let bonus = ((COLLECTION_SYSTEM.getActivityMult(setId)-1)*100).toFixed(1);
-  // Визначаємо чи набір використовує img (як риби) — тоді більші клітинки
   const MINI_RARITY_COLOR = {common:'var(--green)',rare:'var(--blue)',epic:'var(--purple)',legendary:'var(--gold)',mythic:'var(--synth)'};
   let hasImg = set.items.some(it=>it.img);
-  let cellSize = hasImg ? 64 : 28;
-  let imgSize  = hasImg ? 60 : 24;
-  let fontSize = hasImg ? 11 : 13;
-  // Показуємо тільки перші N предметів щоб не переповнити (для img - менше)
-  let maxShow  = hasImg ? 40 : 100;
+  // Для риб: фіксований розмір клітинки, flex-wrap
+  let cs = hasImg ? 52 : 28; // cell size px
+  let is = hasImg ? 46 : 22; // img size px
+  let fontSize = hasImg ? 10 : 13;
+  let maxShow = hasImg ? 40 : 100;
   let shown = set.items.slice(0, maxShow);
   let pct = p.total>0?Math.round(p.owned/p.total*100):0;
   return `<div style="background:var(--panel2);border:1px solid ${done?set.color:'var(--border)'};padding:6px 8px;margin-bottom:6px;">
@@ -702,15 +701,15 @@ function renderCollectionMiniWidget(setId){
     <div style="height:3px;background:#111;margin-bottom:5px;">
       <div style="height:100%;width:${pct}%;background:${done?'var(--gold)':set.color};transition:width .3s;"></div>
     </div>
-    <div style="${hasImg?'display:grid;grid-template-columns:repeat(4,1fr);gap:4px;':'display:flex;gap:3px;flex-wrap:wrap;'}margin-bottom:4px;max-height:${hasImg?'220px':'90px'};overflow-y:auto;padding:1px;">
+    <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px;max-height:${hasImg?'170px':'90px'};overflow-y:auto;padding:1px;">
     ${shown.map(it=>{
       let owned = COLLECTION_SYSTEM.isOwned(it.id);
       let cnt = COLLECTION_SYSTEM.count(it.id);
       let rCol = owned ? (MINI_RARITY_COLOR[it.rarity]||set.color) : '#1a1a1a';
       let bgCol = owned ? (it.rarity==='mythic'?'rgba(200,100,255,.12)':it.rarity==='legendary'?'rgba(232,184,75,.12)':it.rarity==='epic'?'rgba(150,80,220,.10)':it.rarity==='rare'?'rgba(80,140,255,.10)':'rgba(80,200,120,.08)') : '#060810';
-      return `<div title="${it.name}${it.rarity?' ['+it.rarity+']':''}" style="${hasImg?'':'width:'+cellSize+'px;height:'+cellSize+'px;flex-shrink:0;'}${hasImg?'aspect-ratio:1;':''}display:flex;align-items:center;justify-content:center;font-size:${fontSize}px;background:${bgCol};border:1px solid ${rCol};border-radius:3px;opacity:${owned?1:.18};position:relative;overflow:hidden;${owned&&it.rarity==='mythic'?'box-shadow:0 0 6px var(--synth)40;':''}${owned&&it.rarity==='legendary'?'box-shadow:0 0 5px var(--gold)40;':''}">
+      return `<div title="${it.name}${it.rarity?' ['+it.rarity+']':''}" style="width:${cs}px;height:${cs}px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:${fontSize}px;background:${bgCol};border:1px solid ${rCol};border-radius:3px;opacity:${owned?1:.18};position:relative;overflow:hidden;">
         ${it.img
-          ? `<img src="${it.img}" style="width:90%;height:90%;object-fit:contain;image-rendering:pixelated;" onerror="this.outerHTML='🐟'">`
+          ? `<img src="${it.img}" style="width:${is}px;height:${is}px;object-fit:contain;image-rendering:pixelated;" onerror="this.outerHTML='🐟'">`
           : (it.icon||'❓')}
         ${cnt>1?`<span style="position:absolute;bottom:0;right:0;font-size:7px;color:var(--gold);background:rgba(0,0,0,.8);padding:0 2px;line-height:1.4;">×${cnt}</span>`:''}
         ${owned&&it.rarity==='mythic'?`<span style="position:absolute;top:0;left:0;width:100%;height:1px;background:var(--synth);"></span>`:''}
@@ -797,9 +796,10 @@ function renderCollectionTab(){
 
     // Сітка предметів — адаптивний розмір: img=4 col grid, emoji=flex
     let hasImg = set.items.some(it=>it.img);
-    let fs = hasImg ? 20 : 16;   // font size for emoji
-    let grid = hasImg
-      ? `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;max-height:320px;overflow-y:auto;padding:2px;">
+    let fs = hasImg ? 20 : 16;
+    let cs = hasImg ? 68 : 36;   // cell size px
+    let is = hasImg ? 60 : 28;   // img size px
+    let grid = `<div style="display:flex;gap:4px;flex-wrap:wrap;max-height:${hasImg?'300px':'220px'};overflow-y:auto;padding:2px;">
     ${filteredItems.map(it=>{
       let owned=COLLECTION_SYSTEM.isOwned(it.id);
       let cnt=COLLECTION_SYSTEM.count(it.id);
@@ -808,35 +808,18 @@ function renderCollectionTab(){
       let bgCol=owned?(it.rarity==='mythic'?'rgba(200,100,255,.15)':it.rarity==='legendary'?'rgba(232,184,75,.15)':it.rarity==='epic'?'rgba(150,80,220,.12)':it.rarity==='rare'?'rgba(80,140,255,.12)':'rgba(80,200,120,.10)'):'#060810';
       let tooltip=`${it.name}&#10;${RARITY_LABEL[it.rarity]||''}&#10;${owned?`Знайдено: ${cnt}×&#10;+${(it.itemBonus*100).toFixed(1)}% бонус`:'Не знайдено'}`;
       return `<div title="${tooltip}"
-        style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-        background:${bgCol};border:2px solid ${owned?rCol:'#161a22'};border-radius:5px;
+        style="width:${cs}px;height:${cs}px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+        background:${bgCol};border:${owned?'2px':'1px'} solid ${owned?rCol:'#161a22'};border-radius:4px;
         opacity:${owned?1:.15};position:relative;cursor:default;overflow:hidden;
-        box-shadow:${owned?`0 0 8px ${rCol}50`:'none'};">
-        <img src="${it.img}" style="width:75%;height:75%;object-fit:contain;image-rendering:pixelated;" onerror="this.style.display='none';this.insertAdjacentHTML('afterend','🐟')">
-        <div style="font-size:8px;color:${owned?'var(--text)':'var(--dim)'};text-align:center;line-height:1.2;padding:0 2px;overflow:hidden;max-height:18px;">${it.name.split(' ')[0]}</div>
-        ${lvlTxt?`<span style="position:absolute;top:1px;right:2px;font-size:8px;color:var(--gold);
-          background:rgba(0,0,0,.85);padding:0 3px;line-height:1.5;border-radius:2px;">${lvlTxt}</span>`:''}
+        box-shadow:${owned?`0 0 6px ${rCol}40`:'none'};">
+        ${it.img
+          ? `<img src="${it.img}" style="width:${is}px;height:${is}px;object-fit:contain;image-rendering:pixelated;" onerror="this.outerHTML='🐟'">`
+          : `<span style="font-size:${fs}px;">${it.icon||'❓'}</span>`}
+        ${it.img&&owned?`<div style="font-size:7px;color:var(--dim);text-align:center;line-height:1;padding:0 1px;width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${it.name.split(' ')[0]}</div>`:''}
+        ${lvlTxt?`<span style="position:absolute;top:1px;right:2px;font-size:7px;color:var(--gold);
+          background:rgba(0,0,0,.85);padding:0 2px;line-height:1.4;border-radius:2px;">${lvlTxt}</span>`:''}
         ${owned&&it.rarity==='mythic'?`<span style="position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--synth),transparent);"></span>`:''}
         ${owned&&it.rarity==='legendary'?`<span style="position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);"></span>`:''}
-      </div>`;
-    }).join('')}
-    ${!filteredItems.length?`<div style="font-size:10px;color:var(--dim);padding:8px;grid-column:1/-1;">Немає предметів</div>`:''}
-    </div>`
-      : `<div style="display:flex;gap:4px;flex-wrap:wrap;max-height:220px;overflow-y:auto;padding:2px;">
-    ${filteredItems.map(it=>{
-      let owned=COLLECTION_SYSTEM.isOwned(it.id);
-      let cnt=COLLECTION_SYSTEM.count(it.id);
-      let rCol=RARITY_COLOR[it.rarity]||'var(--dim)';
-      let lvlTxt=cnt>1?`×${cnt}`:'';
-      let tooltip=`${it.name}&#10;${RARITY_LABEL[it.rarity]||''}&#10;${owned?`Знайдено: ${cnt}×&#10;+${(it.itemBonus*100).toFixed(1)}% бонус`:'Не знайдено'}`;
-      return `<div title="${tooltip}"
-        style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:${fs}px;
-        background:${owned?'rgba(255,255,255,.05)':'#060810'};border:1px solid ${owned?rCol:'#161a22'};border-radius:4px;
-        opacity:${owned?1:.15};position:relative;cursor:default;flex-shrink:0;overflow:hidden;
-        box-shadow:${owned?`0 0 6px ${rCol}40`:'none'};">
-        ${it.icon||'❓'}
-        ${lvlTxt?`<span style="position:absolute;bottom:0;right:0;font-size:8px;color:var(--gold);
-          background:rgba(0,0,0,.85);padding:0 3px;line-height:1.5;border-radius:2px 0 0 0;">${lvlTxt}</span>`:''}
       </div>`;
     }).join('')}
     ${!filteredItems.length?`<div style="font-size:10px;color:var(--dim);padding:8px;">Немає предметів</div>`:''}
