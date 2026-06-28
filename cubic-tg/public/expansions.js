@@ -684,11 +684,18 @@ function renderCollectionMiniWidget(setId){
   let p = COLLECTION_SYSTEM.setProgress(setId);
   let done = COLLECTION_SYSTEM.isSetComplete(setId);
   let bonus = ((COLLECTION_SYSTEM.getActivityMult(setId)-1)*100).toFixed(1);
-  const MINI_RARITY_COLOR = {common:'var(--green)',rare:'var(--blue)',epic:'var(--purple)',legendary:'var(--gold)',mythic:'var(--synth)'};
+  // Стилі рідкості — колір рамки, фон, glow, товщина рамки
+  const RARITY_STYLE = {
+    common:    { border:'1px solid #4caf50',    bg:'linear-gradient(135deg,#0a1a0a,#061006)', glow:'none',                          top:'none' },
+    rare:      { border:'2px solid #4a9eff',    bg:'linear-gradient(135deg,#060e1a,#03080f)', glow:'0 0 6px #4a9eff55',             top:'linear-gradient(90deg,transparent,#4a9eff,transparent)' },
+    epic:      { border:'2px solid #a855f7',    bg:'linear-gradient(135deg,#0d0620,#080415)', glow:'0 0 8px #a855f766',             top:'linear-gradient(90deg,transparent,#a855f7,transparent)' },
+    legendary: { border:'2px solid #f0c040',    bg:'linear-gradient(135deg,#1a1200,#100b00)', glow:'0 0 10px #f0c04066',            top:'linear-gradient(90deg,transparent,#f0c040,transparent)' },
+    mythic:    { border:'2px solid #e040fb',    bg:'linear-gradient(135deg,#1a0530,#0d0218)', glow:'0 0 14px #e040fb88',            top:'linear-gradient(90deg,#e040fb,#4a9eff,#e040fb)' },
+  };
+  const RARITY_LOCKED = { border:'1px solid #1a1a1a', bg:'#060810', glow:'none', top:'none' };
   let hasImg = set.items.some(it=>it.img);
-  // Для риб: фіксований розмір клітинки, flex-wrap
-  let cs = hasImg ? 52 : 28; // cell size px
-  let is = hasImg ? 46 : 22; // img size px
+  let cs = hasImg ? 54 : 28;
+  let is = hasImg ? 48 : 22;
   let fontSize = hasImg ? 10 : 13;
   let maxShow = hasImg ? 40 : 100;
   let shown = set.items.slice(0, maxShow);
@@ -701,19 +708,17 @@ function renderCollectionMiniWidget(setId){
     <div style="height:3px;background:#111;margin-bottom:5px;">
       <div style="height:100%;width:${pct}%;background:${done?'var(--gold)':set.color};transition:width .3s;"></div>
     </div>
-    <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px;max-height:${hasImg?'170px':'90px'};overflow-y:auto;padding:1px;">
+    <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px;max-height:${hasImg?'175px':'90px'};overflow-y:auto;padding:1px;">
     ${shown.map(it=>{
       let owned = COLLECTION_SYSTEM.isOwned(it.id);
       let cnt = COLLECTION_SYSTEM.count(it.id);
-      let rCol = owned ? (MINI_RARITY_COLOR[it.rarity]||set.color) : '#1a1a1a';
-      let bgCol = owned ? (it.rarity==='mythic'?'rgba(200,100,255,.12)':it.rarity==='legendary'?'rgba(232,184,75,.12)':it.rarity==='epic'?'rgba(150,80,220,.10)':it.rarity==='rare'?'rgba(80,140,255,.10)':'rgba(80,200,120,.08)') : '#060810';
-      return `<div title="${it.name}${it.rarity?' ['+it.rarity+']':''}" style="width:${cs}px;height:${cs}px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:${fontSize}px;background:${bgCol};border:1px solid ${rCol};border-radius:3px;opacity:${owned?1:.18};position:relative;overflow:hidden;">
+      let rs = owned ? (RARITY_STYLE[it.rarity]||RARITY_STYLE.common) : RARITY_LOCKED;
+      return `<div title="${it.name}${it.rarity?' ['+it.rarity+']':''}" style="width:${cs}px;height:${cs}px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:${fontSize}px;background:${rs.bg};border:${rs.border};border-radius:4px;opacity:${owned?1:.18};position:relative;overflow:hidden;box-shadow:${rs.glow};">
         ${it.img
           ? `<img src="${it.img}" style="width:${is}px;height:${is}px;object-fit:contain;image-rendering:pixelated;" onerror="this.outerHTML='🐟'">`
           : (it.icon||'❓')}
-        ${cnt>1?`<span style="position:absolute;bottom:0;right:0;font-size:7px;color:var(--gold);background:rgba(0,0,0,.8);padding:0 2px;line-height:1.4;">×${cnt}</span>`:''}
-        ${owned&&it.rarity==='mythic'?`<span style="position:absolute;top:0;left:0;width:100%;height:1px;background:var(--synth);"></span>`:''}
-        ${owned&&it.rarity==='legendary'?`<span style="position:absolute;top:0;left:0;width:100%;height:1px;background:var(--gold);"></span>`:''}
+        ${cnt>1?`<span style="position:absolute;bottom:0;right:0;font-size:7px;color:var(--gold);background:rgba(0,0,0,.85);padding:0 2px;line-height:1.4;border-radius:2px 0 0 0;">×${cnt}</span>`:''}
+        ${owned&&rs.top!=='none'?`<span style="position:absolute;top:0;left:0;width:100%;height:2px;background:${rs.top};"></span>`:''}
       </div>`;
     }).join('')}
     ${set.items.length>maxShow?`<div style="font-size:9px;color:var(--dim);width:100%;padding:3px 0;">+${set.items.length-maxShow} ще... (відкрий вкладку Колекція)</div>`:''}
@@ -794,32 +799,38 @@ function renderCollectionTab(){
       <div style="height:100%;width:${pct}%;background:${done?'var(--gold)':set.color};transition:width .3s;"></div>
     </div>`;
 
-    // Сітка предметів — адаптивний розмір: img=4 col grid, emoji=flex
+    // Стилі рідкості для сітки колекції
+    const FISH_RARITY_STYLE = {
+      common:    { border:'1px solid #4caf50',  bg:'linear-gradient(135deg,#0a1a0a,#061006)', glow:'none',                top:'none',                                               label:'#4caf50' },
+      rare:      { border:'2px solid #4a9eff',  bg:'linear-gradient(135deg,#060e1a,#030810)', glow:'0 0 7px #4a9eff55',   top:'linear-gradient(90deg,transparent,#4a9eff,transparent)', label:'#4a9eff' },
+      epic:      { border:'2px solid #a855f7',  bg:'linear-gradient(135deg,#0d0620,#070315)', glow:'0 0 9px #a855f766',   top:'linear-gradient(90deg,transparent,#a855f7,transparent)', label:'#a855f7' },
+      legendary: { border:'2px solid #f0c040',  bg:'linear-gradient(135deg,#1a1200,#100b00)', glow:'0 0 12px #f0c04077',  top:'linear-gradient(90deg,transparent,#f0c040,transparent)', label:'#f0c040' },
+      mythic:    { border:'2px solid #e040fb',  bg:'linear-gradient(135deg,#1a0530,#0d0218)', glow:'0 0 16px #e040fb99',  top:'linear-gradient(90deg,#e040fb,#4a9eff,#e040fb)',         label:'#e040fb' },
+    };
+    const FISH_LOCKED = { border:'1px solid #161a22', bg:'#060810', glow:'none', top:'none', label:'#333' };
     let hasImg = set.items.some(it=>it.img);
     let fs = hasImg ? 20 : 16;
-    let cs = hasImg ? 68 : 36;   // cell size px
-    let is = hasImg ? 60 : 28;   // img size px
+    let cs = hasImg ? 68 : 36;
+    let is = hasImg ? 60 : 28;
     let grid = `<div style="display:flex;gap:4px;flex-wrap:wrap;max-height:${hasImg?'300px':'220px'};overflow-y:auto;padding:2px;">
     ${filteredItems.map(it=>{
       let owned=COLLECTION_SYSTEM.isOwned(it.id);
       let cnt=COLLECTION_SYSTEM.count(it.id);
-      let rCol=RARITY_COLOR[it.rarity]||'var(--dim)';
+      let rs=owned?(FISH_RARITY_STYLE[it.rarity]||FISH_RARITY_STYLE.common):FISH_LOCKED;
       let lvlTxt=cnt>1?`×${cnt}`:'';
-      let bgCol=owned?(it.rarity==='mythic'?'rgba(200,100,255,.15)':it.rarity==='legendary'?'rgba(232,184,75,.15)':it.rarity==='epic'?'rgba(150,80,220,.12)':it.rarity==='rare'?'rgba(80,140,255,.12)':'rgba(80,200,120,.10)'):'#060810';
       let tooltip=`${it.name}&#10;${RARITY_LABEL[it.rarity]||''}&#10;${owned?`Знайдено: ${cnt}×&#10;+${(it.itemBonus*100).toFixed(1)}% бонус`:'Не знайдено'}`;
       return `<div title="${tooltip}"
         style="width:${cs}px;height:${cs}px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
-        background:${bgCol};border:${owned?'2px':'1px'} solid ${owned?rCol:'#161a22'};border-radius:4px;
+        background:${rs.bg};border:${rs.border};border-radius:5px;
         opacity:${owned?1:.15};position:relative;cursor:default;overflow:hidden;
-        box-shadow:${owned?`0 0 6px ${rCol}40`:'none'};">
+        box-shadow:${rs.glow};">
         ${it.img
           ? `<img src="${it.img}" style="width:${is}px;height:${is}px;object-fit:contain;image-rendering:pixelated;" onerror="this.outerHTML='🐟'">`
           : `<span style="font-size:${fs}px;">${it.icon||'❓'}</span>`}
-        ${it.img&&owned?`<div style="font-size:7px;color:var(--dim);text-align:center;line-height:1;padding:0 1px;width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${it.name.split(' ')[0]}</div>`:''}
-        ${lvlTxt?`<span style="position:absolute;top:1px;right:2px;font-size:7px;color:var(--gold);
-          background:rgba(0,0,0,.85);padding:0 2px;line-height:1.4;border-radius:2px;">${lvlTxt}</span>`:''}
-        ${owned&&it.rarity==='mythic'?`<span style="position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--synth),transparent);"></span>`:''}
-        ${owned&&it.rarity==='legendary'?`<span style="position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);"></span>`:''}
+        ${it.img&&owned?`<div style="font-size:7px;color:${rs.label};text-align:center;line-height:1;padding:0 2px;width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${it.name.split(' ')[0]}</div>`:''}
+        ${lvlTxt?`<span style="position:absolute;top:1px;right:2px;font-size:7px;color:var(--gold);background:rgba(0,0,0,.9);padding:0 2px;line-height:1.5;border-radius:2px;">${lvlTxt}</span>`:''}
+        ${owned&&rs.top!=='none'?`<span style="position:absolute;top:0;left:0;width:100%;height:2px;background:${rs.top};"></span>`:''}
+        ${owned&&it.rarity==='mythic'?`<span style="position:absolute;bottom:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,#e040fb,#4a9eff,#e040fb);"></span>`:''}
       </div>`;
     }).join('')}
     ${!filteredItems.length?`<div style="font-size:10px;color:var(--dim);padding:8px;">Немає предметів</div>`:''}
