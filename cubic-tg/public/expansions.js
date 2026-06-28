@@ -715,9 +715,10 @@ function renderCollectionMiniWidget(setId){
       let rs = owned ? (RARITY_STYLE[it.rarity]||RARITY_STYLE.common) : RARITY_LOCKED;
       return `<div title="${it.name}${it.rarity?' ['+it.rarity+']':''}" style="width:${cs}px;height:${cs}px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:${fontSize}px;background:${rs.bg};border:${rs.border};border-radius:4px;opacity:${owned?1:.18};position:relative;overflow:hidden;box-shadow:${rs.glow};">
         ${it.img
-          ? `<img src="${it.img}" style="width:${is}px;height:${is}px;object-fit:contain;image-rendering:pixelated;" onerror="this.outerHTML='🐟'">`
+          ? `<img src="${it.img}" style="width:${cs-8}px;height:${cs-16}px;object-fit:contain;image-rendering:pixelated;" onerror="this.outerHTML='🐟'">`
           : (it.icon||'❓')}
-        ${cnt>1?`<span style="position:absolute;bottom:0;right:0;font-size:7px;color:var(--gold);background:rgba(0,0,0,.85);padding:0 2px;line-height:1.4;border-radius:2px 0 0 0;">×${cnt}</span>`:''}
+        ${it.img?`<div style="position:absolute;bottom:0;left:0;width:100%;background:rgba(0,0,0,.78);padding:1px 2px;font-size:6px;color:${owned?rs.label:'#444'};text-align:center;line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${it.name.split(' ')[0]}</div>`:''}
+        ${cnt>1?`<span style="position:absolute;top:1px;right:2px;font-size:6px;color:var(--gold);background:rgba(0,0,0,.85);padding:0 2px;line-height:1.4;border-radius:2px;">×${cnt}</span>`:''}
         ${owned&&rs.top!=='none'?`<span style="position:absolute;top:0;left:0;width:100%;height:2px;background:${rs.top};"></span>`:''}
       </div>`;
     }).join('')}
@@ -825,12 +826,12 @@ function renderCollectionTab(){
         opacity:${owned?1:.15};position:relative;cursor:default;overflow:hidden;
         box-shadow:${rs.glow};">
         ${it.img
-          ? `<img src="${it.img}" style="width:${is}px;height:${is}px;object-fit:contain;image-rendering:pixelated;" onerror="this.outerHTML='🐟'">`
+          ? `<img src="${it.img}" style="width:${cs-8}px;height:${cs-18}px;object-fit:contain;image-rendering:pixelated;" onerror="this.outerHTML='🐟'">`
           : `<span style="font-size:${fs}px;">${it.icon||'❓'}</span>`}
-        ${it.img&&owned?`<div style="font-size:7px;color:${rs.label};text-align:center;line-height:1;padding:0 2px;width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${it.name.split(' ')[0]}</div>`:''}
+        ${it.img?`<div style="position:absolute;bottom:0;left:0;width:100%;background:rgba(0,0,0,.75);padding:2px 2px 1px;font-size:7px;color:${owned?rs.label:'#444'};text-align:center;line-height:1.2;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${it.name.split(' ')[0]}</div>`:''}
         ${lvlTxt?`<span style="position:absolute;top:1px;right:2px;font-size:7px;color:var(--gold);background:rgba(0,0,0,.9);padding:0 2px;line-height:1.5;border-radius:2px;">${lvlTxt}</span>`:''}
         ${owned&&rs.top!=='none'?`<span style="position:absolute;top:0;left:0;width:100%;height:2px;background:${rs.top};"></span>`:''}
-        ${owned&&it.rarity==='mythic'?`<span style="position:absolute;bottom:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,#e040fb,#4a9eff,#e040fb);"></span>`:''}
+        ${owned&&it.rarity==='mythic'?`<span style="position:absolute;bottom:14px;left:0;width:100%;height:1px;background:linear-gradient(90deg,#e040fb,#4a9eff,#e040fb);"></span>`:''}
       </div>`;
     }).join('')}
     ${!filteredItems.length?`<div style="font-size:10px;color:var(--dim);padding:8px;">Немає предметів</div>`:''}
