@@ -422,6 +422,34 @@ header{background:#070a0f;border-bottom:1px solid var(--border);display:flex;ali
 .base-b-btn.can:hover{background:var(--green);color:#000;}
 .base-b-btn:disabled{opacity:.3;cursor:not-allowed;}
 
+/* MULTI-SLOT BASE BUILDINGS */
+.base-slots-wrap{margin-top:4px;}
+.base-slots-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.base-slots-title{font-size:9px;color:var(--dim);letter-spacing:1px;}
+.base-slots-dots{display:flex;gap:3px;align-items:center;}
+.base-slot-dot{width:8px;height:8px;border:1px solid var(--border);background:#070a0f;transition:all .2s;}
+.base-slot-dot.filled{background:var(--green);border-color:var(--green);box-shadow:0 0 3px var(--green);}
+.base-slot-dot.active{background:var(--teal);border-color:var(--teal);}
+.base-add-btn{font-family:var(--font);font-size:8px;padding:2px 6px;border:1px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.base-add-btn:hover:not(:disabled){background:var(--blue);color:#000;}
+.base-add-btn:disabled{border-color:var(--border);color:var(--dim);cursor:not-allowed;opacity:0.5;}
+.base-slot-row{background:#070a0f;border:1px solid var(--border);padding:4px 6px;margin-bottom:3px;display:flex;flex-direction:column;gap:2px;}
+.base-slot-row.active-slot{border-color:var(--green);}
+.base-slot-row.boosted-slot{border-color:var(--gold);}
+.base-slot-top{display:flex;align-items:center;gap:4px;}
+.base-slot-num{font-size:10px;color:var(--gold);flex-shrink:0;width:18px;}
+.base-slot-ps{font-size:10px;color:var(--green);flex:1;}
+.base-slot-lvl{font-size:9px;color:var(--dim);}
+.base-slot-btns{display:flex;gap:2px;flex-wrap:wrap;}
+.base-slot-btn{font-family:var(--font);font-size:9px;padding:2px 5px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.base-slot-btn.up{border-color:var(--gold);color:var(--gold);}
+.base-slot-btn.up:hover{background:var(--gold);color:#000;}
+.base-slot-btn.bst{border-color:var(--teal);color:var(--teal);}
+.base-slot-btn.bst:hover:not(:disabled){background:var(--teal);color:#000;}
+.base-slot-btn.bst.active{background:rgba(74,184,160,0.15);border-color:var(--gold);color:var(--gold);}
+.base-slot-btn:disabled{opacity:.35;cursor:not-allowed;}
+.base-slot-add-cost{font-size:9px;color:var(--orange);margin-top:2px;}
+
 /* BUILDING GROUPS — будівлі згруповані за сировиною, базові споруди як підпункти */
 .group-card{border:1px solid var(--border);margin-bottom:7px;background:var(--panel2);}
 .group-header{display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:pointer;background:var(--panel);user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent;border-bottom:1px solid var(--border);}
@@ -1991,22 +2019,34 @@ BRANCHES.forEach((branch,bIdx)=>{
 // BASE RESOURCE BUILDINGS — auto-produce primary resources
 // ============================================================
 const BASE_RES_BUILDINGS = {
-  bw:  {name:"🌲 Лісозаготівля", res:"wood",       costBase:{wood:50,stone:20},    prodBase:0.5, ep_req:1, lvl:0, maxLvl:999, costMult:1.12},
-  bs:  {name:"⛰ Каменоломня",    res:"stone",      costBase:{wood:60,stone:10},    prodBase:0.4, ep_req:1, lvl:0, maxLvl:999, costMult:1.12},
-  bwa: {name:"💧 Колодязь",       res:"water",      costBase:{wood:40,stone:30},    prodBase:0.5, ep_req:1, lvl:0, maxLvl:999, costMult:1.12},
-  bc:  {name:"🧱 Глинище",        res:"clay",       costBase:{wood:50,stone:25},    prodBase:0.4, ep_req:1, lvl:0, maxLvl:999, costMult:1.12},
-  bv:  {name:"🌿 Розплідник",     res:"vegetation", costBase:{water:30,wood:40},    prodBase:0.4, ep_req:1, lvl:0, maxLvl:999, costMult:1.12},
-  bo:  {name:"🌋 Рудна яма",      res:"raw_ore",    costBase:{wood:80,stone:60},    prodBase:0.3, ep_req:1, lvl:0, maxLvl:999, costMult:1.13},
-  bl:  {name:"🪵 Лісопилка",      res:"logs",       costBase:{wood:100,stone:50},   prodBase:0.5, ep_req:1, lvl:0, maxLvl:999, costMult:1.13},
-  bch: {name:"🕳 Вугільник",       res:"charcoal",   costBase:{logs:80,stone:40},    prodBase:0.3, ep_req:1, lvl:0, maxLvl:999, costMult:1.14},
-  bwh: {name:"🌾 Поле пшениці",   res:"wheat",      costBase:{water:60,clay:50},    prodBase:0.5, ep_req:2, lvl:0, maxLvl:999, costMult:1.13},
-  bba: {name:"🌿 Ячмінне поле",   res:"barley",     costBase:{water:60,clay:50},    prodBase:0.4, ep_req:2, lvl:0, maxLvl:999, costMult:1.13},
-  bcu: {name:"🟤 Мідний кар'єр",  res:"copper",     costBase:{boards:80,bricks:50}, prodBase:0.3, ep_req:4, lvl:0, maxLvl:999, costMult:1.15},
-  bir: {name:"🔩 Залізна шахта",  res:"iron",       costBase:{boards:100,bricks:80},prodBase:0.2, ep_req:5, lvl:0, maxLvl:999, costMult:1.15},
-  boi: {name:"🛢 Нафтова вежа",   res:"oil",        costBase:{steel:80,iron:60},    prodBase:0.2, ep_req:9, lvl:0, maxLvl:999, costMult:1.16},
-  bel: {name:"⚡ Генератор",       res:"electricity",costBase:{steel:120,copper:80}, prodBase:0.3, ep_req:10,lvl:0, maxLvl:999, costMult:1.16},
-  bsi: {name:"💎 Кремнієва ферма", res:"silicon",   costBase:{electricity:100,steel:150},prodBase:0.15,ep_req:11,lvl:0,maxLvl:999,costMult:1.17},
+  bw:  {name:"🌲 Лісозаготівля", res:"wood",       costBase:{wood:50,stone:20},    prodBase:0.5, ep_req:1, slots:[], maxSlots:5, costMult:1.12},
+  bs:  {name:"⛰ Каменоломня",    res:"stone",      costBase:{wood:60,stone:10},    prodBase:0.4, ep_req:1, slots:[], maxSlots:5, costMult:1.12},
+  bwa: {name:"💧 Колодязь",       res:"water",      costBase:{wood:40,stone:30},    prodBase:0.5, ep_req:1, slots:[], maxSlots:5, costMult:1.12},
+  bc:  {name:"🧱 Глинище",        res:"clay",       costBase:{wood:50,stone:25},    prodBase:0.4, ep_req:1, slots:[], maxSlots:5, costMult:1.12},
+  bv:  {name:"🌿 Розплідник",     res:"vegetation", costBase:{water:30,wood:40},    prodBase:0.4, ep_req:1, slots:[], maxSlots:5, costMult:1.12},
+  bo:  {name:"🌋 Рудна яма",      res:"raw_ore",    costBase:{wood:80,stone:60},    prodBase:0.3, ep_req:1, slots:[], maxSlots:5, costMult:1.13},
+  bl:  {name:"🪵 Лісопилка",      res:"logs",       costBase:{wood:100,stone:50},   prodBase:0.5, ep_req:1, slots:[], maxSlots:5, costMult:1.13},
+  bch: {name:"🕳 Вугільник",       res:"charcoal",   costBase:{logs:80,stone:40},    prodBase:0.3, ep_req:1, slots:[], maxSlots:5, costMult:1.14},
+  bwh: {name:"🌾 Поле пшениці",   res:"wheat",      costBase:{water:60,clay:50},    prodBase:0.5, ep_req:2, slots:[], maxSlots:5, costMult:1.13},
+  bba: {name:"🌿 Ячмінне поле",   res:"barley",     costBase:{water:60,clay:50},    prodBase:0.4, ep_req:2, slots:[], maxSlots:5, costMult:1.13},
+  bcu: {name:"🟤 Мідний кар'єр",  res:"copper",     costBase:{boards:80,bricks:50}, prodBase:0.3, ep_req:4, slots:[], maxSlots:5, costMult:1.15},
+  bir: {name:"🔩 Залізна шахта",  res:"iron",       costBase:{boards:100,bricks:80},prodBase:0.2, ep_req:5, slots:[], maxSlots:5, costMult:1.15},
+  boi: {name:"🛢 Нафтова вежа",   res:"oil",        costBase:{steel:80,iron:60},    prodBase:0.2, ep_req:9, slots:[], maxSlots:5, costMult:1.16},
+  bel: {name:"⚡ Генератор",       res:"electricity",costBase:{steel:120,copper:80}, prodBase:0.3, ep_req:10,slots:[], maxSlots:5, costMult:1.16},
+  bsi: {name:"💎 Кремнієва ферма", res:"silicon",   costBase:{electricity:100,steel:150},prodBase:0.15,ep_req:11,slots:[],maxSlots:5,costMult:1.17},
 };
+
+// ── Зворотна сумісність: геттер lvl (сума рівнів усіх слотів) ──
+// Використовується старим кодом де очікується b.lvl
+Object.defineProperties && Object.keys(BASE_RES_BUILDINGS).forEach(id=>{
+  let b = BASE_RES_BUILDINGS[id];
+  // b.lvl = getter: перший слот або 0 (для сумісності з перевірками "if(b.lvl)")
+  Object.defineProperty(b,'lvl',{
+    get(){ return b.slots && b.slots.length ? b.slots[0].lvl : 0; },
+    set(v){ if(b.slots && b.slots.length) b.slots[0].lvl = v; },
+    configurable: true
+  });
+});
 
 // ============================================================
 // GROUP_BASE_MAP — групування будівель за сировиною.
@@ -2068,35 +2108,133 @@ function getBaseLevelMult(lvl){
 
 // Єдина функція розрахунку видобутку базової споруди за тік (до зовнішніх множників буст/баф)
 function getBaseBuildingProdPerTick(b){
-  if(!b.lvl) return 0;
-  return b.prodBase * b.lvl * getBaseLevelMult(b.lvl);
+  if(!b.slots||!b.slots.length) return 0;
+  // Сума всіх слотів
+  return b.slots.reduce((sum,sl)=>{
+    if(!sl.lvl) return sum;
+    return sum + b.prodBase * sl.lvl * getBaseLevelMult(sl.lvl);
+  }, 0);
+}
+
+// Вартість першого або наступного слота (зростає з кількістю слотів)
+function getBaseSlotUnlockCost(b){
+  let slotIdx = b.slots.length; // 0=перший, 1=другий, ...
+  let mult = Math.pow(4, slotIdx); // ×1, ×4, ×16, ×64, ×256
+  let cost = {};
+  Object.keys(b.costBase).forEach(k=>{
+    cost[k] = Math.floor(b.costBase[k] * mult);
+  });
+  return cost;
+}
+
+// Вартість прокачки конкретного слота (звичайна, як раніше)
+function getBaseSlotUpgradeCost(b, sl){
+  let scale = Math.pow(b.costMult, sl.lvl);
+  let cost = {};
+  Object.keys(b.costBase).forEach(k=>cost[k]=Math.floor(b.costBase[k]*scale));
+  return cost;
+}
+
+// Додати новий слот (будівлю) для базової сировини
+function addBaseResSlot(id){
+  let b = BASE_RES_BUILDINGS[id];
+  if(!b || epoch < b.ep_req) return;
+  if(b.slots.length >= b.maxSlots){ showToast('⚠️ Максимум 5 будівель!'); return; }
+  let cost = getBaseSlotUnlockCost(b);
+  let canAfford = Object.keys(cost).every(k=>(storage[k]||0)>=cost[k]);
+  if(!canAfford){ showToast('⚠️ Недостатньо ресурсів!'); return; }
+  Object.keys(cost).forEach(k=>storage[k]-=cost[k]);
+  let newSlot = {lvl:1, boost:0, tileR:null, tileC:null};
+  b.slots.push(newSlot);
+  // Розміщуємо на карті
+  let placed = placeBaseResOnMap(id, b, newSlot);
+  if(placed){ newSlot.tileR = placed.r; newSlot.tileC = placed.c; }
+  buildCount++;
+  addPoints(50*b.ep_req, 'builds');
+  addLog(`🏗 ${b.name} — Слот ${b.slots.length} збудовано!`, true);
+  showToast(`✅ ${b.name} #${b.slots.length}`);
+  markDirty('full');
+}
+
+// Апгрейд конкретного слота
+function upgradeBaseResSlot(id, slotIdx){
+  let b = BASE_RES_BUILDINGS[id];
+  if(!b) return;
+  let sl = b.slots[slotIdx];
+  if(!sl) return;
+  let cost = getBaseSlotUpgradeCost(b, sl);
+  let canAfford = Object.keys(cost).every(k=>(storage[k]||0)>=cost[k]);
+  if(!canAfford){ showToast('⚠️ Недостатньо ресурсів!'); return; }
+  Object.keys(cost).forEach(k=>storage[k]-=cost[k]);
+  sl.lvl++;
+  syncBaseResMapTile(id, b, slotIdx);
+  addPoints(50*b.ep_req, 'builds');
+  addLog(`⚒ ${b.name} #${slotIdx+1} → рів.${sl.lvl}`);
+  markDirty('full');
+}
+
+// МАХ апгрейд конкретного слота
+function maxUpgradeBaseResSlot(id, slotIdx){
+  let b = BASE_RES_BUILDINGS[id];
+  if(!b) return;
+  let sl = b.slots[slotIdx];
+  if(!sl) return;
+  let leveled = 0;
+  while(sl.lvl < 999){
+    let cost = getBaseSlotUpgradeCost(b, sl);
+    if(!Object.keys(cost).every(k=>(storage[k]||0)>=cost[k])) break;
+    Object.keys(cost).forEach(k=>storage[k]-=cost[k]);
+    sl.lvl++; leveled++;
+    addPoints(50*b.ep_req, 'builds');
+  }
+  if(leveled>0){
+    syncBaseResMapTile(id, b, slotIdx);
+    addLog(`⚒⚒ МАХ ${b.name} #${slotIdx+1} → рів.${sl.lvl} (+${leveled})`, true);
+    markDirty('full');
+  } else showToast('⚠️ Недостатньо ресурсів!');
+}
+
+// Буст конкретного слота
+function activateBoostSlot(id, slotIdx){
+  let b = BASE_RES_BUILDINGS[id];
+  if(!b) return;
+  let sl = b.slots[slotIdx];
+  if(!sl||!sl.lvl||sl.boost>0) return;
+  let cost = _boostCost(b);
+  if(!Object.keys(cost).every(k=>(storage[k]||0)>=cost[k])){
+    showToast('⚠️ Не вистачає ресурсів для бусту!'); return;
+  }
+  Object.keys(cost).forEach(k=>storage[k]-=cost[k]);
+  let dur = 30 * getBoostDurationMult();
+  sl.boost = dur;
+  addLog(`⚡ Буст ${b.name} #${slotIdx+1} ×3 на ${dur.toFixed(0)}с!`, true);
+  markDirty('bld');
 }
 
 function maxBuyBaseResBuilding(id){
   let b=BASE_RES_BUILDINGS[id];
-  if(!b||epoch<b.ep_req||b.lvl===0) return;
-  let leveled=0;
-  while(b.lvl<b.maxLvl){
-    let scale=Math.pow(b.costMult,b.lvl);
-    let cost={};
-    Object.keys(b.costBase).forEach(k=>cost[k]=Math.floor(b.costBase[k]*scale));
-    let canAfford=Object.keys(cost).every(k=>(storage[k]||0)>=cost[k]);
-    if(!canAfford) break;
-    Object.keys(cost).forEach(k=>storage[k]-=cost[k]);
-    b.lvl++; leveled++;
-    addPoints(50*b.ep_req, 'builds');
-  }
-  if(leveled>0){
-    syncBaseResMapTile(id,b);
-    addLog(`⚒⚒ МАХ ${b.name} → рів.${b.lvl} (+${leveled})`,true); markDirty("full");
-  }
-  else showToast("⚠️ Недостатньо ресурсів!");
+  if(!b||epoch<b.ep_req||!b.slots.length) return;
+  // МАХ апгрейд першого слота (для зворотної сумісності)
+  maxUpgradeBaseResSlot(id, 0);
 }
 
+// Старий buyBaseResBuilding → тепер або перший слот, або додає новий
+function buyBaseResBuilding(id){
+  let b=BASE_RES_BUILDINGS[id];
+  if(!b||epoch<b.ep_req) return;
+  if(b.slots.length===0){
+    addBaseResSlot(id);
+  } else {
+    // Апгрейд першого слота
+    upgradeBaseResSlot(id, 0);
+  }
+}
 // Вартість бусту залежить від рівня споруди, рідкісності ресурсу та епохи
 function _boostCost(b){
   let ep=RES[b.res]?.ep||1;
-  let lvl=Math.max(1,b.lvl);
+  // Використовуємо сумарний рівень слотів для розрахунку вартості
+  let totalLvl = b.slots ? b.slots.reduce((s,sl)=>s+sl.lvl,0) : (b.lvl||0);
+  let lvl=Math.max(1,totalLvl);
   // Базова вартість: квадратично зростає з епохою
   let epScale = Math.pow(2.5, ep-1); // ep1=1, ep2=2.5, ep3=6.25, ep6=95, ep10=9536...
   let amt=Math.max(10, Math.floor(lvl*ep*5*epScale));
@@ -2117,25 +2255,18 @@ function _fmtTime(s){
   return s>=60?`${Math.floor(s/60)}хв ${s%60}с`:`${s}с`;
 }
 
+// Старий activateBoost — тепер бустує перший слот (зворотна сумісність)
 function activateBoost(id){
-  let b=BASE_RES_BUILDINGS[id];
-  if(!b||!b.lvl||b.boost>0) return;
-  let cost=_boostCost(b);
-  if(!Object.keys(cost).every(k=>(storage[k]||0)>=cost[k])){
-    showToast('⚠️ Не вистачає ресурсів для бусту!'); return;
-  }
-  Object.keys(cost).forEach(k=>storage[k]-=cost[k]);
-  let dur = 30 * getBoostDurationMult(); // тривалість бусту скорочується гілкою "ШВИДКІСТЬ"
-  b.boost=dur;
-  addLog(`⚡ Буст ${b.name} ×3 на ${dur.toFixed(0)} секунд!`, true);
-  markDirty('bld');
+  activateBoostSlot(id, 0);
 }
 
 function syncAllBuildingsToMap(){
   if (typeof mapTiles === 'undefined' || !mapTiles.length) return;
-  // Базові споруди видобутку сировини
+  // Базові споруди видобутку сировини — всі слоти
   Object.entries(BASE_RES_BUILDINGS).forEach(([k, b]) => {
-    if (b.lvl > 0) placeBaseResOnMap(k, b);
+    if (b.slots && b.slots.length) {
+      b.slots.forEach((sl, si)=>{ if(sl.lvl>0) placeBaseResOnMap(k, b, sl); });
+    }
   });
   // Звичайні споруди (buildings)
   if (typeof buildings !== 'undefined') {
@@ -2149,13 +2280,16 @@ function syncAllBuildingsToMap(){
   if (typeof _isoDirty !== 'undefined') _isoDirty = true;
 }
 
-function placeBaseResOnMap(id, b){
+function placeBaseResOnMap(id, b, sl){
+  // sl — конкретний слот або null (для зворотної сумісності)
+  let slot = sl || (b.slots && b.slots[0]) || b;
   for(let r=1;r<MAP_ROWS-1;r++){
     for(let c=1;c<MAP_COLS-1;c++){
       let t=mapTiles[r][c];
       if(!t.building&&t.type!=='water'){
-        t.building={epoch:b.ep_req, name:b.name, resKey:id, autoClicker:false, lvl:b.lvl};
-        b.tileR=r; b.tileC=c;
+        let slotNum = b.slots ? b.slots.indexOf(slot)+1 : 1;
+        t.building={epoch:b.ep_req, name:b.name+(slotNum>1?` #${slotNum}`:''), resKey:id, autoClicker:false, lvl:slot.lvl||1};
+        slot.tileR=r; slot.tileC=c;
         if(typeof _isoDirty!=='undefined') _isoDirty=true;
         return {r,c};
       }
@@ -2164,32 +2298,16 @@ function placeBaseResOnMap(id, b){
   return null;
 }
 
-function syncBaseResMapTile(id, b){
-  if(b.tileR==null||b.tileC==null) return;
-  let t = mapTiles[b.tileR] && mapTiles[b.tileR][b.tileC];
+function syncBaseResMapTile(id, b, slotIdx){
+  let slot = (slotIdx !== undefined && b.slots) ? b.slots[slotIdx] : (b.slots && b.slots[0]) || b;
+  if(slot.tileR==null||slot.tileC==null) return;
+  let t = mapTiles[slot.tileR] && mapTiles[slot.tileR][slot.tileC];
   if(t && t.building && t.building.resKey===id){
-    t.building.lvl = b.lvl;
+    t.building.lvl = slot.lvl;
     if(typeof _isoDirty!=='undefined') _isoDirty=true;
   }
 }
 
-function buyBaseResBuilding(id){
-  let b=BASE_RES_BUILDINGS[id];
-  if(!b||epoch<b.ep_req) return;
-  let scale=Math.pow(b.costMult,b.lvl);
-  let cost={};
-  Object.keys(b.costBase).forEach(k=>cost[k]=Math.floor(b.costBase[k]*scale));
-  let canAfford=Object.keys(cost).every(k=>(storage[k]||0)>=cost[k]);
-  if(!canAfford) return;
-  Object.keys(cost).forEach(k=>storage[k]-=cost[k]);
-  let wasZero = b.lvl===0;
-  b.lvl++;
-  if(wasZero) placeBaseResOnMap(id,b);
-  else syncBaseResMapTile(id,b);
-  addPoints(50*b.ep_req, 'builds');
-  addLog(`⚒ ${b.name} → рів.${b.lvl}`);
-  markDirty("full");
-}
 
 // ============================================================
 // SCORE SYSTEM
@@ -2916,20 +3034,24 @@ setInterval(()=>{
   // Base resource buildings production
   Object.keys(BASE_RES_BUILDINGS).forEach(id=>{
     let b=BASE_RES_BUILDINGS[id];
-    if(!b.lvl||epoch<b.ep_req) return;
-    let mult=1;
-    if(b.boost>0){
-      mult=3;
-      b.boost=Math.max(0, b.boost-0.5); // тік = 0.5с
-      if(b.boost===0){
-        addLog(`⏱ Буст ${b.name} завершився`);
-        markDirty('bld');
+    if(!b.slots||!b.slots.length||epoch<b.ep_req) return;
+    let heroMult = 1 + (typeof heroAggBonuses!=='undefined'?heroAggBonuses.globalResMult||0:0);
+    b.slots.forEach((sl,si)=>{
+      if(!sl.lvl) return;
+      let mult=1;
+      if(sl.boost>0){
+        mult=3;
+        sl.boost=Math.max(0, sl.boost-0.5);
+        if(sl.boost===0){
+          addLog(`⏱ Буст ${b.name} #${si+1} завершився`);
+          markDirty('bld');
+        }
       }
-    }
-    let gain=getBaseBuildingProdPerTick(b)*baseResMultiplier*mult*(1+(typeof heroAggBonuses!=='undefined'?heroAggBonuses.globalResMult||0:0));
-    storage[b.res]=(storage[b.res]||0)+gain;
-    psCounters[b.res]=(psCounters[b.res]||0)+gain;
-    addPoints(Math.ceil(gain*0.05), 'resources');
+      let gain = b.prodBase * sl.lvl * getBaseLevelMult(sl.lvl) * baseResMultiplier * mult * heroMult;
+      storage[b.res]=(storage[b.res]||0)+gain;
+      psCounters[b.res]=(psCounters[b.res]||0)+gain;
+      addPoints(Math.ceil(gain*0.05), 'resources');
+    });
   });
 
   // Passive synth auto-gain from exchange upgrades
@@ -3559,27 +3681,8 @@ function renderBaseBuildings(){
   Object.keys(BASE_RES_BUILDINGS).forEach(id=>{
     let b=BASE_RES_BUILDINGS[id];
     if(epoch<b.ep_req) return;
-    let scale=Math.pow(b.costMult,b.lvl);
-    let cost={};
-    Object.keys(b.costBase).forEach(k=>cost[k]=Math.floor(b.costBase[k]*scale));
-    let canAfford=Object.keys(cost).every(k=>(storage[k]||0)>=cost[k]);
-    let prod=getBaseBuildingProdPerTick(b).toFixed(2);
-    let costStr=Object.keys(cost).map(k=>`${RES[k]?.e||''}${fmt(cost[k])}`).join(' ');
-    html+=`<div class="base-b-card ${b.lvl>0?'active-bld':''}">
-      <div class="base-b-head">
-        <div class="base-b-name">${b.name}</div>
-        ${b.lvl>0?`<div class="base-b-lvl">рів.${b.lvl}</div>`:''}
-      </div>
-      ${b.lvl>0?`<div class="base-b-out">+${prod} ${RES[b.res]?.e} ${RES[b.res]?.n}/с</div>`
-               :`<div style="font-size:9px;color:var(--dim)">+${b.prodBase} ${RES[b.res]?.e}/с за рів.</div>`}
-      <div class="base-b-cost">${costStr}</div>
-      <div style="display:flex;gap:3px;margin-top:4px;">
-        <button class="base-b-btn ${canAfford?'can':''}" onclick="buyBaseResBuilding('${id}')" ${!canAfford?'disabled':''} style="flex:1;margin-top:0;">
-          ${b.lvl===0?'🏗 БУДУВАТИ':'+РІВ'}
-        </button>
-        ${b.lvl>0?`<button class="base-b-btn can" style="border-color:var(--gold);color:var(--gold);flex:0 0 28px;margin-top:0;" onclick="maxBuyBaseResBuilding('${id}')" ${!canAfford?'disabled':''} title="Максимум">МАХ</button>`:''}
-      </div>
-    </div>`;
+    let r=renderBaseCard(id, false);
+    html+=r.html;
   });
   bDiv.innerHTML=html||'<div style="color:var(--dim);font-size:10px;padding:8px;">Немає доступних споруд</div>';
 }
@@ -3740,48 +3843,91 @@ function buyFromSynth(){
 // ── Картка базової видобувної споруди (може бути "підпунктом" групи) ──
 function renderBaseCard(id, isSub){
   let b=BASE_RES_BUILDINGS[id];
-  let scale=Math.pow(b.costMult,b.lvl);
-  let cost={};
-  Object.keys(b.costBase).forEach(k=>cost[k]=Math.floor(b.costBase[k]*scale));
-  let canAfford=Object.keys(cost).every(k=>(storage[k]||0)>=cost[k]);
-  let prod=(getBaseBuildingProdPerTick(b)*baseResMultiplier).toFixed(2);
-  let costStr=Object.keys(cost).map(k=>`${RES[k]?.e||''}${fmt(cost[k])} ${RES[k]?.n}`).join(' + ');
   let res=RES[b.res];
-  let curMult=getBaseLevelMult(b.lvl||0).toFixed(2);
-  let nextTierLvl=(Math.floor((b.lvl||0)/10)+1)*10;
-  let lvlToNextTier=nextTierLvl-(b.lvl||0);
-  let milestoneHint=b.lvl>0?`\nЕфективність: ×${curMult} (наступна віха за ${lvlToNextTier} рів. на рів.${nextTierLvl})`:'';
-  let tipText=`${b.name}\nВидобуває: ${res?.n||b.res} (${res?.e||''})\nВиробництво: +${prod}/с${milestoneHint}\nВартість: ${costStr}\nЕпоха: ${b.ep_req}`;
-  let boost=b.boost||0; // секунд буст залишилось
-  let boostedProd=boost>0?(getBaseBuildingProdPerTick(b)*baseResMultiplier*3).toFixed(2):null;
-  let boostCost=_boostCost(b);
-  let canBoost=Object.keys(boostCost).every(k=>(storage[k]||0)>=boostCost[k]);
-  let boostCostStr=Object.entries(boostCost).map(([k,v])=>`${RES[k]?.e||''}${fmt(v)}`).join(' ');
-  let html=`<div class="base-b-card ${b.lvl>0?'active-bld':''} ${boost>0?'boosted':''} ${isSub?'sub-item':''}" title="${tipText}">
+  let hasSlots = b.slots && b.slots.length > 0;
+
+  // Загальне виробництво
+  let totalProd = (getBaseBuildingProdPerTick(b)*baseResMultiplier).toFixed(2);
+
+  // Вартість нового слота
+  let slotCost = getBaseSlotUnlockCost(b);
+  let canAddSlot = b.slots.length < b.maxSlots && epoch >= b.ep_req &&
+    Object.keys(slotCost).every(k=>(storage[k]||0)>=slotCost[k]);
+  let slotCostStr = Object.entries(slotCost).map(([k,v])=>`${RES[k]?.e||''}${fmt(v)}`).join(' ');
+
+  let isMaxSlots = b.slots.length >= b.maxSlots;
+
+  let tipText=`${b.name}\nВидобуває: ${res?.n||b.res} (${res?.e||''})\nЗагальний видобуток: +${totalProd}/с\nСлотів: ${b.slots.length}/${b.maxSlots}\nЕпоха: ${b.ep_req}`;
+
+  // Слоти (ряди)
+  let slotsHtml='';
+  if(hasSlots){
+    b.slots.forEach((sl,si)=>{
+      let slProd=(b.prodBase*sl.lvl*getBaseLevelMult(sl.lvl)*baseResMultiplier);
+      let boostedProd=(sl.boost>0)?(slProd*3).toFixed(2):null;
+      let upCost = getBaseSlotUpgradeCost(b, sl);
+      let canUp = Object.keys(upCost).every(k=>(storage[k]||0)>=upCost[k]);
+      let upCostStr = Object.entries(upCost).map(([k,v])=>`${RES[k]?.e||''}${fmt(v)}`).join(' ');
+      let boostCost = _boostCost(b);
+      let canBoost = sl.boost===0 && Object.keys(boostCost).every(k=>(storage[k]||0)>=boostCost[k]);
+      let boostCostStr = Object.entries(boostCost).map(([k,v])=>`${RES[k]?.e||''}${fmt(v)}`).join(' ');
+
+      slotsHtml+=`<div class="base-slot-row ${sl.lvl>0?'active-slot':''} ${sl.boost>0?'boosted-slot':''}">
+        <div class="base-slot-top">
+          <span class="base-slot-num">#${si+1}</span>
+          <span class="base-slot-ps">${sl.boost>0
+            ? `<span style="color:var(--gold)">⚡×3 +${boostedProd}${res?.e}/с <span style="font-size:9px;color:var(--orange)">${_fmtTime(sl.boost)}</span></span>`
+            : `+${slProd.toFixed(2)}${res?.e}/с`}</span>
+          <span class="base-slot-lvl">рів.${sl.lvl}</span>
+        </div>
+        <div class="base-slot-btns">
+          <button class="base-slot-btn up" onclick="upgradeBaseResSlot('${id}',${si})" ${!canUp?'disabled':''}>⬆ ${upCostStr}</button>
+          <button class="base-slot-btn up" style="border-color:var(--gold);color:var(--gold);font-size:8px;" onclick="maxUpgradeBaseResSlot('${id}',${si})" ${!canUp?'disabled':''}>МАХ</button>
+          <button class="base-slot-btn bst ${sl.boost>0?'active':''}" onclick="activateBoostSlot('${id}',${si})" ${sl.boost>0||!canBoost?'disabled':''}>
+            ${sl.boost>0?`⚡ ${_fmtTime(sl.boost)}`:`⚡ ${boostCostStr}`}
+          </button>
+        </div>
+      </div>`;
+    });
+  }
+
+  // Кнопка додавання нового слота
+  let addBtnHtml='';
+  if(!isMaxSlots){
+    let nextSlotNum = b.slots.length + 1;
+    addBtnHtml=`<div class="base-slot-add-cost">Слот ${nextSlotNum}: ${slotCostStr}</div>
+      <button class="base-add-btn ${canAddSlot?'':'disabled'}" onclick="addBaseResSlot('${id}')" ${!canAddSlot?'disabled':''}>
+        ➕ БУДУВАТИ #${nextSlotNum} / ${b.maxSlots}
+      </button>`;
+  } else {
+    addBtnHtml=`<div style="font-size:9px;color:var(--gold);text-align:center;padding:2px 0;">✅ Максимум 5 будівель</div>`;
+  }
+
+  // Слот-точки
+  let slotDots='';
+  for(let i=0;i<b.maxSlots;i++){
+    let filled=i<b.slots.length;
+    slotDots+=`<div class="base-slot-dot ${filled?'filled':''}"></div>`;
+  }
+
+  let html=`<div class="base-b-card ${hasSlots?'active-bld':''} ${isSub?'sub-item':''}" title="${tipText}">
     <div class="base-b-head">
       <div class="base-b-name">${b.name}</div>
-      ${b.lvl>0?`<div class="base-b-lvl">рів.${b.lvl}</div>`:''}
+      <div class="base-slots-dots">${slotDots}</div>
     </div>
-    ${b.lvl>0
-      ? boost>0
-        ? `<div class="base-b-out" style="color:var(--gold)">⚡ +${boostedProd} ${res?.e||''}/с <span style="color:var(--orange);font-size:9px">${_fmtTime(boost)}</span></div>`
-        : `<div class="base-b-out">+${prod} ${res?.e||''} ${res?.n||b.res}/с</div>`
-      : `<div style="font-size:9px;color:var(--dim)">+${b.prodBase} ${res?.e||''}/с за рів.</div>`}
-    <div class="base-b-cost">${costStr}</div>
-    <div style="display:flex;gap:3px;margin-top:4px;">
-      <button class="base-b-btn ${canAfford?'can':''}" onclick="buyBaseResBuilding('${id}')" ${!canAfford?'disabled':''} style="flex:1;margin-top:0;">
-        ${b.lvl===0?'🏗 БУДУВАТИ':'+РІВ'}
-      </button>
-      ${b.lvl>0?`<button class="base-b-btn can" style="border-color:var(--gold);color:var(--gold);flex:0 0 28px;margin-top:0;" onclick="maxBuyBaseResBuilding('${id}')" ${!canAfford?'disabled':''}>МАХ</button>`:''}
+    ${hasSlots
+      ? `<div class="base-b-out">+${totalProd} ${res?.e||''} ${res?.n||b.res}/с (${b.slots.length} буд.)</div>`
+      : `<div style="font-size:9px;color:var(--dim)">+${b.prodBase} ${res?.e||''}/с за рів. · До 5 будівель</div>`}
+    <div class="base-slots-wrap">
+      ${slotsHtml}
+      ${addBtnHtml}
     </div>
-    ${b.lvl>0?`<button class="boost-btn ${boost>0?'active':''} ${!canBoost&&!boost?'disabled':''}"
-      onclick="activateBoost('${id}')" ${boost>0?'disabled':''}>
-      ${boost>0
-        ? `⚡ БУСТ: ${_fmtTime(boost)}`
-        : `⚡ БУСТ ×3 · 30с · ${boostCostStr}`}
-    </button>`:''}
   </div>`;
-  return {html, action: canAfford};
+  let canAffordAny = canAddSlot || (hasSlots && b.slots.some((sl)=>{
+    let c=getBaseSlotUpgradeCost(b,sl);
+    return Object.keys(c).every(k=>(storage[k]||0)>=c[k]);
+  }));
+  return {html, action: canAffordAny};
 }
 
 // ── Картка виробничої споруди гілки (ep1..ep12) ──
@@ -3911,8 +4057,8 @@ function renderBuildings(){
     (GROUP_BASE_MAP[bIdx]||[]).forEach(baseId=>{
       let b=BASE_RES_BUILDINGS[baseId];
       if(!b||epoch<b.ep_req) return;
-      if(buildStatusFilter==='built'&&b.lvl===0) return;
-      if(buildStatusFilter==='notbuilt'&&b.lvl>0) return;
+      if(buildStatusFilter==='built'&&(!b.slots||!b.slots.length)) return;
+      if(buildStatusFilter==='notbuilt'&&(b.slots&&b.slots.length>0)) return;
       let r=renderBaseCard(baseId,true);
       subHtml+=r.html;
       if(r.action) groupHasAction=true;
@@ -4963,7 +5109,10 @@ function serializeGameState() {
     binds: BINDS.map(b => ({ lvl: b.lvl })),
     // BASE_RES_BUILDINGS
     baseResBuildings: Object.fromEntries(
-      Object.entries(BASE_RES_BUILDINGS).map(([k, v]) => [k, { lvl: v.lvl, cap: v.cap||'all', boost: v.boost||0, tileR: v.tileR, tileC: v.tileC }])
+      Object.entries(BASE_RES_BUILDINGS).map(([k, v]) => [k, {
+        slots: (v.slots||[]).map(sl=>({lvl:sl.lvl, boost:sl.boost||0, tileR:sl.tileR, tileC:sl.tileC})),
+        cap: v.cap||'all'
+      }])
     ),
     // Buildings instances
     buildings: Object.fromEntries(
@@ -5065,7 +5214,17 @@ function deserializeGameState(s) {
     // Base res buildings
     if (s.baseResBuildings) {
       Object.entries(s.baseResBuildings).forEach(([k, v]) => {
-        if (BASE_RES_BUILDINGS[k]) { BASE_RES_BUILDINGS[k].lvl = v.lvl || 0; BASE_RES_BUILDINGS[k].cap = v.cap||'all'; BASE_RES_BUILDINGS[k].boost = v.boost||0; }
+        if (BASE_RES_BUILDINGS[k]) {
+          let b = BASE_RES_BUILDINGS[k];
+          b.cap = v.cap || 'all';
+          if (v.slots && Array.isArray(v.slots)) {
+            // Новий формат: масив слотів
+            b.slots = v.slots.map(sl=>({lvl:sl.lvl||0, boost:sl.boost||0, tileR:sl.tileR||null, tileC:sl.tileC||null}));
+          } else if (v.lvl) {
+            // Старий формат: один lvl → конвертуємо в 1 слот
+            b.slots = [{lvl:v.lvl, boost:v.boost||0, tileR:v.tileR||null, tileC:v.tileC||null}];
+          }
+        }
       });
     }
     // Buildings instances
@@ -5364,7 +5523,7 @@ function calcOfflineEarnings(secondsOffline) {
 
   // Base resource buildings
   Object.entries(BASE_RES_BUILDINGS).forEach(([id, b]) => {
-    if (!b.lvl || b.ep_req > epoch) return;
+    if (!b.slots||!b.slots.length || b.ep_req > epoch) return;
     let prod = getBaseBuildingProdPerTick(b) * baseResMultiplier * OFFLINE_RATE * capped;
     if (prod > 0.01) earned[b.res] = (earned[b.res] || 0) + prod;
   });
@@ -5495,7 +5654,7 @@ function _fullPrestigeReset(){
   epoch = 1; tech = 0; buildCount = 0; totalClicks = 0;
   Object.keys(storage).forEach(k => storage[k] = 0);
   Object.keys(psCounters).forEach(k => psCounters[k] = 0);
-  Object.keys(BASE_RES_BUILDINGS).forEach(id => { BASE_RES_BUILDINGS[id].lvl = 0; BASE_RES_BUILDINGS[id].boost = 0; });
+  Object.keys(BASE_RES_BUILDINGS).forEach(id => { BASE_RES_BUILDINGS[id].slots = []; });
   Object.values(buildings).forEach(b => { b.instances = []; b.mapTile = null; });
   TECH_NODES.forEach(n => n.unlocked = false);
   BINDS.forEach(b => b.lvl = 0);
